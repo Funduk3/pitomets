@@ -1,15 +1,16 @@
 package com.pitomets.monolit.model
 
-import jakarta.persistence.*;
+import jakarta.persistence.*
 
+// переделать потом
 @Entity
 @Table(name = "users")
 data class User (
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long ?= null,
+    val id: Long? = null,
 
-    var name: String,
+    val name: String,
 
-    var password: String
+    val password: String,
 )

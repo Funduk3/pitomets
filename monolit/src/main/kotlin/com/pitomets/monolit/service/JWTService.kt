@@ -1,47 +1,75 @@
 package com.pitomets.monolit.service
 
+import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.Claims
 import io.jsonwebtoken.io.Decoders
 import io.jsonwebtoken.security.Keys
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-import java.security.Key
-import java.security.NoSuchAlgorithmException
 import java.util.*
-import javax.crypto.KeyGenerator
+import java.util.concurrent.TimeUnit
 import javax.crypto.SecretKey
-import kotlin.collections.HashMap
 
-
+// непонятно где лучше хранить секретный ключ
 @Component
-class JWTService {
-    private var secretkey = ""
+class JWTService(
+    @Value("\${jwt.secret:}") private val secretBase64: String
+) {
 
-    init {
-        try {
-            val keyGen: KeyGenerator = KeyGenerator.getInstance("HmacSHA256")
-            val sk: SecretKey = keyGen.generateKey()
-            secretkey = Base64.getEncoder().encodeToString(sk.encoded)
-        } catch (e: NoSuchAlgorithmException) {
-            throw RuntimeException(e)
+    private val secretKey: SecretKey by lazy {
+        if (secretBase64.isBlank()) {
+            Jwts.SIG.HS256.key().build()
+        } else {
+            val keyBytes = Decoders.BASE64.decode(secretBase64)
+            Keys.hmacShaKeyFor(keyBytes)
         }
     }
 
-    fun generateToken(username: String?): String {
-        val claims: Map<String, Any> = HashMap()
+    fun generateToken(subject: String, ttlHours: Long = 30): String {
+        val now = Date()
+        val expiry = Date(now.time + TimeUnit.HOURS.toMillis(ttlHours))
         return Jwts.builder()
             .claims()
-            .add(claims)
-            .subject(username)
-            .issuedAt(Date(System.currentTimeMillis()))
-            .expiration(Date(System.currentTimeMillis() + 60 * 60 * 30))
+            .subject(subject)
+            .issuedAt(now)
+            .expiration(expiry)
             .and()
-            .signWith(key)
+            .signWith(secretKey, Jwts.SIG.HS256)
             .compact()
     }
 
-    private val key: Key
-        get() {
-            val keyBytes = Decoders.BASE64.decode(secretkey)
-            return Keys.hmacShaKeyFor(keyBytes)
+    fun extractUsername(token: String): String? =
+        try {
+            extractAllClaims(token)?.subject
+        } catch (ex: Exception) {
+            null
+        }
+
+    fun validateToken(token: String, username: String): Boolean {
+        val extracted = extractUsername(token) ?: return false
+        if (extracted != username) return false
+        val exp = extractExpiration(token) ?: return false
+        return !exp.before(Date())
+    }
+
+    private fun extractExpiration(token: String): Date? =
+        try {
+            extractAllClaims(token)?.expiration
+        } catch (ex: Exception) {
+            null
+        }
+
+    private fun extractAllClaims(token: String): Claims? =
+        try {
+            Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .payload
+        } catch (ex: JwtException) {
+            null
+        } catch (ex: Exception) {
+            null
         }
 }
