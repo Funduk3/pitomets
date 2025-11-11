@@ -18,7 +18,7 @@ class UserController(
     @PostMapping("/register")
     fun register(@RequestBody request: RegisterRequest): ResponseEntity<UserResponse> {
         return try {
-            val user = User(fullName = request.fullName, passwordHash = request.passwordHash)
+            val user = User(fullName = request.fullName, passwordHash = request.passwordHash, email = "123")
             val savedUser = service.register(user)
             ResponseEntity(
                 UserResponse(id = savedUser.id!!, fullName = savedUser.fullName),

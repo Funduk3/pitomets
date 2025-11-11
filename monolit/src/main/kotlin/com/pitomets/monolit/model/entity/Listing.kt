@@ -37,8 +37,8 @@ class Listing(
     @JoinColumn(name = "seller_profile_id")
     var sellerProfile: SellerProfile? = null,
 
-    @OneToMany(mappedBy = "listing", cascade = [CascadeType.ALL], orphanRemoval = true)
-    var pets: MutableList<Pet> = mutableListOf()
+//    @OneToMany(mappedBy = "listing", cascade = [CascadeType.ALL], orphanRemoval = true)
+//    var pets: MutableList<Pet> = mutableListOf()
 ) {
     constructor(): this(null)
 }

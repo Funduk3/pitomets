@@ -21,7 +21,7 @@ class SellerProfile(
     var description: String? = null,
 
     @Column(precision = 10, scale = 2)
-    var rating: Integer? = null,
+    var rating: Int? = null,
 
 //    @OneToMany(mappedBy = "sellerProfile", cascade = [CascadeType.ALL], orphanRemoval = true)
 //    var listings: MutableList<Listing> = mutableListOf(),

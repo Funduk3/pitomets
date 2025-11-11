@@ -11,12 +11,12 @@ class AdminAction(
     @Column(name = "id", updatable = false, nullable = false)
     var id: Long? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "admin_id", nullable = false)
     var admin: User? = null,
 
     // seller_profile reference
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id")
     var sellerProfile: SellerProfile? = null,
 
