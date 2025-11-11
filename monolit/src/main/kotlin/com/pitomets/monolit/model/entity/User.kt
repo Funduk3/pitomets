@@ -3,7 +3,6 @@ package com.pitomets.monolit.model.entity
 import jakarta.persistence.*
 import java.time.OffsetDateTime
 
-// переделать потом
 @Entity
 @Table(name = "users")
 class User(
@@ -13,7 +12,7 @@ class User(
     var id: Long? = null,
 
     @Column(nullable = false, unique = true)
-    var email: String = "",
+    var email: String,
 
     @Column(name = "password_hash", nullable = false)
     var passwordHash: String,
