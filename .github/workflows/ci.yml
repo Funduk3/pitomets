@@ -64,3 +64,13 @@ jobs:
         with:
           name: build-artifacts
           path: monolit/**/build/libs/*.jar
+  assign-reviewers:
+    name: Assign Reviewers
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: hmarr/auto-assign-action@v2
+        with:
+          reviewers: 'aartmoon,Funduk3'
+          remove-assignees: false
+  
