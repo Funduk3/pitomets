@@ -5,7 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3c637cb0-8530-49c6-accc-75038fefaeda" name="Changes" comment="clear">
-      <change beforePath="$PROJECT_DIR$/.github/workflows/ci.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/ci.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/monolit/src/test/kotlin/com/pitomets/monolit/MonolitApplicationTests.kt" beforeDir="false" afterPath="$PROJECT_DIR$/monolit/src/test/kotlin/com/pitomets/monolit/MonolitApplicationTests.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
