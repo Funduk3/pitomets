@@ -6,29 +6,39 @@ import io.jsonwebtoken.Claims
 import io.jsonwebtoken.io.Decoders
 import io.jsonwebtoken.security.Keys
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.stereotype.Component
+import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.stereotype.Service
+import java.security.SecureRandom
 import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.crypto.SecretKey
 
-// непонятно где лучше хранить секретный ключ
-@Component
+@Service
 class JWTService(
-    @Value("\${jwt.secret:}") private val secretBase64: String
+    @Value("\${jwt.secret:}") private val secretBase64: String,
+    @Value("\${jwt.access-token-ttl:1}") private val accessTokenTtlHours: Long,
+    @Value("\${jwt.refresh-token-ttl:168}") private val refreshTokenTtlHours: Long,
+    private val redisTemplate: RedisTemplate<String, String>
 ) {
+
+    private val REFRESH_TOKEN_PREFIX = "refresh_token:"
 
     private val secretKey: SecretKey by lazy {
         if (secretBase64.isBlank()) {
-            Jwts.SIG.HS256.key().build()
+            // Dev-only
+            val devKey = "dev-secret-key-dev-secret-key-123456"
+            Keys.hmacShaKeyFor(devKey.toByteArray(Charsets.UTF_8))
         } else {
             val keyBytes = Decoders.BASE64.decode(secretBase64)
             Keys.hmacShaKeyFor(keyBytes)
         }
     }
 
-    fun generateToken(subject: String, ttlHours: Long = 30): String {
+    // Access Token
+
+    fun generateAccessToken(subject: String): String {
         val now = Date()
-        val expiry = Date(now.time + TimeUnit.HOURS.toMillis(ttlHours))
+        val expiry = Date(now.time + TimeUnit.HOURS.toMillis(accessTokenTtlHours))
         return Jwts.builder()
             .claims()
             .subject(subject)
@@ -72,4 +82,50 @@ class JWTService(
         } catch (ex: Exception) {
             null
         }
+
+    // Refresh Token
+
+    fun generateRefreshToken(): String {
+        val bytes = ByteArray(32)
+        SecureRandom().nextBytes(bytes)
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
+    }
+
+    fun createRefreshToken(username: String): String {
+        val refreshToken = generateRefreshToken()
+        val key = REFRESH_TOKEN_PREFIX + refreshToken
+
+        redisTemplate.opsForValue().set(
+            key,
+            username,
+            refreshTokenTtlHours,
+            TimeUnit.HOURS
+        )
+
+        return refreshToken
+    }
+
+    fun consumeRefreshToken(refreshToken: String): String? {
+        val key = REFRESH_TOKEN_PREFIX + refreshToken
+        val username = redisTemplate.opsForValue().get(key) ?: return null
+        redisTemplate.delete(key)
+        return username
+    }
+
+    fun deleteRefreshToken(refreshToken: String) {
+        val key = REFRESH_TOKEN_PREFIX + refreshToken
+        redisTemplate.delete(key)
+    }
+
+    fun deleteAllUserRefreshTokens(username: String) {
+        val pattern = "$REFRESH_TOKEN_PREFIX*"
+        val keys = redisTemplate.keys(pattern)
+
+        keys.forEach { key ->
+            val storedUsername = redisTemplate.opsForValue().get(key)
+            if (storedUsername == username) {
+                redisTemplate.delete(key)
+            }
+        }
+    }
 }

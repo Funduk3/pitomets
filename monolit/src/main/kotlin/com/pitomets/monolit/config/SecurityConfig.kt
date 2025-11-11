@@ -1,9 +1,11 @@
 package com.pitomets.monolit.config
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.pitomets.monolit.filter.JWTFilter
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.MediaType
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.AuthenticationProvider
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider
@@ -34,13 +36,13 @@ class SecurityConfig(
     fun authenticationProvider(passwordEncoder: PasswordEncoder): AuthenticationProvider {
         val provider = DaoAuthenticationProvider(userDetailsService)
         provider.setPasswordEncoder(passwordEncoder)
-        return provider;
+        return provider
     }
 
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
-        configuration.allowedOrigins = listOf("http://localhost:3000")  // фронтенд на этом порту
+        configuration.allowedOrigins = listOf("http://localhost:3000")
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
         configuration.allowedHeaders = listOf("*")
         configuration.allowCredentials = true
@@ -53,28 +55,55 @@ class SecurityConfig(
 
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
+        val mapper = jacksonObjectMapper()
+
         http
             .csrf { it.disable() }
             .headers { it.frameOptions { it.disable() } }
             .cors { it.configurationSource(corsConfigurationSource()) }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests {
-                it.requestMatchers("/register", "/login", "/h2-console/**").permitAll()
+                it.requestMatchers(
+                    "/register",
+                    "/login",
+                    "/refresh",
+                    "/h2-console/**"
+                ).permitAll()
                 it.anyRequest().authenticated()
             }
             .authenticationProvider(authenticationProvider(passwordEncoder()))
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter::class.java)
             .exceptionHandling {
+                // когда нет токена
                 it.authenticationEntryPoint { _, response, authException ->
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authException.message)
+                    response.status = HttpServletResponse.SC_UNAUTHORIZED
+                    response.contentType = MediaType.APPLICATION_JSON_VALUE
+                    val body = mapOf(
+                        "status" to 401,
+                        "error" to "Unauthorized",
+                        "message" to authException.message
+                    )
+                    response.writer.write(mapper.writeValueAsString(body))
+                }
+
+                // когда токен есть, но нет прав или невалидный/устаревший
+                it.accessDeniedHandler { _, response, accessDeniedException ->
+                    response.status = HttpServletResponse.SC_FORBIDDEN
+                    response.contentType = MediaType.APPLICATION_JSON_VALUE
+                    val body = mapOf(
+                        "status" to 403,
+                        "error" to "Forbidden",
+                        "message" to accessDeniedException.message
+                    )
+                    response.writer.write(mapper.writeValueAsString(body))
                 }
             }
+            .logout { it.disable() }
 
         return http.build()
     }
 
     @Bean
     fun authenticationManager(config: AuthenticationConfiguration): AuthenticationManager
-        = config.authenticationManager
-
+            = config.authenticationManager
 }

@@ -1,7 +1,9 @@
 package com.pitomets.monolit.service
 
+import com.pitomets.monolit.model.dto.TokenResponse
 import com.pitomets.monolit.model.entity.User
 import com.pitomets.monolit.repository.UserRepo
+import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
@@ -15,35 +17,61 @@ class UserService(
     private val repo: UserRepo,
     private val encoder: PasswordEncoder
 ) {
+    private val log = LoggerFactory.getLogger(UserService::class.java)
 
     fun register(user: User): User {
         if (repo.findByFullName(user.fullName) != null) {
             throw IllegalArgumentException("User with this name already exists")
         }
-
-        // хэшируем пароль и присваиваем в объект
         user.passwordHash = encoder.encode(user.passwordHash)
-
         val savedUser = repo.save(user)
-
-        // возвращаем без пароля тк безопасность
         savedUser.passwordHash = ""
         return savedUser
     }
 
-
-    fun verify(name: String, rawPassword: String): String {
+    fun login(name: String, rawPassword: String): TokenResponse {
         try {
             val authToken = UsernamePasswordAuthenticationToken(name, rawPassword)
             val authentication: Authentication = authManager.authenticate(authToken)
 
             if (authentication.isAuthenticated) {
-                return jwtService.generateToken(name)
+                val accessToken = jwtService.generateAccessToken(name)
+                val refreshToken = jwtService.createRefreshToken(name)
+
+                return TokenResponse(
+                    accessToken = accessToken,
+                    refreshToken = refreshToken
+                )
             }
         } catch (ex: Exception) {
-            // Можно логировать
+            log.warn("Authentication failed for user {}: {}", name, ex.message)
+            // можно пробросить более специфичную ошибку
         }
         throw IllegalArgumentException("Invalid username or password")
+    }
+
+    fun refreshAccessToken(refreshToken: String): TokenResponse {
+        val username = jwtService.consumeRefreshToken(refreshToken)
+            ?: throw IllegalArgumentException("Invalid or expired refresh token")
+
+        repo.findByFullName(username)
+            ?: throw IllegalArgumentException("User not found")
+
+        val newAccessToken = jwtService.generateAccessToken(username)
+        val newRefreshToken = jwtService.createRefreshToken(username)
+
+        return TokenResponse(
+            accessToken = newAccessToken,
+            refreshToken = newRefreshToken
+        )
+    }
+
+    fun logout(refreshToken: String) {
+        jwtService.deleteRefreshToken(refreshToken)
+    }
+
+    fun logoutAll(username: String) {
+        jwtService.deleteAllUserRefreshTokens(username)
     }
 
     // для теста
