@@ -1,6 +1,6 @@
 package com.pitomets.monolit.service
 
-import com.pitomets.monolit.model.User
+import com.pitomets.monolit.model.entity.User
 import com.pitomets.monolit.repository.UserRepo
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -17,15 +17,20 @@ class UserService(
 ) {
 
     fun register(user: User): User {
-        if (repo.findByName(user.name) != null) {
+        if (repo.findByFullName(user.fullName) != null) {
             throw IllegalArgumentException("User with this name already exists")
         }
 
-        val hashedPassword = encoder.encode(user.password)
-        val savedUser = repo.save(user.copy(password = hashedPassword))
+        // хэшируем пароль и присваиваем в объект
+        user.passwordHash = encoder.encode(user.passwordHash)
 
-        return savedUser.copy(password = "")
+        val savedUser = repo.save(user)
+
+        // возвращаем без пароля тк безопасность
+        savedUser.passwordHash = ""
+        return savedUser
     }
+
 
     fun verify(name: String, rawPassword: String): String {
         try {
@@ -43,6 +48,8 @@ class UserService(
 
     // для теста
     fun getAll(): List<User> {
-        return repo.findAll().map { it.copy(password = "") }
+        val users = repo.findAll()
+        users.forEach { it.passwordHash = "" }
+        return users
     }
 }

@@ -5,7 +5,6 @@ import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
-import com.pitomets.monolit.model.User
 import com.pitomets.monolit.model.UserPrincipal
 
 
@@ -15,7 +14,7 @@ class MyUserDetailsService(
 ) : UserDetailsService {
 
     override fun loadUserByUsername(username: String): UserDetails {
-        val user: User? = userRepo.findByName(username)
+        val user = userRepo.findByFullName(username)
         if (user == null) {
             println("User Not Found")
             throw UsernameNotFoundException("user not found")

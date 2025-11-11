@@ -1,6 +1,11 @@
 package com.pitomets.monolit.controller
 
 import com.pitomets.monolit.model.*
+import com.pitomets.monolit.model.dto.LoginRequest
+import com.pitomets.monolit.model.dto.LoginResponse
+import com.pitomets.monolit.model.dto.RegisterRequest
+import com.pitomets.monolit.model.dto.UserResponse
+import com.pitomets.monolit.model.entity.User
 import com.pitomets.monolit.service.UserService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -10,14 +15,13 @@ import org.springframework.web.bind.annotation.*
 class UserController(
     private val service: UserService
 ) {
-
     @PostMapping("/register")
     fun register(@RequestBody request: RegisterRequest): ResponseEntity<UserResponse> {
         return try {
-            val user = User(name = request.name, password = request.password)
+            val user = User(fullName = request.fullName, passwordHash = request.passwordHash, email = "123")
             val savedUser = service.register(user)
             ResponseEntity(
-                UserResponse(id = savedUser.id!!, name = savedUser.name),
+                UserResponse(id = savedUser.id!!, fullName = savedUser.fullName),
                 HttpStatus.CREATED
             )
         } catch (ex: IllegalArgumentException) {
@@ -28,16 +32,16 @@ class UserController(
     @PostMapping("/login")
     fun login(@RequestBody request: LoginRequest): ResponseEntity<LoginResponse> {
         return try {
-            val token = service.verify(request.name, request.password)
+            val token = service.verify(request.fullName, request.passwordHash)
             ResponseEntity.ok(LoginResponse(token))
         } catch (ex: IllegalArgumentException) {
             ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         }
     }
 
-    //для теста
+    // для теста
     @GetMapping("/all")
     fun getAll(): List<UserResponse> {
-        return service.getAll().map { UserResponse(it.id, it.name) }
+        return service.getAll().map { UserResponse(it.id!!, it.fullName) }
     }
 }
