@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: hmarr/auto-assign-action@v2
+      - uses: hmarr/auto-approve-action@v4
         with:
           reviewers: 'aartmoon,Funduk3'
           remove-assignees: false
