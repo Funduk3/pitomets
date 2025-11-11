@@ -14,7 +14,7 @@ class MyUserDetailsService(
 ) : UserDetailsService {
 
     override fun loadUserByUsername(username: String): UserDetails {
-        val user = userRepo.findByName(username)
+        val user = userRepo.findByFullName(username)
         if (user == null) {
             println("User Not Found")
             throw UsernameNotFoundException("user not found")

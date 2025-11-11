@@ -15,11 +15,11 @@ class UserPrincipal(
     }
 
     override fun getPassword(): String {
-        return user.password
+        return user.passwordHash
     }
 
     override fun getUsername(): String {
-        return user.name
+        return user.fullName
     }
 
     override fun isAccountNonExpired(): Boolean {
