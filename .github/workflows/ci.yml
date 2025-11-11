@@ -2,11 +2,11 @@ name: CI — monolit (Java 21, Gradle)
 
 on:
   push:
-    branches: ["main", "master", "develop"]
+    branches: ["main", "dev"]
     paths:
       - "monolit/**"
   pull_request:
-    branches: ["main", "develop"]
+    branches: ["main", "dev"]
     paths:
       - "monolit/**"
   workflow_dispatch:
