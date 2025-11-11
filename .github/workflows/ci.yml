@@ -1,0 +1,66 @@
+name: CI — monolit (Java 21, Gradle)
+
+on:
+  push:
+    branches: ["main", "dev"]
+    paths:
+      - "monolit/**"
+  pull_request:
+    branches: ["main", "dev"]
+    paths:
+      - "monolit/**"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build & Test (monolit)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Cache Gradle directories
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            monolit/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('monolit/**/gradle-wrapper.properties','monolit/**/build.gradle*','monolit/**/settings.gradle*') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Make gradlew executable
+        run: chmod +x monolit/gradlew
+
+      - name: Build & run tests
+        working-directory: monolit
+        run: ./gradlew clean build --no-daemon --parallel
+
+      - name: Run additional checks (optional)
+        if: always()
+        working-directory: monolit
+        run: ./gradlew check --no-daemon || true
+
+      - name: Upload test results (JUnit XML)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: monolit/**/build/test-results
+
+      - name: Upload build archive (optional)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: monolit/**/build/libs/*.jar
