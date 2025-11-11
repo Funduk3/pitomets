@@ -1,6 +1,11 @@
 package com.pitomets.monolit.controller
 
 import com.pitomets.monolit.model.*
+import com.pitomets.monolit.model.dto.LoginRequest
+import com.pitomets.monolit.model.dto.LoginResponse
+import com.pitomets.monolit.model.dto.RegisterRequest
+import com.pitomets.monolit.model.dto.UserResponse
+import com.pitomets.monolit.model.entity.User
 import com.pitomets.monolit.service.UserService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -35,7 +40,7 @@ class UserController(
         }
     }
 
-    //для теста
+    // для теста
     @GetMapping("/all")
     fun getAll(): List<UserResponse> {
         return service.getAll().map { UserResponse(it.id, it.name) }

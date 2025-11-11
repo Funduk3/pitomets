@@ -27,7 +27,8 @@ class SecurityConfig(
     private val userDetailsService: UserDetailsService
 ) {
     @Bean
-    fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder(12)
+    fun passwordEncoder(): PasswordEncoder =
+        BCryptPasswordEncoder(12)
 
     @Bean
     fun authenticationProvider(passwordEncoder: PasswordEncoder): AuthenticationProvider {

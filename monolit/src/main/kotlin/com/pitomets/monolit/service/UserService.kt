@@ -1,6 +1,6 @@
 package com.pitomets.monolit.service
 
-import com.pitomets.monolit.model.User
+import com.pitomets.monolit.model.entity.User
 import com.pitomets.monolit.repository.UserRepo
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
