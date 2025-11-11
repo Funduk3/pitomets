@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: monolit
+
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: user
+    password:
+    driver-class-name: org.h2.Driver
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+logging:
+  level:
+    com.pitomets.monolit: DEBUG
+    org.springframework.security: DEBUG
+
+jwt:
+  secret: "" # ??? dev ????????? ??????
+  access-token-ttl: 1
+  refresh-token-ttl: 168
