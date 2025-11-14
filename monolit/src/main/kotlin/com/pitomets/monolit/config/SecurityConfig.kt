@@ -1,6 +1,7 @@
 package com.pitomets.monolit.config
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.pitomets.monolit.exceptions.ErrorResponse
 import com.pitomets.monolit.filter.JWTFilter
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.context.annotation.Bean
@@ -74,28 +75,28 @@ class SecurityConfig(
             .authenticationProvider(authenticationProvider(passwordEncoder()))
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter::class.java)
             .exceptionHandling {
-                // когда нет токена
+                // Обработка когда нет аутентификации
                 it.authenticationEntryPoint { _, response, authException ->
                     response.status = HttpServletResponse.SC_UNAUTHORIZED
                     response.contentType = MediaType.APPLICATION_JSON_VALUE
-                    val body = mapOf(
-                        "status" to 401,
-                        "error" to "Unauthorized",
-                        "message" to authException.message
+                    val errorResponse = ErrorResponse(
+                        status = HttpServletResponse.SC_UNAUTHORIZED,
+                        error = "Unauthorized",
+                        message = authException.message ?: "Authentication required"
                     )
-                    response.writer.write(mapper.writeValueAsString(body))
+                    response.writer.write(mapper.writeValueAsString(errorResponse))
                 }
 
-                // когда токен есть, но нет прав или невалидный/устаревший
+                // Обработка когда нет прав доступа
                 it.accessDeniedHandler { _, response, accessDeniedException ->
                     response.status = HttpServletResponse.SC_FORBIDDEN
                     response.contentType = MediaType.APPLICATION_JSON_VALUE
-                    val body = mapOf(
-                        "status" to 403,
-                        "error" to "Forbidden",
-                        "message" to accessDeniedException.message
+                    val errorResponse = ErrorResponse(
+                        status = HttpServletResponse.SC_FORBIDDEN,
+                        error = "Forbidden",
+                        message = accessDeniedException.message ?: "Access denied"
                     )
-                    response.writer.write(mapper.writeValueAsString(body))
+                    response.writer.write(mapper.writeValueAsString(errorResponse))
                 }
             }
             .logout { it.disable() }

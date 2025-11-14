@@ -25,11 +25,6 @@ class JWTFilter(
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
-        if (request.requestURI.startsWith("/auth/") || request.requestURI.startsWith("/public/")) {
-            filterChain.doFilter(request, response)
-            return
-        }
-
         val token = request.getHeader("Authorization")
             ?.takeIf { it.startsWith("Bearer ", ignoreCase = true) }
             ?.substring(7)
@@ -56,8 +51,7 @@ class JWTFilter(
                     }
                 }
             } catch (ex: Exception) {
-                // Не бросаем exception, просто логируем и продолжаем цепочку
-                log.warn("JWT authentication failed: {}", ex.message)
+                throw ex
             }
         }
 
