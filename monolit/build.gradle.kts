@@ -1,9 +1,9 @@
 plugins {
-	kotlin("jvm") version "1.9.25"
-	kotlin("plugin.spring") version "1.9.25"
+	kotlin("jvm") version "2.1.0"
+	kotlin("plugin.spring") version "2.1.0"
 	id("org.springframework.boot") version "3.5.7"
 	id("io.spring.dependency-management") version "1.1.7"
-	kotlin("plugin.jpa") version "1.9.25"
+	kotlin("plugin.jpa") version "2.1.0"
 }
 
 group = "com.pitomets"
@@ -50,8 +50,8 @@ dependencies {
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
     testImplementation("net.datafaker:datafaker:1.4.0")
-//    testImplementation("io.rest-assured:rest-assured:5.5.6")
-//    testImplementation("io.rest-assured:kotlin-extensions:5.5.6")
+    testImplementation("io.rest-assured:rest-assured:5.5.6")
+    testImplementation("io.rest-assured:kotlin-extensions:5.5.6")
 }
 
 kotlin {
