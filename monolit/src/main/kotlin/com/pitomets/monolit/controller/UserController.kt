@@ -24,9 +24,8 @@ class UserController(
     }
 
     @PostMapping("/refresh")
-    fun refresh(@RequestBody request: RefreshTokenRequest) {
+    fun refresh(@RequestBody request: RefreshTokenRequest): TokenResponse =
         service.refreshAccessToken(request.refreshToken)
-    }
 
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.OK)
