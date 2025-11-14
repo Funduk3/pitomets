@@ -44,6 +44,8 @@ class AuthFlowIntegrationTest {
             })
         }
 
+        val faker = Faker()
+
         @JvmStatic
         @DynamicPropertySource
         fun props(registry: DynamicPropertyRegistry) {
@@ -73,7 +75,6 @@ class AuthFlowIntegrationTest {
         RestAssured.baseURI = "http://localhost"
         RestAssured.port = port
 
-        val faker = Faker()
         val username = faker.name().username()
         val password = faker.internet().password(8, 16)
 
@@ -136,6 +137,27 @@ class AuthFlowIntegrationTest {
             .body(RefreshTokenRequest(newTokens.refreshToken))
             .`when`()
             .post("/refresh")
+            .then()
+            .statusCode(Matchers.allOf(Matchers.greaterThanOrEqualTo(400), Matchers.lessThan(500)))
+
+        // Вымышленный username
+        val usernameIncorrect = faker.name().username()
+        val loginReqBadUsername = LoginRequest(fullName = usernameIncorrect, passwordHash = faker.internet().password(8, 16))
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .body(loginReqBadUsername)
+            .`when`()
+            .post("/login")
+            .then()
+            .statusCode(Matchers.allOf(Matchers.greaterThanOrEqualTo(400), Matchers.lessThan(500)))
+
+        // Неправильный пароль
+        val loginReqBadPassword = LoginRequest(fullName = username, passwordHash = faker.internet().password(17,18))
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .body(loginReqBadPassword)
+            .`when`()
+            .post("/login")
             .then()
             .statusCode(Matchers.allOf(Matchers.greaterThanOrEqualTo(400), Matchers.lessThan(500)))
     }
