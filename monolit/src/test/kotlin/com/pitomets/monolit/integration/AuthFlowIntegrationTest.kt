@@ -131,6 +131,25 @@ class AuthFlowIntegrationTest {
             .then()
             .statusCode(200)
 
+        // 4a) Попытка logout с повреждённым access token должна вернуть 4xx (тест токена)
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .auth().oauth2(newTokens.accessToken + "tampered") // подменяем токен
+            .body(RefreshTokenRequest(newTokens.refreshToken))
+            .`when`()
+            .post("/logout")
+            .then()
+            .statusCode(Matchers.allOf(Matchers.greaterThanOrEqualTo(400), Matchers.lessThan(500)))
+
+        // 4b) Попытка logout без access token должна вернуть 4xx (тест токена)
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .body(RefreshTokenRequest(newTokens.refreshToken))
+            .`when`()
+            .post("/logout")
+            .then()
+            .statusCode(Matchers.allOf(Matchers.greaterThanOrEqualTo(400), Matchers.lessThan(500)))
+
         // 5) Попытка повторного refresh должна возвращать 4xx
         RestAssured.given()
             .contentType(ContentType.JSON)
