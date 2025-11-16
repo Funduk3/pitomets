@@ -7,10 +7,21 @@ services:
     ports:
       - "8080:8080"
     depends_on:
+      - postgres
       - redis
     environment:
+      # DB settings (передаются в Spring через placeholders в application.yml)
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: monolit
+      DB_USER: postgres
+      DB_PASS: postgres
+      # Redis
       SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PORT: "6379"
+      # Доп. JVM options
+      JAVA_OPTS: ""
+    restart: on-failure
 
   redis:
     image: redis:7-alpine
@@ -18,3 +29,24 @@ services:
     restart: always
     ports:
       - "6379:6379"
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: monolit
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d monolit"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

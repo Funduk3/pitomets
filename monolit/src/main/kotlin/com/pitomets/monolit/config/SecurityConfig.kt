@@ -67,8 +67,7 @@ class SecurityConfig(
                 it.requestMatchers(
                     "/register",
                     "/login",
-                    "/refresh",
-                    "/h2-console/**"
+                    "/refresh"
                 ).permitAll()
                 it.anyRequest().authenticated()
             }
