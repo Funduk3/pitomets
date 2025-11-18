@@ -1,0 +1,27 @@
+spring:
+
+  liquibase:
+    enabled: false
+  datasource:
+    url: jdbc:postgresql://invalidhost/invaliddb   # будет переопределено DynamicPropertySource
+    username: test
+    password: test
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        show_sql: false
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  redis:
+    data:
+      host: invalid
+      port: 0
+
+logging:
+  level:
+    root: INFO
