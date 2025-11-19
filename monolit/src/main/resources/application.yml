@@ -9,9 +9,9 @@ spring:
       password: password
       driver-class-name: org.postgresql.Driver
 
-    h2:
-      console:
-        enabled: false
+#    h2:
+#      console:
+#        enabled: false
 
     jpa:
       hibernate:
