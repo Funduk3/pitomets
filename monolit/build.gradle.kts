@@ -35,7 +35,6 @@ dependencies {
 
 	implementation("org.springframework.boot:spring-boot-starter-data-redis")
 	implementation("redis.clients:jedis")
-    implementation("org.postgresql:postgresql:42.6.0")
     implementation("org.springframework.boot:spring-boot-starter-validation")
 
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
@@ -45,7 +44,6 @@ dependencies {
 	runtimeOnly("org.postgresql:postgresql")
 	runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
 	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
-    runtimeOnly("com.h2database:h2")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation("io.swagger:swagger-annotations:1.6.6")
 
