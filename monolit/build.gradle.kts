@@ -55,7 +55,7 @@ dependencies {
     testImplementation("net.datafaker:datafaker:1.4.0")
     testImplementation("io.rest-assured:rest-assured:5.5.6")
     testImplementation("io.rest-assured:kotlin-extensions:5.5.6")
-    implementation("org.springdoc:sp:ringdoc-openapi-starter-webmvc-ui:2.1.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0")
 }
 
 kotlin {
