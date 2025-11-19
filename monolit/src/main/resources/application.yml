@@ -9,10 +9,6 @@ spring:
       password: password
       driver-class-name: org.postgresql.Driver
 
-#    h2:
-#      console:
-#        enabled: false
-
     jpa:
       hibernate:
         ddl-auto: update
@@ -29,7 +25,7 @@ spring:
 
 logging:
   level:
-    com.pitomets.monolit: DEBUG
+    com.pitomets.monolit: INFO
     org.springframework.security: DEBUG
 
 jwt:
