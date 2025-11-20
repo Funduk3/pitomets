@@ -7,13 +7,18 @@ import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.Base64
 
+@Suppress("UtilityClassWithPublicConstructor")
 @Testcontainers
 abstract class BaseContainers {
 
     companion object {
         @JvmStatic
         val postgres = PostgreSQLContainer<Nothing>("postgres:15-alpine")
-            .apply { withDatabaseName("testdb"); withUsername("test"); withPassword("test") }
+            .apply {
+                withDatabaseName("testdb")
+                withUsername("test")
+                withPassword("test")
+            }
 
         @JvmStatic
         val redis = GenericContainer<Nothing>("redis:7-alpine").apply { withExposedPorts(6379) }
@@ -21,11 +26,14 @@ abstract class BaseContainers {
         init {
             postgres.start()
             redis.start()
-            Runtime.getRuntime().addShutdownHook(Thread {
-                try { postgres.stop() } catch (_: Throwable) {}
-                try { redis.stop() } catch (_: Throwable) {}
-            })
+            Runtime.getRuntime().addShutdownHook(
+                Thread {
+                    try { postgres.stop() } catch (_: Throwable) {}
+                    try { redis.stop() } catch (_: Throwable) {}
+                }
+            )
         }
+
         @JvmStatic
         @DynamicPropertySource
         fun props(registry: DynamicPropertyRegistry) {

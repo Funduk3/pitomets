@@ -1,10 +1,10 @@
 package com.pitomets.monolit.service
 
-import com.pitomets.monolit.exceptions.authExceptions.AuthenticationException
 import com.pitomets.monolit.exceptions.InvalidCredentialsException
-import com.pitomets.monolit.exceptions.authExceptions.InvalidTokenException
 import com.pitomets.monolit.exceptions.UserAlreadyExistsException
 import com.pitomets.monolit.exceptions.UserNotFoundException
+import com.pitomets.monolit.exceptions.authExceptions.AuthenticationException
+import com.pitomets.monolit.exceptions.authExceptions.InvalidTokenException
 import com.pitomets.monolit.model.dto.TokenResponse
 import com.pitomets.monolit.model.entity.User
 import com.pitomets.monolit.repository.UserRepo
@@ -53,7 +53,7 @@ class UserService(
         } catch (ex: BadCredentialsException) {
             log.warn("Authentication failed for user {}: {}", name, ex.message)
             throw InvalidCredentialsException("Invalid username or password")
-        } catch (ex: Exception) {
+        } catch (ex: AuthenticationException) {
             log.warn("Authentication failed for user {}: {}", name, ex.message)
             throw AuthenticationException("Authentication failed")
         }
@@ -80,7 +80,7 @@ class UserService(
     fun logout(refreshToken: String) {
         try {
             jwtService.deleteRefreshToken(refreshToken)
-        } catch (ex: Exception) {
+        } catch (ex: InvalidTokenException) {
             throw InvalidTokenException("Invalid refresh token")
         }
     }

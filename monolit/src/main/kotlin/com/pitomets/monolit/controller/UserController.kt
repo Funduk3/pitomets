@@ -1,10 +1,18 @@
 package com.pitomets.monolit.controller
 
-import com.pitomets.monolit.model.dto.*
+import com.pitomets.monolit.model.dto.LoginRequest
+import com.pitomets.monolit.model.dto.RefreshTokenRequest
+import com.pitomets.monolit.model.dto.RegisterRequest
+import com.pitomets.monolit.model.dto.TokenResponse
+import com.pitomets.monolit.model.dto.UserResponse
 import com.pitomets.monolit.model.entity.User
 import com.pitomets.monolit.service.UserService
 import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class UserController(

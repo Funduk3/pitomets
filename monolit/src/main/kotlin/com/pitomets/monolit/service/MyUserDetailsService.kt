@@ -1,12 +1,11 @@
 package com.pitomets.monolit.service
 
+import com.pitomets.monolit.model.UserPrincipal
 import com.pitomets.monolit.repository.UserRepo
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
-import com.pitomets.monolit.model.UserPrincipal
-
 
 @Service
 class MyUserDetailsService(

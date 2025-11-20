@@ -1,9 +1,10 @@
 package com.pitomets.monolit.model.entity
 
-import jakarta.persistence.*
+import jakarta.persistence.Column
+import jakarta.persistence.Embeddable
 
 @Embeddable
-class Favouritesd(
+class Favourites(
     @Column(name = "buyer_id")
     var buyerId: Long? = null,
 
