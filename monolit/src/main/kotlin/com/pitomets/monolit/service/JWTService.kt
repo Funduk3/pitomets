@@ -19,10 +19,18 @@ import javax.crypto.SecretKey
 
 @Service
 class JWTService(
-    @Value("\${jwt.secret:}") private val secretBase64: String,
-    @Value("\${jwt.access-token-ttl:1}") private val accessTokenTtlHours: Long,
-    @Value("\${jwt.refresh-token-ttl:168}") private val refreshTokenTtlHours: Long,
-    @Value("32") private val refreshTokenByteSize: Int,
+    @Value("\${jwt.secret:}")
+    private val secretBase64: String,
+
+    @Value("\${jwt.access-token-ttl:1}")
+    private val accessTokenTtlHours: Long,
+
+    @Value("\${jwt.refresh-token-ttl:168}")
+    private val refreshTokenTtlHours: Long,
+
+    @Value("32")
+    private val refreshTokenByteSize: Int,
+
     private val redisTemplate: RedisTemplate<String, String>
 ) {
 
