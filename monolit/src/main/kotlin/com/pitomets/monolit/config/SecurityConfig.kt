@@ -4,6 +4,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.pitomets.monolit.exceptions.ErrorResponse
 import com.pitomets.monolit.filter.JWTFilter
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.MediaType
@@ -27,11 +28,13 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 @EnableWebSecurity
 class SecurityConfig(
     private val jwtFilter: JWTFilter,
-    private val userDetailsService: UserDetailsService
+    private val userDetailsService: UserDetailsService,
+    @Value("3600") private val configMaxAge: Long,
+    @Value("12") private val passwordEncoderStrength: Int
 ) {
     @Bean
     fun passwordEncoder(): PasswordEncoder =
-        BCryptPasswordEncoder(12)
+        BCryptPasswordEncoder(passwordEncoderStrength)
 
     @Bean
     fun authenticationProvider(passwordEncoder: PasswordEncoder): AuthenticationProvider {
@@ -47,7 +50,7 @@ class SecurityConfig(
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
         configuration.allowedHeaders = listOf("*")
         configuration.allowCredentials = true
-        configuration.maxAge = 3600L
+        configuration.maxAge = configMaxAge
 
         val source = UrlBasedCorsConfigurationSource()
         source.registerCorsConfiguration("/**", configuration)
@@ -104,6 +107,5 @@ class SecurityConfig(
     }
 
     @Bean
-    fun authenticationManager(config: AuthenticationConfiguration): AuthenticationManager
-            = config.authenticationManager
+    fun authenticationManager(config: AuthenticationConfiguration): AuthenticationManager = config.authenticationManager
 }

@@ -1,10 +1,13 @@
 plugins {
-	kotlin("jvm") version "2.1.0"
-	kotlin("plugin.spring") version "2.1.0"
-	id("org.springframework.boot") version "3.5.7"
-	id("io.spring.dependency-management") version "1.1.7"
-	kotlin("plugin.jpa") version "2.1.0"
+    kotlin("jvm") version "2.0.21"
+    kotlin("plugin.spring") version "2.0.21"
+    id("org.springframework.boot") version "3.5.7"
+    id("io.spring.dependency-management") version "1.1.7"
+    kotlin("plugin.jpa") version "2.0.21"
     id("org.openapi.generator") version "7.17.0"
+
+    // Detekt
+    id("io.gitlab.arturbosch.detekt") version "1.23.8"
 }
 
 group = "com.pitomets"
@@ -56,14 +59,23 @@ dependencies {
     testImplementation("io.rest-assured:rest-assured:5.5.6")
     testImplementation("io.rest-assured:kotlin-extensions:5.5.6")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0")
+
+    // detekt
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.8")
 }
 
 kotlin {
-	compilerOptions {
-		freeCompilerArgs.addAll("-Xjsr305=strict")
-	}
-    sourceSets["main"].kotlin.srcDir("$buildDir/generated/openapi/src/main/kotlin")
+    compilerOptions {
+        freeCompilerArgs.addAll("-Xjsr305=strict")
+    }
 }
+
+sourceSets {
+    main {
+        kotlin.srcDir("$buildDir/generated/openapi/src/main/kotlin")
+    }
+}
+
 
 allOpen {
 	annotation("jakarta.persistence.Entity")
@@ -105,4 +117,30 @@ tasks.named("compileKotlin") {
 
 springBoot {
     mainClass.set("com.pitomets.monolit.MonolitApplicationKt")
+}
+
+detekt {
+    toolVersion = "1.23.8"
+    parallel = true
+    buildUponDefaultConfig = true
+    allRules = false
+    config = files("$rootDir/config/detekt/detekt.yml")
+    baseline = file("$rootDir/config/baseline.xml")
+}
+
+tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+    this.autoCorrect = true
+
+    reports {
+        html.required.set(true)
+        html.outputLocation.set(file("build/reports/detekt.html"))
+        xml.required.set(true)
+        xml.outputLocation.set(file("build/reports/detekt.xml"))
+        txt.required.set(true)
+        txt.outputLocation.set(file("build/reports/detekt.txt"))
+    }
+}
+
+tasks.named("bootRun") {
+    dependsOn("detekt")
 }

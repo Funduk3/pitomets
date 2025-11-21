@@ -2,11 +2,11 @@ package com.pitomets.monolit.controller.controllerAdvice
 
 import com.pitomets.monolit.exceptions.ErrorResponse
 import com.pitomets.monolit.exceptions.InvalidCredentialsException
-import com.pitomets.monolit.exceptions.jwtException.JWTException
-import com.pitomets.monolit.exceptions.refreshTokenException.RefreshTokenException
 import com.pitomets.monolit.exceptions.UserAlreadyExistsException
 import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.exceptions.authExceptions.AuthenticationException
+import com.pitomets.monolit.exceptions.jwtException.JWTException
+import com.pitomets.monolit.exceptions.refreshTokenException.RefreshTokenException
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -67,7 +67,7 @@ class ControllerAdvice {
 
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handleGenericException(ex: Exception): ErrorResponse {
+    fun handleGenericException(): ErrorResponse {
         return ErrorResponse(
             status = HttpStatus.INTERNAL_SERVER_ERROR.value(),
             error = "Internal Server Error",

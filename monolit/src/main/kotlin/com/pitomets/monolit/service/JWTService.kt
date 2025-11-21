@@ -5,10 +5,8 @@ import com.pitomets.monolit.exceptions.jwtException.JWTExpiredException
 import com.pitomets.monolit.exceptions.jwtException.JWTMalformedException
 import com.pitomets.monolit.exceptions.jwtException.JWTValidationException
 import com.pitomets.monolit.exceptions.refreshTokenException.RefreshTokenNotFoundException
-import io.jsonwebtoken.JwtException
-import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.Claims
-import io.jsonwebtoken.ExpiredJwtException
+import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.io.Decoders
 import io.jsonwebtoken.security.Keys
 import org.springframework.beans.factory.annotation.Value
@@ -24,10 +22,11 @@ class JWTService(
     @Value("\${jwt.secret:}") private val secretBase64: String,
     @Value("\${jwt.access-token-ttl:1}") private val accessTokenTtlHours: Long,
     @Value("\${jwt.refresh-token-ttl:168}") private val refreshTokenTtlHours: Long,
+    @Value("32") private val refreshTokenByteSize: Int,
     private val redisTemplate: RedisTemplate<String, String>
 ) {
 
-    private val REFRESH_TOKEN_PREFIX = "refresh_token:"
+    private val refreshTokenPrefix = "refresh_token:"
 
     private val secretKey: SecretKey by lazy {
         if (secretBase64.isBlank()) {
@@ -60,9 +59,9 @@ class JWTService(
             extractAllClaims(token)?.subject
         } catch (ex: JWTExpiredException) {
             throw JWTExpiredException("Token expired")
-        } catch (ex: JwtException) {
+        } catch (ex: JWTMalformedException) {
             throw JWTMalformedException("Invalid token format: ${ex.message}")
-        } catch (ex: Exception) {
+        } catch (ex: JWTValidationException) {
             throw JWTValidationException("Token validation failed: ${ex.message}")
         }
 
@@ -71,7 +70,7 @@ class JWTService(
             val extracted = extractUsername(token)
             val exp = extractExpiration(token)
             extracted == username && exp?.after(Date()) == true
-        } catch (ex: JWTException) {
+        } catch (_: JWTException) {
             false
         }
     }
@@ -79,11 +78,11 @@ class JWTService(
     private fun extractExpiration(token: String): Date? =
         try {
             extractAllClaims(token)?.expiration
-        } catch (ex: ExpiredJwtException) {
+        } catch (ex: JWTExpiredException) {
             throw JWTExpiredException("Token expired")
-        } catch (ex: JwtException) {
+        } catch (ex: JWTMalformedException) {
             throw JWTMalformedException("Invalid token format")
-        } catch (ex: Exception) {
+        } catch (ex: JWTValidationException) {
             throw JWTValidationException("Token validation failed")
         }
 
@@ -94,25 +93,25 @@ class JWTService(
                 .build()
                 .parseSignedClaims(token)
                 .payload
-        } catch (ex: ExpiredJwtException) {
+        } catch (ex: JWTExpiredException) {
             throw JWTExpiredException("Token expired")
-        } catch (ex: JwtException) {
+        } catch (ex: JWTMalformedException) {
             throw JWTMalformedException("Invalid token format: ${ex.message}")
-        } catch (ex: Exception) {
+        } catch (ex: JWTValidationException) {
             throw JWTValidationException("Token validation failed: ${ex.message}")
         }
 
     // Refresh Token
 
     fun generateRefreshToken(): String {
-        val bytes = ByteArray(32)
+        val bytes = ByteArray(refreshTokenByteSize)
         SecureRandom().nextBytes(bytes)
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
     }
 
     fun createRefreshToken(username: String): String {
         val refreshToken = generateRefreshToken()
-        val key = REFRESH_TOKEN_PREFIX + refreshToken
+        val key = refreshTokenPrefix + refreshToken
 
         redisTemplate.opsForValue().set(
             key,
@@ -125,7 +124,7 @@ class JWTService(
     }
 
     fun consumeRefreshToken(token: String): String? {
-        val key = REFRESH_TOKEN_PREFIX + token
+        val key = refreshTokenPrefix + token
         val username = redisTemplate.opsForValue().get(key)
             ?: throw RefreshTokenNotFoundException("Refresh token not found or expired")
 
@@ -134,7 +133,7 @@ class JWTService(
     }
 
     fun deleteRefreshToken(refreshToken: String) {
-        val key = REFRESH_TOKEN_PREFIX + refreshToken
+        val key = refreshTokenPrefix + refreshToken
         redisTemplate.delete(key)
     }
 }

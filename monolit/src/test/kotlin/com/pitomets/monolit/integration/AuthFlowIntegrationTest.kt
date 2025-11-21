@@ -123,7 +123,10 @@ class AuthFlowIntegrationTest : BaseContainers() {
 
         // Вымышленный username
         val usernameIncorrect = faker.name().username()
-        val loginReqBadUsername = LoginRequest(fullName = usernameIncorrect, passwordHash = faker.internet().password(8, 16))
+        val loginReqBadUsername = LoginRequest(
+            fullName = usernameIncorrect,
+            passwordHash = faker.internet().password(8, 16)
+        )
         RestAssured.given()
             .contentType(ContentType.JSON)
             .body(loginReqBadUsername)
@@ -133,7 +136,7 @@ class AuthFlowIntegrationTest : BaseContainers() {
             .statusCode(Matchers.allOf(Matchers.greaterThanOrEqualTo(400), Matchers.lessThan(500)))
 
         // Неправильный пароль
-        val loginReqBadPassword = LoginRequest(fullName = username, passwordHash = faker.internet().password(17,18))
+        val loginReqBadPassword = LoginRequest(fullName = username, passwordHash = faker.internet().password(17, 18))
         RestAssured.given()
             .contentType(ContentType.JSON)
             .body(loginReqBadPassword)
