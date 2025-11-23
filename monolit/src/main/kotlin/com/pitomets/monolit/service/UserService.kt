@@ -32,7 +32,6 @@ class UserService(
         }
         user.passwordHash = encoder.encode(user.passwordHash)
         val savedUser = repo.save(user)
-        savedUser.passwordHash = ""
         return UserResponse(
             id = savedUser.id!!,
             fullName = savedUser.fullName
