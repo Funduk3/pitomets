@@ -29,6 +29,6 @@ logging:
     org.springframework.security: DEBUG
 
 jwt:
-  secret: "" # ??? dev ????????? ??????
+  secret: "" # todo dev
   access-token-ttl: 1
   refresh-token-ttl: 168

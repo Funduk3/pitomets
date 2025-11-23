@@ -38,9 +38,8 @@ class UserController(
 
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.OK)
-    fun logout(@RequestBody request: RefreshTokenRequest) {
+    fun logout(@RequestBody request: RefreshTokenRequest) =
         service.logout(request.refreshToken)
-    }
 
     @GetMapping("/all")
     fun getAll(): List<UserResponse> =
