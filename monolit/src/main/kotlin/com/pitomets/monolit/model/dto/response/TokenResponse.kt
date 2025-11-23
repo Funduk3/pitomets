@@ -1,4 +1,4 @@
-package com.pitomets.monolit.model.dto
+package com.pitomets.monolit.model.dto.response
 
 class TokenResponse(
     val accessToken: String,

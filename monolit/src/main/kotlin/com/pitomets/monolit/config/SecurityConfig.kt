@@ -29,8 +29,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 class SecurityConfig(
     private val jwtFilter: JWTFilter,
     private val userDetailsService: UserDetailsService,
-    @Value("3600") private val configMaxAge: Long,
-    @Value("12") private val passwordEncoderStrength: Int
+
+    @Value("3600")
+    private val configMaxAge: Long,
+    @Value("12")
+    private val passwordEncoderStrength: Int
 ) {
     @Bean
     fun passwordEncoder(): PasswordEncoder =

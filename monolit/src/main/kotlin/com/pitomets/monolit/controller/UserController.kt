@@ -1,10 +1,10 @@
 package com.pitomets.monolit.controller
 
-import com.pitomets.monolit.model.dto.LoginRequest
-import com.pitomets.monolit.model.dto.RefreshTokenRequest
-import com.pitomets.monolit.model.dto.RegisterRequest
-import com.pitomets.monolit.model.dto.TokenResponse
-import com.pitomets.monolit.model.dto.UserResponse
+import com.pitomets.monolit.model.dto.request.LoginRequest
+import com.pitomets.monolit.model.dto.request.RefreshTokenRequest
+import com.pitomets.monolit.model.dto.request.RegisterRequest
+import com.pitomets.monolit.model.dto.response.TokenResponse
+import com.pitomets.monolit.model.dto.response.UserResponse
 import com.pitomets.monolit.model.entity.User
 import com.pitomets.monolit.service.UserService
 import org.springframework.http.HttpStatus
@@ -20,16 +20,17 @@ class UserController(
 ) {
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    fun register(@RequestBody request: RegisterRequest): UserResponse {
-        val user = User(fullName = request.fullName, passwordHash = request.passwordHash)
-        val savedUser = service.register(user)
-        return UserResponse(id = savedUser.id!!, fullName = savedUser.fullName)
-    }
+    fun register(@RequestBody request: RegisterRequest): UserResponse =
+        service.register(
+            User(
+                fullName = request.fullName,
+                passwordHash = request.passwordHash
+            )
+        )
 
     @PostMapping("/login")
-    fun login(@RequestBody request: LoginRequest): TokenResponse {
-        return service.login(request.fullName, request.passwordHash)
-    }
+    fun login(@RequestBody request: LoginRequest): TokenResponse =
+        service.login(request.fullName, request.passwordHash)
 
     @PostMapping("/refresh")
     fun refresh(@RequestBody request: RefreshTokenRequest): TokenResponse =
@@ -42,7 +43,6 @@ class UserController(
     }
 
     @GetMapping("/all")
-    fun getAll(): List<UserResponse> {
-        return service.getAll().map { UserResponse(it.id!!, it.fullName) }
-    }
+    fun getAll(): List<UserResponse> =
+        service.getAll()
 }
