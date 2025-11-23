@@ -16,7 +16,7 @@ class User(
     @Column(name = "id", updatable = false, nullable = false)
     var id: Long? = null,
 
-    @Column(nullable = false, unique = false) // todo поправить
+    @Column(nullable = true, unique = false) // todo поправить
     var email: String? = null,
 
     @Column(name = "password_hash", nullable = false)
