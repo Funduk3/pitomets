@@ -47,7 +47,6 @@ class UserService(
                 return TokenResponse(
                     accessToken = accessToken,
                     refreshToken = refreshToken,
-                    tokenType = "Bearer"
                 )
             }
         } catch (ex: BadCredentialsException) {
@@ -73,7 +72,6 @@ class UserService(
         return TokenResponse(
             accessToken = newAccessToken,
             refreshToken = newRefreshToken,
-            tokenType = "Bearer" // todo fix
         )
     }
 

@@ -87,32 +87,32 @@ tasks.withType<Test> {
 	useJUnitPlatform()
 }
 
-openApiGenerate {
-    generatorName.set("kotlin-spring")
-    inputSpec.set("$rootDir/src/main/resources/openapi.yaml")
-    outputDir.set("$buildDir/generated/openapi")
-
-    apiPackage.set("com.pitomets.monolit.api")
-    modelPackage.set("com.pitomets.monolit.model.dto")
-    invokerPackage.set("com.pitomets.monolit.invoker")
-
-    // опции (для Spring Boot 3 / jakarta)
-    configOptions.set(
-        mapOf(
-            "useSpringBoot3" to "true",
-            "useJakartaEe" to "true",
-            "useSwaggerAnnotations" to "false",
-            "serializationLibrary" to "jackson",
-            "dateLibrary" to "java8",
-            "interfaceOnly" to "true"
-        )
-    )
-    // Если ваша версия плагина требует additionalProperties:
-    additionalProperties.set(mapOf("useSpringBoot3" to "true"))
-}
+//openApiGenerate {
+//    generatorName.set("kotlin-spring")
+//    inputSpec.set("$rootDir/src/main/resources/openapi.yaml")
+//    outputDir.set("$buildDir/generated/openapi")
+//
+//    apiPackage.set("com.pitomets.monolit.api")
+//    modelPackage.set("com.pitomets.monolit.model.dto")
+//    invokerPackage.set("com.pitomets.monolit.invoker")
+//
+//    // опции (для Spring Boot 3 / jakarta)
+//    configOptions.set(
+//        mapOf(
+//            "useSpringBoot3" to "true",
+//            "useJakartaEe" to "true",
+//            "useSwaggerAnnotations" to "false",
+//            "serializationLibrary" to "jackson",
+//            "dateLibrary" to "java8",
+//            "interfaceOnly" to "true"
+//        )
+//    )
+//    // Если ваша версия плагина требует additionalProperties:
+//    additionalProperties.set(mapOf("useSpringBoot3" to "true"))
+//}
 
 tasks.named("compileKotlin") {
-    dependsOn("openApiGenerate")
+    // dependsOn("openApiGenerate")
     dependsOn("detekt")
 }
 

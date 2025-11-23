@@ -21,7 +21,7 @@ class UserController(
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     fun register(@RequestBody request: RegisterRequest): UserResponse {
-        val user = User(fullName = request.fullName, passwordHash = request.passwordHash, email = "123")
+        val user = User(fullName = request.fullName, passwordHash = request.passwordHash)
         val savedUser = service.register(user)
         return UserResponse(id = savedUser.id!!, fullName = savedUser.fullName)
     }
