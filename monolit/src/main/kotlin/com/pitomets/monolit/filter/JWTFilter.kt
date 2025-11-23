@@ -17,7 +17,8 @@ import org.springframework.web.filter.OncePerRequestFilter
 class JWTFilter(
     private val jwtService: JWTService,
     private val userDetailsService: UserDetailsService,
-    @Value("7") private val bearerTokenSize: Int,
+    @Value("7")
+    private val bearerTokenSize: Int,
 ) : OncePerRequestFilter() {
 
     private val log = LoggerFactory.getLogger(javaClass)

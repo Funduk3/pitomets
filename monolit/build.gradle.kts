@@ -146,3 +146,30 @@ tasks.named("bootRun") {
     dependsOn("detekt")
 }
 
+
+
+detekt {
+    toolVersion = "1.23.8"
+    parallel = true
+    buildUponDefaultConfig = true
+    allRules = false
+    config = files("$rootDir/config/detekt/detekt.yml")
+    baseline = file("$rootDir/config/baseline.xml")
+}
+
+tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+    this.autoCorrect = true
+
+    reports {
+        html.required.set(true)
+        html.outputLocation.set(file("build/reports/detekt.html"))
+        xml.required.set(true)
+        xml.outputLocation.set(file("build/reports/detekt.xml"))
+        txt.required.set(true)
+        txt.outputLocation.set(file("build/reports/detekt.txt"))
+    }
+}
+
+tasks.named("bootRun") {
+    dependsOn("detekt")
+}
