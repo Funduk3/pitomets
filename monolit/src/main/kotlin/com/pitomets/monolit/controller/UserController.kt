@@ -30,7 +30,10 @@ class UserController(
 
     @PostMapping("/login")
     fun login(@RequestBody request: LoginRequest): TokenResponse =
-        service.login(request.fullName, request.passwordHash)
+        service.login(
+            request.fullName,
+            request.passwordHash
+        )
 
     @PostMapping("/refresh")
     fun refresh(@RequestBody request: RefreshTokenRequest): TokenResponse =
