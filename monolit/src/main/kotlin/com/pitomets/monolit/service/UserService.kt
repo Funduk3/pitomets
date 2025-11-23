@@ -33,7 +33,7 @@ class UserService(
         user.passwordHash = encoder.encode(user.passwordHash)
         val savedUser = repo.save(user)
         return UserResponse(
-            id = savedUser.id!!,
+            id = requireNotNull(savedUser.id!!) { "User ID cannot be null" },
             fullName = savedUser.fullName
         )
     }
@@ -89,6 +89,11 @@ class UserService(
     // для теста
     fun getAll(): List<UserResponse> {
         val users = repo.findAll()
-        return users.map { UserResponse(it.id!!, it.fullName) }
+        return users.map {
+            UserResponse(
+                requireNotNull(it.id) { "User ID cannot be null" },
+                it.fullName
+            )
+        }
     }
 }

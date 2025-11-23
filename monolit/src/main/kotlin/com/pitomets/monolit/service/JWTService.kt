@@ -19,7 +19,7 @@ import javax.crypto.SecretKey
 
 @Service
 class JWTService(
-    @Value("\${jwt.secret:}")
+    @Value("\${jwt.secret:}") // todo ???
     private val secretBase64: String,
 
     @Value("\${jwt.access-token-ttl:1}")
