@@ -2,10 +2,10 @@ package com.pitomets.monolit.integration
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.pitomets.monolit.model.dto.LoginRequest
-import com.pitomets.monolit.model.dto.RefreshTokenRequest
-import com.pitomets.monolit.model.dto.RegisterRequest
-import com.pitomets.monolit.model.dto.TokenResponse
+import com.pitomets.monolit.model.dto.request.LoginRequest
+import com.pitomets.monolit.model.dto.request.RefreshTokenRequest
+import com.pitomets.monolit.model.dto.request.RegisterRequest
+import com.pitomets.monolit.model.dto.response.TokenResponse
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
 import net.datafaker.Faker

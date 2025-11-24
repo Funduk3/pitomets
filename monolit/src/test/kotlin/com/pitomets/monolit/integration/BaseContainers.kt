@@ -26,12 +26,6 @@ abstract class BaseContainers {
         init {
             postgres.start()
             redis.start()
-            Runtime.getRuntime().addShutdownHook(
-                Thread {
-                    try { postgres.stop() } catch (_: Throwable) {}
-                    try { redis.stop() } catch (_: Throwable) {}
-                }
-            )
         }
 
         @JvmStatic

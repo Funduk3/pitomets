@@ -5,7 +5,8 @@ import com.pitomets.monolit.exceptions.UserAlreadyExistsException
 import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.exceptions.authExceptions.AuthenticationException
 import com.pitomets.monolit.exceptions.authExceptions.InvalidTokenException
-import com.pitomets.monolit.model.dto.TokenResponse
+import com.pitomets.monolit.model.dto.response.TokenResponse
+import com.pitomets.monolit.model.dto.response.UserResponse
 import com.pitomets.monolit.model.entity.User
 import com.pitomets.monolit.repository.UserRepo
 import org.slf4j.LoggerFactory
@@ -25,14 +26,16 @@ class UserService(
 ) {
     private val log = LoggerFactory.getLogger(UserService::class.java)
 
-    fun register(user: User): User {
+    fun register(user: User): UserResponse {
         if (repo.findByFullName(user.fullName) != null) {
             throw UserAlreadyExistsException("User with this name already exists")
         }
         user.passwordHash = encoder.encode(user.passwordHash)
         val savedUser = repo.save(user)
-        savedUser.passwordHash = ""
-        return savedUser
+        return UserResponse(
+            id = requireNotNull(savedUser.id!!) { "User ID cannot be null" },
+            fullName = savedUser.fullName
+        )
     }
 
     fun login(name: String, rawPassword: String): TokenResponse {
@@ -47,7 +50,6 @@ class UserService(
                 return TokenResponse(
                     accessToken = accessToken,
                     refreshToken = refreshToken,
-                    tokenType = "Bearer"
                 )
             }
         } catch (ex: BadCredentialsException) {
@@ -73,7 +75,6 @@ class UserService(
         return TokenResponse(
             accessToken = newAccessToken,
             refreshToken = newRefreshToken,
-            tokenType = "Bearer" // todo fix
         )
     }
 
@@ -86,9 +87,13 @@ class UserService(
     }
 
     // для теста
-    fun getAll(): List<User> {
+    fun getAll(): List<UserResponse> {
         val users = repo.findAll()
-        users.forEach { it.passwordHash = "" }
-        return users
+        return users.map {
+            UserResponse(
+                requireNotNull(it.id) { "User ID cannot be null" },
+                it.fullName
+            )
+        }
     }
 }
