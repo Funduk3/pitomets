@@ -2,9 +2,11 @@ package com.pitomets.monolit.integration
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
 import com.pitomets.monolit.model.dto.request.LoginRequest
 import com.pitomets.monolit.model.dto.request.RefreshTokenRequest
 import com.pitomets.monolit.model.dto.request.RegisterRequest
+import com.pitomets.monolit.model.dto.response.SellerProfileResponse
 import com.pitomets.monolit.model.dto.response.TokenResponse
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
@@ -27,8 +29,9 @@ class AuthFlowIntegrationTest : BaseContainers() {
     @LocalServerPort
     var port: Int = 0
 
-    private val mapper = jacksonObjectMapper()
-
+    private val mapper = jacksonObjectMapper().apply {
+        findAndRegisterModules()
+    }
     val faker = Faker()
 
     @Test
@@ -39,9 +42,10 @@ class AuthFlowIntegrationTest : BaseContainers() {
 
         val username = faker.name().username()
         val password = faker.internet().password(8, 16)
+        val email = faker.name().lastName() + "@mail.ru"
 
         // 1) Register
-        val registerReq = RegisterRequest(fullName = username, passwordHash = password)
+        val registerReq = RegisterRequest(email = email, passwordHash = password, fullName = username)
         RestAssured.given()
             .contentType(ContentType.JSON)
             .body(registerReq)
@@ -51,7 +55,7 @@ class AuthFlowIntegrationTest : BaseContainers() {
             .statusCode(201)
 
         // 2) Login
-        val loginReq = LoginRequest(fullName = username, passwordHash = password)
+        val loginReq = LoginRequest(email = email, passwordHash = password)
         val loginBody = RestAssured.given()
             .contentType(ContentType.JSON)
             .body(loginReq)
@@ -66,6 +70,25 @@ class AuthFlowIntegrationTest : BaseContainers() {
         val tokens: TokenResponse = mapper.readValue(loginBody)
         Assertions.assertNotNull(tokens.accessToken)
         Assertions.assertNotNull(tokens.refreshToken)
+
+        // Register seller
+        val shopName = faker.funnyName().name()
+        val createShopRequest = CreateSellerProfileRequest(shopName = shopName)
+        val shopBody = RestAssured.given()
+            .contentType(ContentType.JSON)
+            .auth().oauth2(tokens.accessToken)
+            .body(createShopRequest)
+            .`when`()
+            .post("/seller/profile")
+            .then()
+            .statusCode(201)
+            .extract()
+            .asString()
+
+        Assertions.assertFalse(shopBody.isBlank())
+        val response: SellerProfileResponse = mapper.readValue(shopBody)
+        Assertions.assertNotNull(response.id)
+        Assertions.assertNotNull(response.shopName)
 
         // 3) Refresh
         val refreshReq = RefreshTokenRequest(refreshToken = tokens.refreshToken)
@@ -122,9 +145,9 @@ class AuthFlowIntegrationTest : BaseContainers() {
             .statusCode(Matchers.allOf(Matchers.greaterThanOrEqualTo(400), Matchers.lessThan(500)))
 
         // Вымышленный username
-        val usernameIncorrect = faker.name().username()
+        val emailIncorrect = faker.name().username() + "@mail.ru"
         val loginReqBadUsername = LoginRequest(
-            fullName = usernameIncorrect,
+            email = emailIncorrect,
             passwordHash = faker.internet().password(8, 16)
         )
         RestAssured.given()
@@ -136,7 +159,7 @@ class AuthFlowIntegrationTest : BaseContainers() {
             .statusCode(Matchers.allOf(Matchers.greaterThanOrEqualTo(400), Matchers.lessThan(500)))
 
         // Неправильный пароль
-        val loginReqBadPassword = LoginRequest(fullName = username, passwordHash = faker.internet().password(17, 18))
+        val loginReqBadPassword = LoginRequest(email = email, passwordHash = faker.internet().password(17, 18))
         RestAssured.given()
             .contentType(ContentType.JSON)
             .body(loginReqBadPassword)

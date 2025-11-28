@@ -14,11 +14,11 @@ class MyUserDetailsService(
 ) : UserDetailsService {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun loadUserByUsername(username: String): UserDetails {
-        val user = userRepo.findByFullName(username)
+    override fun loadUserByUsername(email: String): UserDetails {
+        val user = userRepo.findByEmail(email)
         if (user == null) {
-            log.error("User Not Found")
-            throw UsernameNotFoundException("User not found")
+            log.error("User not found with email: {}", email)
+            throw UsernameNotFoundException("User not found with email: $email")
         }
         return UserPrincipal(user)
     }

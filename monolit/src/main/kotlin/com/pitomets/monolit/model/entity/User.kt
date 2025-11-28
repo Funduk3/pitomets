@@ -1,10 +1,12 @@
 package com.pitomets.monolit.model.entity
 
+import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
+import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import java.time.OffsetDateTime
 
@@ -13,10 +15,10 @@ import java.time.OffsetDateTime
 class User(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
+    @Column(name = "id", updatable = false)
     var id: Long? = null,
 
-    @Column(nullable = true, unique = false) // todo поправить
+    @Column(unique = true)
     var email: String? = null,
 
     @Column(name = "password_hash", nullable = false)
@@ -31,15 +33,15 @@ class User(
     @Column(name = "banned_until")
     var bannedUntil: OffsetDateTime? = null,
 
-//    @OneToMany(mappedBy = "seller", cascade = [CascadeType.ALL], orphanRemoval = true)
-//    var sellerProfiles: MutableList<SellerProfile> = mutableListOf(),
-//
-//    @OneToMany(mappedBy = "buyer", cascade = [CascadeType.ALL])
-//    var buyerProfiles: MutableList<BuyerProfile> = mutableListOf(),
-//
-//    @OneToMany(mappedBy = "admin", cascade = [CascadeType.ALL])
-//    var adminProfiles: MutableList<AdminProfile> = mutableListOf(),
-//
-//    @OneToMany(mappedBy = "user", cascade = [CascadeType.ALL], orphanRemoval = true)
-//    var addresses: MutableList<Address> = mutableListOf()
+    @OneToOne(mappedBy = "seller", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var sellerProfile: SellerProfile? = null,
+
+    @OneToOne(mappedBy = "buyer", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var buyerProfile: BuyerProfile? = null,
+
+    @OneToOne(mappedBy = "admin", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var adminProfile: AdminProfile? = null,
+
+    @OneToOne(mappedBy = "user", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var address: Address? = null
 )
