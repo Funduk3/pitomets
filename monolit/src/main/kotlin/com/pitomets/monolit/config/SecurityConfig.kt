@@ -77,8 +77,7 @@ class SecurityConfig(
                     "/login",
                     "/refresh"
                 ).permitAll()
-                it.requestMatchers("/api/seller/**").hasRole("SELLER")
-                it.requestMatchers("/api/**").authenticated()
+                it.requestMatchers("/seller/**").hasRole("SELLER")
                 it.anyRequest().authenticated()
             }
             .authenticationProvider(authenticationProvider(passwordEncoder()))
