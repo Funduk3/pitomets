@@ -2,14 +2,19 @@ package com.pitomets.monolit.service
 
 import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.exceptions.profileExceptions.ProfileAlreadyExistsException
+import com.pitomets.monolit.model.UserPrincipal
 import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
 import com.pitomets.monolit.model.dto.response.BuyerProfileResponse
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
 import com.pitomets.monolit.model.dto.response.UserWithProfilesResponse
 import com.pitomets.monolit.model.entity.SellerProfile
+import com.pitomets.monolit.model.entity.User
+import com.pitomets.monolit.model.entity.UserRole
 import com.pitomets.monolit.repository.SellerProfileRepo
 import com.pitomets.monolit.repository.UserRepo
 import org.slf4j.LoggerFactory
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -25,18 +30,19 @@ class ProfileService(
         val user = userRepo.findById(userId).orElseThrow {
             UserNotFoundException("User not found")
         }
-
         if (user.sellerProfile != null) {
             throw ProfileAlreadyExistsException("Seller profile already exists for this user")
         }
+        user.role = UserRole.SELLER
 
         val sellerProfile = SellerProfile(
             seller = user,
             shopName = request.shopName,
             description = request.description
         )
-
         val saved = sellerProfileRepo.save(sellerProfile)
+
+        updateSecurityContext(user)
 
         log.info("Seller profile created for user ID: {}, shop name: {}", userId, request.shopName)
 
@@ -48,6 +54,20 @@ class ProfileService(
             isVerified = saved.isVerified,
             createdAt = saved.createdAt
         )
+    }
+
+    private fun updateSecurityContext(user: User) {
+        val authentication = SecurityContextHolder.getContext().authentication
+        if (authentication != null && authentication.principal is UserPrincipal) {
+            val newPrincipal = UserPrincipal(user)
+            val newAuth = UsernamePasswordAuthenticationToken(
+                newPrincipal,
+                authentication.credentials,
+                newPrincipal.authorities
+            )
+            newAuth.details = (authentication as? UsernamePasswordAuthenticationToken)?.details
+            SecurityContextHolder.getContext().authentication = newAuth
+        }
     }
 
     fun getUserWithProfiles(userId: Long): UserWithProfilesResponse {

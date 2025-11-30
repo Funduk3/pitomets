@@ -8,13 +8,16 @@ import com.pitomets.monolit.model.dto.request.RefreshTokenRequest
 import com.pitomets.monolit.model.dto.request.RegisterRequest
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
 import com.pitomets.monolit.model.dto.response.TokenResponse
+import com.pitomets.monolit.repository.UserRepo
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
 import net.datafaker.Faker
 import org.hamcrest.Matchers
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.test.context.ActiveProfiles
@@ -34,12 +37,18 @@ class AuthFlowIntegrationTest : BaseContainers() {
     }
     val faker = Faker()
 
-    @Test
-    fun `full auth flow - register login refresh logout`() {
-        // Настройка RestAssured
+    @Autowired
+    lateinit var userRepo: UserRepo
+
+    @BeforeEach
+    fun setUp() {
         RestAssured.baseURI = "http://localhost"
         RestAssured.port = port
+        println("Testing on port: $port")
+    }
 
+    @Test
+    fun `full auth flow - register login refresh logout`() {
         val username = faker.name().username()
         val password = faker.internet().password(8, 16)
         val email = faker.name().lastName() + "@mail.ru"
@@ -70,25 +79,6 @@ class AuthFlowIntegrationTest : BaseContainers() {
         val tokens: TokenResponse = mapper.readValue(loginBody)
         Assertions.assertNotNull(tokens.accessToken)
         Assertions.assertNotNull(tokens.refreshToken)
-
-        // Register seller
-        val shopName = faker.funnyName().name()
-        val createShopRequest = CreateSellerProfileRequest(shopName = shopName)
-        val shopBody = RestAssured.given()
-            .contentType(ContentType.JSON)
-            .auth().oauth2(tokens.accessToken)
-            .body(createShopRequest)
-            .`when`()
-            .post("/seller/profile")
-            .then()
-            .statusCode(201)
-            .extract()
-            .asString()
-
-        Assertions.assertFalse(shopBody.isBlank())
-        val response: SellerProfileResponse = mapper.readValue(shopBody)
-        Assertions.assertNotNull(response.id)
-        Assertions.assertNotNull(response.shopName)
 
         // 3) Refresh
         val refreshReq = RefreshTokenRequest(refreshToken = tokens.refreshToken)
@@ -167,5 +157,142 @@ class AuthFlowIntegrationTest : BaseContainers() {
             .post("/login")
             .then()
             .statusCode(Matchers.allOf(Matchers.greaterThanOrEqualTo(400), Matchers.lessThan(500)))
+    }
+
+    @Test
+    fun `should create seller profile when user has SELLER role`() {
+        val username = faker.name().username()
+        val password = faker.internet().password(8, 16)
+        val email = faker.name().lastName() + "@mail.ru"
+
+        val registerReq = RegisterRequest(email = email, passwordHash = password, fullName = username)
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .body(registerReq)
+            .`when`()
+            .post("/register")
+            .then()
+            .statusCode(201)
+
+        val loginRequest = LoginRequest(email = email, passwordHash = password)
+        val sellerTokens = RestAssured.given()
+            .contentType(ContentType.JSON)
+            .body(loginRequest)
+            .`when`()
+            .post("/login")
+            .then()
+            .statusCode(200)
+            .extract()
+            .`as`(TokenResponse::class.java)
+
+        val shopName = faker.funnyName().name()
+        val createShopRequest = CreateSellerProfileRequest(shopName = shopName)
+        val shopBody = RestAssured.given()
+            .contentType(ContentType.JSON)
+            .auth().oauth2(sellerTokens.accessToken)
+            .body(createShopRequest)
+            .`when`()
+            .post("/seller/profile")
+            .then()
+            .statusCode(201)
+            .extract()
+            .asString()
+
+        Assertions.assertFalse(shopBody.isBlank())
+        val response: SellerProfileResponse = mapper.readValue(shopBody)
+        Assertions.assertNotNull(response.id)
+        Assertions.assertEquals(shopName, response.shopName)
+    }
+
+    @Test
+    fun `should upgrade user role from USER to SELLER after creating seller profile`() {
+        val email = faker.internet().emailAddress()
+        val password = faker.internet().password(8, 16)
+        val fullName = faker.name().fullName()
+
+        // 1. Регистрация
+        val registerReq = RegisterRequest(email = email, passwordHash = password, fullName = fullName)
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .body(registerReq)
+            .post("/register")
+            .then()
+            .statusCode(201)
+
+        // 2. Первый логин (роль должна быть USER)
+        val loginReq = LoginRequest(email = email, passwordHash = password)
+        val userTokens = RestAssured.given()
+            .contentType(ContentType.JSON)
+            .body(loginReq)
+            .post("/login")
+            .then()
+            .statusCode(200)
+            .extract()
+            .`as`(TokenResponse::class.java)
+
+        // 3. Создать профиль продавца
+        val shopName = faker.company().name()
+        val createShopRequest = CreateSellerProfileRequest(shopName = shopName, description = "Test shop")
+
+        val profileResponse = RestAssured.given()
+            .contentType(ContentType.JSON)
+            .auth().oauth2(userTokens.accessToken)
+            .body(createShopRequest)
+            .post("/seller/profile")
+            .then()
+            .statusCode(201)
+            .extract()
+            .`as`(SellerProfileResponse::class.java)
+
+        Assertions.assertNotNull(profileResponse.id)
+        Assertions.assertEquals(shopName, profileResponse.shopName)
+
+        // 4. Перелогиниться (роль должна стать SELLER)
+        val sellerTokens = RestAssured.given()
+            .contentType(ContentType.JSON)
+            .body(loginReq)
+            .post("/login")
+            .then()
+            .statusCode(200)
+            .extract()
+            .`as`(TokenResponse::class.java)
+
+        // 5. Проверить, что новый токен отличается от старого
+        Assertions.assertNotEquals(userTokens.accessToken, sellerTokens.accessToken)
+
+        // 6. Обновить профиль продавца с новым токеном (должно работать)
+        val updateRequest = CreateSellerProfileRequest(
+            shopName = "Updated Shop Name",
+            description = "Updated description"
+        )
+
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .auth().oauth2(sellerTokens.accessToken)
+            .body(updateRequest)
+            .put("/seller/profile")
+            .then()
+            .statusCode(200)
+    }
+
+    @Test
+    fun `should deny access to seller endpoints without authentication token`() {
+        val createRequest = CreateSellerProfileRequest("Shop", "Description")
+
+        // POST без токена
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .body(createRequest)
+            .post("/seller/profile")
+            .then()
+            .statusCode(401)
+
+        // PUT без токена
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .body(createRequest)
+            .put("/seller/profile")
+            .then()
+            .statusCode(401)
     }
 }

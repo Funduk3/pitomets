@@ -9,6 +9,7 @@ import com.pitomets.monolit.model.dto.response.TokenResponse
 import com.pitomets.monolit.model.dto.response.UserResponse
 import com.pitomets.monolit.model.entity.BuyerProfile
 import com.pitomets.monolit.model.entity.User
+import com.pitomets.monolit.model.entity.UserRole
 import com.pitomets.monolit.repository.BuyerProfileRepo
 import com.pitomets.monolit.repository.UserRepo
 import org.slf4j.LoggerFactory
@@ -36,6 +37,8 @@ class UserService(
             throw UserAlreadyExistsException("User with this email already exists")
         }
         user.passwordHash = encoder.encode(user.passwordHash)
+        user.role = UserRole.USER
+
         val savedUser = repo.save(user)
         val buyerProfile = BuyerProfile(
             buyer = savedUser

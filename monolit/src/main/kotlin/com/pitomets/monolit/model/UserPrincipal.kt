@@ -25,6 +25,7 @@ class UserPrincipal(private val user: User) : UserDetails {
 
     override fun getAuthorities(): Collection<GrantedAuthority> {
         val authorities = mutableListOf<GrantedAuthority>()
+        authorities.add(SimpleGrantedAuthority("ROLE_${user.role}"))
         if (isBuyer) authorities.add(SimpleGrantedAuthority("ROLE_BUYER"))
         if (isSeller) authorities.add(SimpleGrantedAuthority("ROLE_SELLER"))
         return authorities
