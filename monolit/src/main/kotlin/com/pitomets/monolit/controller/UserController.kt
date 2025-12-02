@@ -23,6 +23,7 @@ class UserController(
     fun register(@RequestBody request: RegisterRequest): UserResponse =
         service.register(
             User(
+                email = request.email,
                 fullName = request.fullName,
                 passwordHash = request.passwordHash
             )
@@ -31,7 +32,7 @@ class UserController(
     @PostMapping("/login")
     fun login(@RequestBody request: LoginRequest): TokenResponse =
         service.login(
-            request.fullName,
+            request.email,
             request.passwordHash
         )
 

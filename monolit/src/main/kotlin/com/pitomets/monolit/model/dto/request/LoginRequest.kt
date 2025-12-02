@@ -1,6 +1,6 @@
 package com.pitomets.monolit.model.dto.request
 
-class LoginRequest(
-    val fullName: String,
-    val passwordHash: String,
+data class LoginRequest(
+    val email: String,
+    val passwordHash: String
 )

@@ -19,6 +19,6 @@ class BuyerProfile(
     var id: Long? = null,
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "buyer_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     var buyer: User? = null
 )

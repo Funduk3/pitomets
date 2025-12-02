@@ -12,6 +12,7 @@ import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.AuthenticationProvider
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -26,6 +27,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 class SecurityConfig(
     private val jwtFilter: JWTFilter,
     private val userDetailsService: UserDetailsService,
@@ -75,6 +77,8 @@ class SecurityConfig(
                     "/login",
                     "/refresh"
                 ).permitAll()
+                it.requestMatchers("/seller/profile").authenticated() // Создание профиля для всех
+                it.requestMatchers("/seller/**").hasRole("SELLER")
                 it.anyRequest().authenticated()
             }
             .authenticationProvider(authenticationProvider(passwordEncoder()))

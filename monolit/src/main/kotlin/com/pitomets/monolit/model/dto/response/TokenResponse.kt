@@ -1,6 +1,6 @@
 package com.pitomets.monolit.model.dto.response
 
-class TokenResponse(
+data class TokenResponse(
     val accessToken: String,
-    val refreshToken: String,
+    val refreshToken: String
 )

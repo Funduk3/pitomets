@@ -5,36 +5,39 @@ import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 
-// класс для авторизации
-class UserPrincipal(
-    private val user: User
-) : UserDetails {
+class UserPrincipal(private val user: User) : UserDetails {
 
-    override fun getAuthorities(): Collection<GrantedAuthority?> {
-        return setOf(SimpleGrantedAuthority("USER"))
+    val id: Long
+        get() = requireNotNull(user.id) { "User ID cannot be null" }
+
+    val email: String
+        get() = requireNotNull(user.email) { "User email cannot be null" }
+
+    val isSeller: Boolean
+        get() = user.sellerProfile != null
+
+    val isBuyer: Boolean
+        get() = user.buyerProfile != null
+
+    override fun getUsername(): String = user.email!!
+
+    override fun getPassword(): String = user.passwordHash
+
+    override fun getAuthorities(): Collection<GrantedAuthority> {
+        val authorities = mutableListOf<GrantedAuthority>()
+        authorities.add(SimpleGrantedAuthority("ROLE_${user.role}"))
+        if (isBuyer) authorities.add(SimpleGrantedAuthority("ROLE_BUYER"))
+        if (isSeller) authorities.add(SimpleGrantedAuthority("ROLE_SELLER"))
+        return authorities
     }
 
-    override fun getPassword(): String {
-        return user.passwordHash
-    }
-
-    override fun getUsername(): String {
-        return user.fullName
-    }
-
-    override fun isAccountNonExpired(): Boolean {
-        return true
-    }
+    override fun isAccountNonExpired(): Boolean = true
 
     override fun isAccountNonLocked(): Boolean {
-        return true
+        return user.bannedUntil == null || user.bannedUntil!!.isBefore(java.time.OffsetDateTime.now())
     }
 
-    override fun isCredentialsNonExpired(): Boolean {
-        return true
-    }
+    override fun isCredentialsNonExpired(): Boolean = true
 
-    override fun isEnabled(): Boolean {
-        return true
-    }
+    override fun isEnabled(): Boolean = true
 }

@@ -32,7 +32,8 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-	implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.2")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("io.jsonwebtoken:jjwt-api:0.12.6")
     implementation("io.swagger.core.v3:swagger-annotations:2.2.10")
 
@@ -146,8 +147,6 @@ tasks.named("bootRun") {
     dependsOn("detekt")
 }
 
-
-
 detekt {
     toolVersion = "1.23.8"
     parallel = true
@@ -168,8 +167,4 @@ tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
         txt.required.set(true)
         txt.outputLocation.set(file("build/reports/detekt.txt"))
     }
-}
-
-tasks.named("bootRun") {
-    dependsOn("detekt")
 }

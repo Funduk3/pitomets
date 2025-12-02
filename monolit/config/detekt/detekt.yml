@@ -139,11 +139,11 @@ complexity:
   LongMethod:
     active: true
     threshold: 60
-    excludes: "**/test/**"
+    excludes: ["**/test/**"]
   LongParameterList:
     active: false
     functionThreshold: 6
-    constructorThreshold: 7
+    constructorThreshold: 20
     ignoreDefaultParameters: false
     ignoreDataClasses: true
     ignoreAnnotatedParameter: []

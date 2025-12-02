@@ -7,7 +7,10 @@ import com.pitomets.monolit.exceptions.authExceptions.AuthenticationException
 import com.pitomets.monolit.exceptions.authExceptions.InvalidTokenException
 import com.pitomets.monolit.model.dto.response.TokenResponse
 import com.pitomets.monolit.model.dto.response.UserResponse
+import com.pitomets.monolit.model.entity.BuyerProfile
 import com.pitomets.monolit.model.entity.User
+import com.pitomets.monolit.model.entity.UserRole
+import com.pitomets.monolit.repository.BuyerProfileRepo
 import com.pitomets.monolit.repository.UserRepo
 import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.AuthenticationManager
@@ -16,36 +19,51 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class UserService(
     private val jwtService: JWTService,
     private val authManager: AuthenticationManager,
     private val repo: UserRepo,
+    private val buyerProfileRepo: BuyerProfileRepo,
     private val encoder: PasswordEncoder
 ) {
     private val log = LoggerFactory.getLogger(UserService::class.java)
 
+    @Transactional
     fun register(user: User): UserResponse {
-        if (repo.findByFullName(user.fullName) != null) {
-            throw UserAlreadyExistsException("User with this name already exists")
+        if (repo.findByEmail(user.email!!) != null) { // fix
+            throw UserAlreadyExistsException("User with this email already exists")
         }
         user.passwordHash = encoder.encode(user.passwordHash)
+        user.role = UserRole.USER
+
         val savedUser = repo.save(user)
+        val buyerProfile = BuyerProfile(
+            buyer = savedUser
+        )
+        buyerProfileRepo.save(buyerProfile)
+
+        log.info("User registered with email: {} and buyer profile created", savedUser.email)
+
         return UserResponse(
-            id = requireNotNull(savedUser.id!!) { "User ID cannot be null" },
-            fullName = savedUser.fullName
+            id = requireNotNull(savedUser.id) { "User ID cannot be null" },
+            email = savedUser.email!!, // fix
+            fullName = savedUser.fullName,
+            hasBuyerProfile = true,
+            hasSellerProfile = false
         )
     }
 
-    fun login(name: String, rawPassword: String): TokenResponse {
+    fun login(email: String, rawPassword: String): TokenResponse {
         try {
-            val authToken = UsernamePasswordAuthenticationToken(name, rawPassword)
+            val authToken = UsernamePasswordAuthenticationToken(email, rawPassword)
             val authentication: Authentication = authManager.authenticate(authToken)
 
             if (authentication.isAuthenticated) {
-                val accessToken = jwtService.generateAccessToken(name)
-                val refreshToken = jwtService.createRefreshToken(name)
+                val accessToken = jwtService.generateAccessToken(email)
+                val refreshToken = jwtService.createRefreshToken(email)
 
                 return TokenResponse(
                     accessToken = accessToken,
@@ -53,24 +71,24 @@ class UserService(
                 )
             }
         } catch (ex: BadCredentialsException) {
-            log.warn("Authentication failed for user {}: {}", name, ex.message)
-            throw InvalidCredentialsException("Invalid username or password")
+            log.warn("Authentication failed for user {}: {}", email, ex.message)
+            throw InvalidCredentialsException("Invalid email or password")
         } catch (ex: AuthenticationException) {
-            log.warn("Authentication failed for user {}: {}", name, ex.message)
+            log.warn("Authentication failed for user {}: {}", email, ex.message)
             throw AuthenticationException("Authentication failed")
         }
         throw AuthenticationException("Authentication failed")
     }
 
     fun refreshAccessToken(refreshToken: String): TokenResponse {
-        val username = jwtService.consumeRefreshToken(refreshToken)
+        val email = jwtService.consumeRefreshToken(refreshToken)
             ?: throw InvalidTokenException("Invalid or expired refresh token")
 
-        repo.findByFullName(username)
+        repo.findByEmail(email)
             ?: throw UserNotFoundException("User not found")
 
-        val newAccessToken = jwtService.generateAccessToken(username)
-        val newRefreshToken = jwtService.createRefreshToken(username)
+        val newAccessToken = jwtService.generateAccessToken(email)
+        val newRefreshToken = jwtService.createRefreshToken(email)
 
         return TokenResponse(
             accessToken = newAccessToken,
@@ -86,13 +104,15 @@ class UserService(
         }
     }
 
-    // для теста
     fun getAll(): List<UserResponse> {
         val users = repo.findAll()
         return users.map {
             UserResponse(
-                requireNotNull(it.id) { "User ID cannot be null" },
-                it.fullName
+                id = requireNotNull(it.id) { "User ID cannot be null" },
+                email = it.email!!,
+                fullName = it.fullName,
+                hasBuyerProfile = it.buyerProfile != null,
+                hasSellerProfile = it.sellerProfile != null
             )
         }
     }
