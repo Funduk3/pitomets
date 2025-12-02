@@ -1,21 +1,17 @@
 package com.pitomets.monolit.service
 
 import com.pitomets.monolit.exceptions.UserNotFoundException
-import com.pitomets.monolit.exceptions.profileExceptions.InvalidRoleException
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.response.ListingsResponse
 import com.pitomets.monolit.model.entity.Listing
-import com.pitomets.monolit.model.entity.UserRole
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.PetsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
-import com.pitomets.monolit.repository.UserRepo
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
 class ListingsService(
-    private val userRepo: UserRepo,
     private val petsRepo: PetsRepo,
     private val listingsRepo: ListingsRepo,
     private val sellerProfileRepo: SellerProfileRepo
@@ -60,8 +56,8 @@ class ListingsService(
             species = listing.species,
             breed = listing.breed,
             ageMonths = listing.ageMonths,
-            father = request.father,
-            mother = request.mother,
+            father = father?.id,
+            mother = mother?.id,
             listingsId = requireNotNull(listing.id),
             price = listing.price,
             isArchived = listing.isArchived,

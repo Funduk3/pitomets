@@ -25,11 +25,6 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @ActiveProfiles("test")
 class SellerProfileTest : BaseContainers() {
 
-    @LocalServerPort
-    var port: Int = 0
-
-    val faker = Faker()
-
     @BeforeEach
     fun setUp() {
         RestAssured.baseURI = "http://localhost"
