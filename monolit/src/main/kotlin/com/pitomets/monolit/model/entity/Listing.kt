@@ -44,7 +44,7 @@ class Listing(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_profile_id")
-    var sellerProfile: SellerProfile? = null,
+    var sellerProfile: SellerProfile,
 
 //    @OneToMany(mappedBy = "listing", cascade = [CascadeType.ALL], orphanRemoval = true)
 //    var pets: MutableList<Pet> = mutableListOf()

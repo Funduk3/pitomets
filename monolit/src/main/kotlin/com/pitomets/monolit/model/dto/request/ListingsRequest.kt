@@ -7,7 +7,7 @@ data class ListingsRequest(
 
     val species: String,
 
-    val breed: String,
+    val breed: String?,
 
     val ageMonths: Int,
 

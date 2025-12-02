@@ -5,6 +5,4 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface SellerProfileRepo : JpaRepository<SellerProfile, Long> {
-    fun findBySellerId(sellerId: Long): SellerProfile?
-}
+interface SellerProfileRepo : JpaRepository<SellerProfile, Long>

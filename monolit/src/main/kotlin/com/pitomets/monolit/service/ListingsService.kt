@@ -8,6 +8,7 @@ import com.pitomets.monolit.model.entity.Listing
 import com.pitomets.monolit.model.entity.UserRole
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.PetsRepo
+import com.pitomets.monolit.repository.SellerProfileRepo
 import com.pitomets.monolit.repository.UserRepo
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -17,6 +18,7 @@ class ListingsService(
     private val userRepo: UserRepo,
     private val petsRepo: PetsRepo,
     private val listingsRepo: ListingsRepo,
+    private val sellerProfileRepo: SellerProfileRepo
 ) {
     private val log = LoggerFactory.getLogger(ListingsService::class.java)
 
@@ -24,12 +26,10 @@ class ListingsService(
         userId: Long,
         request: ListingsRequest
     ): ListingsResponse {
-        val user = userRepo.findById(userId).orElseThrow {
+        val seller = sellerProfileRepo.findById(userId).orElseThrow {
             UserNotFoundException("User not found")
         }
-        if (user.role != UserRole.SELLER) {
-            throw InvalidRoleException("User is not seller")
-        }
+
         val father = if (request.father != null) {
             petsRepo.findByid(request.father)
         } else {
@@ -40,6 +40,7 @@ class ListingsService(
         } else {
             null
         }
+
         val listing = Listing(
             description = request.description,
             species = request.species,
@@ -48,7 +49,9 @@ class ListingsService(
             father = father,
             mother = mother,
             price = request.price,
+            sellerProfile = seller
         )
+
         listingsRepo.save(listing)
         log.info("Created Listings: {}", listing)
 
