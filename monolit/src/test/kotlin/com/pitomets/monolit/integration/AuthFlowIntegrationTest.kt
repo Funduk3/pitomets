@@ -8,14 +8,18 @@ import com.pitomets.monolit.model.dto.request.RefreshTokenRequest
 import com.pitomets.monolit.model.dto.request.RegisterRequest
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
 import com.pitomets.monolit.model.dto.response.TokenResponse
+import com.pitomets.monolit.repository.UserRepo
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
+import net.datafaker.Faker
 import org.hamcrest.Matchers
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.junit.jupiter.Testcontainers
 
@@ -24,6 +28,17 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")
 class AuthFlowIntegrationTest : BaseContainers() {
+    @LocalServerPort
+    var port: Int = 0
+
+    val faker = Faker()
+
+    @Autowired
+    lateinit var userRepo: UserRepo
+
+    val mapper = jacksonObjectMapper().apply {
+        findAndRegisterModules()
+    }
 
     @BeforeEach
     fun setUp() {
