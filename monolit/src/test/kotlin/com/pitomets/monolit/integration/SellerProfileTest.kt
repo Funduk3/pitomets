@@ -1,8 +1,10 @@
 package com.pitomets.monolit.integration
 
 import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
+import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.LoginRequest
 import com.pitomets.monolit.model.dto.request.RegisterRequest
+import com.pitomets.monolit.model.dto.response.ListingsResponse
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
 import com.pitomets.monolit.model.dto.response.TokenResponse
 import com.pitomets.monolit.model.dto.response.UserResponse
@@ -20,6 +22,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.junit.jupiter.Testcontainers
+import java.math.BigDecimal
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -148,6 +151,24 @@ class SellerProfileTest : BaseContainers() {
         Assertions.assertEquals(updatedShopName, updated.shopName)
         Assertions.assertEquals("Updated description", updated.description)
         Assertions.assertNotEquals(originalShopName, updated.shopName)
+
+        val createListing = ListingsRequest(
+            description = faker.harryPotter().book(),
+            species = faker.animal().name(),
+            ageMonths = faker.number().numberBetween(4, 12),
+            price = BigDecimal(faker.number().numberBetween(4, 12)),
+            breed = faker.animal().name(),
+        )
+        // создаем объявление todo доделать
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .auth().oauth2(tokens.accessToken)
+            .body(createListing)
+            .post("/seller/listings")
+            .then()
+            .statusCode(200)
+            .extract()
+            .`as`(ListingsResponse::class.java)
     }
 
     @Test

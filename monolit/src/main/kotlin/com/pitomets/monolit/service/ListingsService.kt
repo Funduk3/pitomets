@@ -4,6 +4,7 @@ import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.response.ListingsResponse
 import com.pitomets.monolit.model.entity.Listing
+import com.pitomets.monolit.model.entity.Pet
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.PetsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
@@ -26,16 +27,8 @@ class ListingsService(
             UserNotFoundException("User not found")
         }
 
-        val father = if (request.father != null) {
-            petsRepo.findByid(request.father)
-        } else {
-            null
-        }
-        val mother = if (request.mother != null) {
-            petsRepo.findByid(request.mother)
-        } else {
-            null
-        }
+        val father: Pet? = request.father?.let { petsRepo.findById(it).orElse(null) }
+        val mother: Pet? = request.mother?.let { petsRepo.findById(it).orElse(null) }
 
         val listing = Listing(
             description = request.description,
