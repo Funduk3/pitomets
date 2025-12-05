@@ -28,17 +28,17 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")
 class AuthFlowIntegrationTest : BaseContainers() {
-
     @LocalServerPort
     var port: Int = 0
 
-    private val mapper = jacksonObjectMapper().apply {
-        findAndRegisterModules()
-    }
     val faker = Faker()
 
     @Autowired
     lateinit var userRepo: UserRepo
+
+    val mapper = jacksonObjectMapper().apply {
+        findAndRegisterModules()
+    }
 
     @BeforeEach
     fun setUp() {

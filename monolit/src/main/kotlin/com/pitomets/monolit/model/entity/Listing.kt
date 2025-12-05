@@ -9,6 +9,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import java.math.BigDecimal
 
 @Entity
 @Table(name = "listing")
@@ -19,13 +20,13 @@ class Listing(
     var id: Long? = null,
 
     @Column(columnDefinition = "text")
-    var description: String? = null,
+    var description: String,
 
     var species: String? = null,
     var breed: String? = null,
 
     @Column(name = "age_months")
-    var ageMonths: Int? = null,
+    var ageMonths: Int,
 
     // mother/father reference to Pet (FK to pets.id)
     @ManyToOne(fetch = FetchType.LAZY)
@@ -36,17 +37,15 @@ class Listing(
     @JoinColumn(name = "father")
     var father: Pet? = null,
 
-    var price: Int? = null,
+    var price: BigDecimal,
 
     @Column(name = "is_archived")
     var isArchived: Boolean = false,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_profile_id")
-    var sellerProfile: SellerProfile? = null,
+    var sellerProfile: SellerProfile,
 
 //    @OneToMany(mappedBy = "listing", cascade = [CascadeType.ALL], orphanRemoval = true)
 //    var pets: MutableList<Pet> = mutableListOf()
-) {
-    constructor() : this(null)
-}
+)
