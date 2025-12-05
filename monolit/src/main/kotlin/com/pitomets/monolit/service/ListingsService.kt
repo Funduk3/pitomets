@@ -22,9 +22,8 @@ class ListingsService(
         userId: Long,
         request: ListingsRequest
     ): ListingsResponse {
-        val seller = sellerProfileRepo.findById(userId).orElseThrow {
-            UserNotFoundException("User not found")
-        }
+        val seller = sellerProfileRepo.findBySellerId(userId)
+            ?: throw UserNotFoundException("User with seller id $userId does not exist")
 
         val father = request.father?.let { id ->
             petsRepo.findById(id).orElse(null)
