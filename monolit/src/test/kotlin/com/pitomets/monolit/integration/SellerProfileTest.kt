@@ -7,6 +7,7 @@ import com.pitomets.monolit.model.dto.request.RegisterRequest
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
 import com.pitomets.monolit.model.dto.response.TokenResponse
 import com.pitomets.monolit.model.dto.response.UserResponse
+import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.PetsRepo
 import com.pitomets.monolit.repository.UserRepo
 import io.restassured.RestAssured
@@ -40,6 +41,9 @@ class SellerProfileTest : BaseContainers() {
 
     @Autowired
     lateinit var petsRepo: PetsRepo
+
+    @Autowired
+    lateinit var listingsRepo: ListingsRepo
 
     @BeforeEach
     fun setUp() {
@@ -155,14 +159,14 @@ class SellerProfileTest : BaseContainers() {
         Assertions.assertEquals("Updated description", updated.description)
         Assertions.assertNotEquals(originalShopName, updated.shopName)
 
+        // Создаем объявление
         val createListingRequest = ListingsRequest(
             description = faker.funnyName().name(),
             species = faker.funnyName().name(),
-            ageMonths = 10,
-            price = BigDecimal(1000),
+            ageMonths = faker.number().randomDigit(),
+            price = BigDecimal(faker.number().randomDigit()),
             breed = null
         )
-
         RestAssured.given()
             .contentType(ContentType.JSON)
             .auth().oauth2(sellerTokens.accessToken)
@@ -170,6 +174,25 @@ class SellerProfileTest : BaseContainers() {
             .post("/seller/listings")
             .then()
             .statusCode(200)
+
+        // Проверяем что сохранилось объявление в БД
+        val allListings = listingsRepo.findAll()
+        Assertions.assertTrue(
+            allListings.isNotEmpty(),
+            "Listings should not be empty"
+        )
+
+        val createdListing = allListings.find {
+            it.description == createListingRequest.description
+        }
+        Assertions.assertNotNull(
+            createdListing,
+            "Created listing should exist in DB"
+        )
+        Assertions.assertEquals(
+            createListingRequest.species,
+            createdListing!!.species
+        )
     }
 
     @Test
