@@ -26,15 +26,11 @@ class ListingsService(
             UserNotFoundException("User not found")
         }
 
-        val father = if (request.father != null) {
-            petsRepo.findByid(request.father)
-        } else {
-            null
+        val father = request.father?.let { id ->
+            petsRepo.findByid(id)
         }
-        val mother = if (request.mother != null) {
-            petsRepo.findByid(request.mother)
-        } else {
-            null
+        val mother = request.mother?.let { id ->
+            petsRepo.findByid(id)
         }
 
         val listing = Listing(
@@ -49,7 +45,7 @@ class ListingsService(
         )
 
         listingsRepo.save(listing)
-        log.info("Created Listings: {}", listing)
+        log.info("Created Listing: {}", listing)
 
         return ListingsResponse(
             description = listing.description,

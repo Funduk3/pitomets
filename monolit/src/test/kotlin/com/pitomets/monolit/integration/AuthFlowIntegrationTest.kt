@@ -273,7 +273,6 @@ class AuthFlowIntegrationTest : BaseContainers() {
             .put("/seller/profile")
             .then()
             .statusCode(200)
-        // todo test
     }
 
     @Test
