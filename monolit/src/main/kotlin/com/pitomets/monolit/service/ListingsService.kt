@@ -30,7 +30,7 @@ class ListingsService(
             petsRepo.findById(id).orElse(null)
         }
         val mother = request.mother?.let { id ->
-            petsRepo.findById(id).orElse(null) // преобразуем Optional в null
+            petsRepo.findById(id).orElse(null)
         }
 
         val listing = Listing(
