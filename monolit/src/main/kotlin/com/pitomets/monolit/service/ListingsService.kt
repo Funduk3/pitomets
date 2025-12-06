@@ -3,6 +3,7 @@ package com.pitomets.monolit.service
 import com.pitomets.monolit.exceptions.ListingNotFoundException
 import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.model.dto.request.ListingsRequest
+import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.ListingsResponse
 import com.pitomets.monolit.model.entity.Listing
 import com.pitomets.monolit.repository.ListingsRepo
@@ -76,6 +77,42 @@ class ListingsService(
             price = response.price,
             isArchived = response.isArchived,
             listingsId = listingId
+        )
+    }
+
+    fun updateListing(
+        listingId: Long,
+        sellerId: Long,
+        request: UpdateListingRequest
+    ): ListingsResponse {
+        val listing = listingsRepo.findByIdOrNull(listingId)
+            ?: throw ListingNotFoundException("Listing does not exist")
+        if (listing.sellerProfile.seller?.id == sellerId) {
+            throw UserNotFoundException(
+                "User with seller id $sellerId does not has this listing"
+            )
+        }
+
+        request.species?.let { listing.species = it }
+        request.price?.let { listing.price = it }
+        request.ageMonths?.let { listing.ageMonths = it }
+        request.mother?.let { listing.mother = it }
+        request.father?.let { listing.father = it }
+        request.breed?.let { listing.breed = it }
+        request.isArchived?.let { listing.isArchived = it }
+
+        val updatedListing = listingsRepo.save(listing)
+
+        return ListingsResponse(
+            description = updatedListing.description,
+            species = updatedListing.species,
+            ageMonths = updatedListing.ageMonths,
+            price = updatedListing.price,
+            breed = updatedListing.breed,
+            isArchived = updatedListing.isArchived,
+            listingsId = listingId,
+            mother = updatedListing.mother,
+            father = updatedListing.father,
         )
     }
 }

@@ -4,6 +4,7 @@ import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.LoginRequest
 import com.pitomets.monolit.model.dto.request.RegisterRequest
+import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
 import com.pitomets.monolit.model.dto.response.TokenResponse
 import com.pitomets.monolit.model.dto.response.UserResponse
@@ -202,6 +203,35 @@ class SellerProfileTest : BaseContainers() {
             .statusCode(200)
             .body("description", Matchers.equalTo(createListingRequest.description))
             .body("species", Matchers.equalTo(createListingRequest.species))
+
+        val updateListingRequest = UpdateListingRequest(
+            faker.funnyName().name(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        )
+        // Исправить объявление без прав
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .param("id", createdListing.id)
+            .body(updateListingRequest)
+            .put("/seller/listings/")
+            .then()
+            .statusCode(401)
+
+        // Success исправить объявление
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .param("id", createdListing.id)
+            .auth().oauth2(sellerTokens.accessToken)
+            .body(updateListingRequest)
+            .put("/seller/listings/")
+            .then()
+            .statusCode(200)
     }
 
     @Test
