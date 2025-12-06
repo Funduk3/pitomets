@@ -237,6 +237,11 @@ class SellerProfileTest : BaseContainers() {
                 "description",
                 Matchers.equalTo(newDescription)
             )
+
+        Assertions.assertEquals(
+            newDescription,
+            listingsRepo.findById(createdListing.id!!).get().description
+        )
     }
 
     @Test
