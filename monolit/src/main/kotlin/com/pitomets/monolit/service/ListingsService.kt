@@ -1,5 +1,6 @@
 package com.pitomets.monolit.service
 
+import com.pitomets.monolit.exceptions.ListingNotFoundException
 import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.response.ListingsResponse
@@ -8,6 +9,7 @@ import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.PetsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
 import org.slf4j.LoggerFactory
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
 @Service
@@ -51,11 +53,29 @@ class ListingsService(
             species = listing.species,
             breed = listing.breed,
             ageMonths = listing.ageMonths,
-            father = father?.id,
-            mother = mother?.id,
+            father = father,
+            mother = mother,
             listingsId = requireNotNull(listing.id),
             price = listing.price,
             isArchived = listing.isArchived,
+        )
+    }
+
+    fun getListing(
+        listingId: Long
+    ): ListingsResponse {
+        val response = listingsRepo.findByIdOrNull(listingId)
+            ?: throw ListingNotFoundException("Listing with id $listingId does not exist")
+        return ListingsResponse(
+            description = response.description,
+            species = response.species,
+            breed = response.breed,
+            ageMonths = response.ageMonths,
+            mother = response.mother,
+            father = response.father,
+            price = response.price,
+            isArchived = response.isArchived,
+            listingsId = listingId
         )
     }
 }

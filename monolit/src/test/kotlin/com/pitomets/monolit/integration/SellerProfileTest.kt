@@ -193,6 +193,16 @@ class SellerProfileTest : BaseContainers() {
             createListingRequest.species,
             createdListing!!.species
         )
+        // найти объявление
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .auth().oauth2(sellerTokens.accessToken)
+            .param("id", createdListing.id) // query params
+            .get("/listing/")
+            .then()
+            .statusCode(200)
+            .body("description", Matchers.equalTo(createListingRequest.description))
+            .body("species", Matchers.equalTo(createListingRequest.species))
     }
 
     @Test
