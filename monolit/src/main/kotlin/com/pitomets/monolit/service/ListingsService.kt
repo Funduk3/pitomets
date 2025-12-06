@@ -101,6 +101,7 @@ class ListingsService(
         request.father?.let { listing.father = it }
         request.breed?.let { listing.breed = it }
         request.isArchived?.let { listing.isArchived = it }
+        request.description?.let { listing.description = it }
 
         val updatedListing = listingsRepo.save(listing)
 

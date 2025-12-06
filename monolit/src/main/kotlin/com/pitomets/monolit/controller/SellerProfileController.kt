@@ -52,11 +52,9 @@ class SellerProfileController(
 
     @PutMapping("/listings/")
     fun updateListing(
-        @RequestParam("id")
-        listingId: Long,
-        @AuthenticationPrincipal
-        userPrincipal: UserPrincipal,
-        updateListing: UpdateListingRequest,
+        @RequestParam("id") listingId: Long,
+        @AuthenticationPrincipal userPrincipal: UserPrincipal,
+        @RequestBody updateListing: UpdateListingRequest,
     ): ListingsResponse {
         return listingsService.updateListing(
             listingId,

@@ -204,8 +204,9 @@ class SellerProfileTest : BaseContainers() {
             .body("description", Matchers.equalTo(createListingRequest.description))
             .body("species", Matchers.equalTo(createListingRequest.species))
 
+        val newDescription = faker.funnyName().name()
         val updateListingRequest = UpdateListingRequest(
-            faker.funnyName().name(),
+            newDescription,
             null,
             null,
             null,
@@ -232,6 +233,10 @@ class SellerProfileTest : BaseContainers() {
             .put("/seller/listings/")
             .then()
             .statusCode(200)
+            .body(
+                "description",
+                Matchers.equalTo(newDescription)
+            )
     }
 
     @Test
