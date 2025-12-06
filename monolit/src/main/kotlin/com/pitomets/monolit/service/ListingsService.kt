@@ -87,9 +87,10 @@ class ListingsService(
     ): ListingsResponse {
         val listing = listingsRepo.findByIdOrNull(listingId)
             ?: throw ListingNotFoundException("Listing does not exist")
-        if (listing.sellerProfile.seller?.id == sellerId) {
+        if (listing.sellerProfile.seller?.id != sellerId) {
             throw UserNotFoundException(
-                "User with seller id $sellerId does not has this listing"
+                "User with seller id $sellerId does not has this listing," +
+                    "excepted id ${listing.sellerProfile.seller?.id}"
             )
         }
 
