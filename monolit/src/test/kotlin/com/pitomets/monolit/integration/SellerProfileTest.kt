@@ -193,7 +193,7 @@ class SellerProfileTest : BaseContainers() {
             createListingRequest.species,
             createdListing!!.species
         )
-        // найти объявление
+        // Найти объявление без ауф токена
         RestAssured.given()
             .contentType(ContentType.JSON)
             .param("id", createdListing.id) // query params
