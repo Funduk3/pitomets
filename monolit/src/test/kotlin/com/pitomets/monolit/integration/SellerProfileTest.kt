@@ -196,7 +196,6 @@ class SellerProfileTest : BaseContainers() {
         // найти объявление
         RestAssured.given()
             .contentType(ContentType.JSON)
-            .auth().oauth2(sellerTokens.accessToken)
             .param("id", createdListing.id) // query params
             .get("/listing/")
             .then()
