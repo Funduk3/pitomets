@@ -27,7 +27,7 @@ class ListingController(
     }
 
     @PostMapping("/")
-    fun listings(
+    fun createListings(
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
         @RequestBody request: ListingsRequest
     ): ListingsResponse {
