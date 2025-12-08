@@ -79,6 +79,7 @@ class SecurityConfig(
                     "/refresh"
                 ).permitAll()
                 it.requestMatchers(HttpMethod.GET, "/listings/**").permitAll()
+                it.requestMatchers("/listings/**").hasRole("SELLER")
                 it.requestMatchers("/seller/profile").authenticated() // Создание профиля для всех
                 it.requestMatchers("/seller/**").hasRole("SELLER")
                 it.anyRequest().authenticated()
