@@ -172,7 +172,7 @@ class SellerProfileTest : BaseContainers() {
             .contentType(ContentType.JSON)
             .auth().oauth2(sellerTokens.accessToken)
             .body(createListingRequest)
-            .post("/seller/listings")
+            .post("/listings/")
             .then()
             .statusCode(200)
 
@@ -198,7 +198,7 @@ class SellerProfileTest : BaseContainers() {
         RestAssured.given()
             .contentType(ContentType.JSON)
             .param("id", createdListing.id) // query params
-            .get("/listing/")
+            .get("/listings/")
             .then()
             .statusCode(200)
             .body("description", Matchers.equalTo(createListingRequest.description))
@@ -220,7 +220,7 @@ class SellerProfileTest : BaseContainers() {
             .contentType(ContentType.JSON)
             .param("id", createdListing.id)
             .body(updateListingRequest)
-            .put("/seller/listings/")
+            .put("/listings/")
             .then()
             .statusCode(401)
 
@@ -230,7 +230,7 @@ class SellerProfileTest : BaseContainers() {
             .param("id", createdListing.id)
             .auth().oauth2(sellerTokens.accessToken)
             .body(updateListingRequest)
-            .put("/seller/listings/")
+            .put("/listings/")
             .then()
             .statusCode(200)
             .body(
