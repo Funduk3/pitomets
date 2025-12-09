@@ -19,6 +19,8 @@ class Listing(
     @Column(name = "id", updatable = false, nullable = false)
     var id: Long? = null,
 
+    var title: String,
+
     @Column(columnDefinition = "text")
     var description: String,
 
@@ -45,7 +47,4 @@ class Listing(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_profile_id")
     var sellerProfile: SellerProfile,
-
-//    @OneToMany(mappedBy = "listing", cascade = [CascadeType.ALL], orphanRemoval = true)
-//    var pets: MutableList<Pet> = mutableListOf()
 )

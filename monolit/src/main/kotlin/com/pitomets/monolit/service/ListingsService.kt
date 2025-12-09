@@ -43,7 +43,8 @@ class ListingsService(
             father = father,
             mother = mother,
             price = request.price,
-            sellerProfile = seller
+            sellerProfile = seller,
+            title = request.title
         )
 
         listingsRepo.save(listing)

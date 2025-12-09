@@ -166,7 +166,8 @@ class SellerProfileTest : BaseContainers() {
             species = faker.funnyName().name(),
             ageMonths = faker.number().randomDigit(),
             price = BigDecimal(faker.number().randomDigit()),
-            breed = null
+            breed = null,
+            title = faker.name().fullName(),
         )
         RestAssured.given()
             .contentType(ContentType.JSON)
@@ -242,6 +243,24 @@ class SellerProfileTest : BaseContainers() {
             newDescription,
             listingsRepo.findById(createdListing.id!!).get().description
         )
+
+        // Добавить объявление в избранное
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .body(mapOf("listingId" to createdListing.id))
+            .auth().oauth2(tokens.accessToken)
+            .post("/favourites")
+            .then()
+            .statusCode(200)
+
+        // Получить мои избранные
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .auth().oauth2(tokens.accessToken)
+            .get("/favourites")
+            .then()
+            .statusCode(200)
+            .body("[0].description", Matchers.equalTo(newDescription))
     }
 
     @Test
