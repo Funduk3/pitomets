@@ -261,6 +261,24 @@ class SellerProfileTest : BaseContainers() {
             .then()
             .statusCode(200)
             .body("[0].description", Matchers.equalTo(newDescription))
+
+        // удаляем избранное
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .body(mapOf("listingId" to createdListing.id))
+            .auth().oauth2(tokens.accessToken)
+            .delete("/favourites")
+            .then()
+            .statusCode(200)
+
+        // Получить мои избранные (ожидаем пустоту)
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .auth().oauth2(tokens.accessToken)
+            .get("/favourites")
+            .then()
+            .statusCode(200)
+            .body("size()", Matchers.equalTo(0))
     }
 
     @Test

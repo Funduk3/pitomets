@@ -1,5 +1,5 @@
 package com.pitomets.monolit.model.dto.request
 
-data class AddFavouriteRequest(
+data class FavouriteRequest(
     val listingId: Long,
 )

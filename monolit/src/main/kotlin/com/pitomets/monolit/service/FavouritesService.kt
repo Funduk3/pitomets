@@ -55,4 +55,13 @@ class FavouritesService(
             description = listing.description,
         )
     }
+
+    fun deleteFavourite(
+        userId: Long,
+        listingId: Long
+    ) {
+        val favourite = favouritesRepo.findByUserIdAndListingId(userId, listingId)
+            ?: throw ListingNotFoundException("Favourite not found")
+        favouritesRepo.delete(favourite)
+    }
 }
