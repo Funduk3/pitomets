@@ -1,6 +1,7 @@
 package com.pitomets.monolit.service
 
 import com.pitomets.monolit.exceptions.ListingNotFoundException
+import com.pitomets.monolit.exceptions.PetNotFoundException
 import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
@@ -98,8 +99,16 @@ class ListingsService(
         request.species?.let { listing.species = it }
         request.price?.let { listing.price = it }
         request.ageMonths?.let { listing.ageMonths = it }
-        request.mother?.let { listing.mother = it }
-        request.father?.let { listing.father = it }
+        request.mother?.let {
+            listing.mother = petsRepo.findById(it).orElseThrow {
+                PetNotFoundException("Mother with id $it")
+            }
+        }
+        request.father?.let {
+            listing.father = petsRepo.findById(it).orElseThrow {
+                PetNotFoundException("Father with id $it")
+            }
+        }
         request.breed?.let { listing.breed = it }
         request.isArchived?.let { listing.isArchived = it }
         request.description?.let { listing.description = it }

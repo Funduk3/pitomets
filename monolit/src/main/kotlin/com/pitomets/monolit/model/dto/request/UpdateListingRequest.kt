@@ -1,6 +1,5 @@
 package com.pitomets.monolit.model.dto.request
 
-import com.pitomets.monolit.model.entity.Pet
 import java.math.BigDecimal
 
 data class UpdateListingRequest(
@@ -12,9 +11,9 @@ data class UpdateListingRequest(
 
     val ageMonths: Int?,
 
-    val mother: Pet?,
+    val mother: Long?,
 
-    val father: Pet?,
+    val father: Long?,
 
     val price: BigDecimal?,
 
