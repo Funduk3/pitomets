@@ -54,8 +54,8 @@ class ListingsService(
             species = listing.species,
             breed = listing.breed,
             ageMonths = listing.ageMonths,
-            father = father,
-            mother = mother,
+            father = father?.id,
+            mother = mother?.id,
             listingsId = requireNotNull(listing.id),
             price = listing.price,
             isArchived = listing.isArchived,
@@ -72,8 +72,8 @@ class ListingsService(
             species = response.species,
             breed = response.breed,
             ageMonths = response.ageMonths,
-            mother = response.mother,
-            father = response.father,
+            mother = response.mother?.id,
+            father = response.father?.id,
             price = response.price,
             isArchived = response.isArchived,
             listingsId = listingId
@@ -113,8 +113,8 @@ class ListingsService(
             breed = updatedListing.breed,
             isArchived = updatedListing.isArchived,
             listingsId = listingId,
-            mother = updatedListing.mother,
-            father = updatedListing.father,
+            mother = updatedListing.mother?.id,
+            father = updatedListing.father?.id,
         )
     }
 }

@@ -1,6 +1,5 @@
 package com.pitomets.monolit.model.dto.response
 
-import com.pitomets.monolit.model.entity.Pet
 import java.math.BigDecimal
 
 data class ListingsResponse(
@@ -14,11 +13,11 @@ data class ListingsResponse(
 
     val ageMonths: Int,
 
-    val mother: Pet?,
-
-    val father: Pet?,
-
     val price: BigDecimal,
 
     val isArchived: Boolean,
+
+    val mother: Long?,
+
+    val father: Long?,
 )

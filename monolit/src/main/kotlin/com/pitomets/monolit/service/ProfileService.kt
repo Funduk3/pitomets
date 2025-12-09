@@ -4,7 +4,6 @@ import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.exceptions.profileExceptions.ProfileAlreadyExistsException
 import com.pitomets.monolit.model.UserPrincipal
 import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
-import com.pitomets.monolit.model.dto.response.BuyerProfileResponse
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
 import com.pitomets.monolit.model.dto.response.UserWithProfilesResponse
 import com.pitomets.monolit.model.entity.SellerProfile
@@ -76,28 +75,14 @@ class ProfileService(
         }
 
         return UserWithProfilesResponse(
-            id = user.id!!, // fix
-            email = user.email!!, // fix
+            id = requireNotNull(user.id),
+            email = requireNotNull(user.email),
             fullName = user.fullName,
-            sellerProfile = user.sellerProfile?.let {
-                it.id?.let { it1 ->
-                    SellerProfileResponse(
-                        id = it1,
-                        shopName = it.shopName,
-                        description = it.description,
-                        rating = it.rating,
-                        isVerified = it.isVerified,
-                        createdAt = it.createdAt
-                    )
-                }
-            },
-            buyerProfile = user.buyerProfile?.let {
-                it.id?.let { it1 ->
-                    BuyerProfileResponse(
-                        id = it1,
-                    )
-                }
-            }
+            shopName = user.sellerProfile?.shopName,
+            description = user.sellerProfile?.description,
+            rating = user.sellerProfile?.rating,
+            isVerified = user.sellerProfile?.isVerified,
+            createdAt = user.sellerProfile?.createdAt,
         )
     }
 
