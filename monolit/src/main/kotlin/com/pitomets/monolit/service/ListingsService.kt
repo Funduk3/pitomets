@@ -118,4 +118,18 @@ class ListingsService(
             father = updatedListing.father?.id,
         )
     }
+
+    fun deleteListing(
+        listingId: Long,
+        userId: Long
+    ) {
+        val favourite = listingsRepo.findById(listingId).orElseThrow {
+            ListingNotFoundException("Listing does not exist")
+        }
+
+        if (favourite.sellerProfile.seller?.id != userId) {
+            throw UserNotFoundException("User is not seller of this listing")
+        }
+        listingsRepo.delete(favourite)
+    }
 }

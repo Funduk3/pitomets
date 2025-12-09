@@ -279,6 +279,24 @@ class SellerProfileTest : BaseContainers() {
             .then()
             .statusCode(200)
             .body("size()", Matchers.equalTo(0))
+
+        // Success удалить объявление
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .param("id", createdListing.id)
+            .auth().oauth2(sellerTokens.accessToken)
+            .body(updateListingRequest)
+            .delete("/listings/")
+            .then()
+            .statusCode(200)
+
+        // не найдем объявление после удаления
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .param("id", createdListing.id)
+            .get("/listings/")
+            .then()
+            .statusCode(500)
     }
 
     @Test

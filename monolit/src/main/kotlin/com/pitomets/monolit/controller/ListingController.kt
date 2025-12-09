@@ -6,6 +6,7 @@ import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.ListingsResponse
 import com.pitomets.monolit.service.ListingsService
 import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -22,28 +23,34 @@ class ListingController(
     @GetMapping("/")
     fun getListing(
         @RequestParam("id") listingId: Long
-    ): ListingsResponse {
-        return listingsService.getListing(listingId)
-    }
+    ): ListingsResponse = listingsService.getListing(listingId)
 
     @PostMapping("/")
     fun createListings(
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
         @RequestBody request: ListingsRequest
-    ): ListingsResponse {
-        return listingsService.createListing(userPrincipal.id, request)
-    }
+    ): ListingsResponse = listingsService.createListing(
+        userPrincipal.id,
+        request
+    )
 
     @PutMapping("/")
     fun updateListing(
         @RequestParam("id") listingId: Long,
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
         @RequestBody updateListing: UpdateListingRequest,
-    ): ListingsResponse {
-        return listingsService.updateListing(
-            listingId,
-            userPrincipal.id,
-            updateListing
-        )
-    }
+    ): ListingsResponse = listingsService.updateListing(
+        listingId,
+        userPrincipal.id,
+        updateListing
+    )
+
+    @DeleteMapping("/")
+    fun deleteListing(
+        @RequestParam("id") listingId: Long,
+        @AuthenticationPrincipal userPrincipal: UserPrincipal,
+    ) = listingsService.deleteListing(
+        listingId,
+        userPrincipal.id,
+    )
 }
