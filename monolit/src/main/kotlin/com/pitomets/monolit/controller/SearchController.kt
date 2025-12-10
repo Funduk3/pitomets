@@ -1,5 +1,6 @@
 import com.pitomets.monolit.model.dto.request.SearchListingsRequest
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
+import com.pitomets.monolit.service.SearchService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam

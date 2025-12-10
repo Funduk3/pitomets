@@ -4,6 +4,7 @@ import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.LoginRequest
 import com.pitomets.monolit.model.dto.request.RegisterRequest
+import com.pitomets.monolit.model.dto.request.SearchListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
 import com.pitomets.monolit.model.dto.response.TokenResponse
@@ -11,6 +12,7 @@ import com.pitomets.monolit.model.dto.response.UserResponse
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.PetsRepo
 import com.pitomets.monolit.repository.UserRepo
+import com.pitomets.monolit.service.SearchService
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
 import net.datafaker.Faker
@@ -45,6 +47,9 @@ class SellerProfileTest : BaseContainers() {
 
     @Autowired
     lateinit var listingsRepo: ListingsRepo
+
+    @Autowired
+    lateinit var searchService: SearchService
 
     @BeforeEach
     fun setUp() {
@@ -195,6 +200,15 @@ class SellerProfileTest : BaseContainers() {
             createListingRequest.species,
             createdListing!!.species
         )
+
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .body(mapOf("query" to createdListing.description))
+            .post("/search")
+            .then()
+            .statusCode(200)
+            .body("size()", Matchers.greaterThan(0))
+
         // Найти объявление без ауф токена
         RestAssured.given()
             .contentType(ContentType.JSON)
@@ -208,6 +222,7 @@ class SellerProfileTest : BaseContainers() {
         val newDescription = faker.funnyName().name()
         val updateListingRequest = UpdateListingRequest(
             newDescription,
+            null,
             null,
             null,
             null,
@@ -297,6 +312,15 @@ class SellerProfileTest : BaseContainers() {
             .get("/listings/")
             .then()
             .statusCode(500)
+        // не найдём объявление в поиске
+        Assertions.assertEquals(
+            newDescription,
+            searchService.search(
+                SearchListingsRequest(
+                    createdListing.description
+                )
+            )
+        )
     }
 
     @Test

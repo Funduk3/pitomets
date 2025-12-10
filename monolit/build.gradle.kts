@@ -53,6 +53,7 @@ dependencies {
 
     // testcontainers
     testImplementation("org.testcontainers:junit-jupiter:1.21.3")
+    testImplementation("org.testcontainers:elasticsearch:1.20.0")
     testImplementation("org.testcontainers:testcontainers")
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
@@ -88,6 +89,7 @@ allOpen {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+    systemProperty("junit.jupiter.execution.timeout.default", "30s")
 }
 
 //openApiGenerate {

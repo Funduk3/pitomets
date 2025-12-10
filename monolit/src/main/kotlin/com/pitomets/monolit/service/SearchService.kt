@@ -1,4 +1,7 @@
+package com.pitomets.monolit.service
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient
+import co.elastic.clients.elasticsearch.core.IndexResponse
 import com.pitomets.monolit.model.dto.SearchListingDocument
 import com.pitomets.monolit.model.dto.request.SearchListingsRequest
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
@@ -11,13 +14,17 @@ class SearchService(
     fun search(
         query: SearchListingsRequest
     ): List<SearchListingsResponse> {
+        val from = query.page * query.size
+
         val response = client.search(
             { s ->
                 s.index("listings")
+                    .from(from)
+                    .size(query.size)
                     .query { q ->
                         q.multiMatch { mm ->
                             mm.query(query.query)
-                                .fields(listOf("tittle^3", "description")) // не доделал
+                                .fields(listOf("title^3", "description"))
                         }
                     }
             },
@@ -34,5 +41,20 @@ class SearchService(
                     )
                 }
             }
+    }
+
+    fun indexListing(doc: SearchListingDocument): IndexResponse {
+        return client.index { idx ->
+            idx.index("listings")
+                .id(doc.id.toString())
+                .document(doc)
+        }
+    }
+
+    fun deleteListing(id: Long) {
+        client.delete { d ->
+            d.index("listings")
+                .id(id.toString())
+        }
     }
 }

@@ -18,4 +18,6 @@ data class UpdateListingRequest(
     val price: BigDecimal?,
 
     val isArchived: Boolean?,
+
+    val title: String?,
 )
