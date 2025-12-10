@@ -6,6 +6,7 @@ import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
 import com.pitomets.monolit.model.dto.request.LoginRequest
 import com.pitomets.monolit.model.dto.request.RefreshTokenRequest
 import com.pitomets.monolit.model.dto.request.RegisterRequest
+import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
 import com.pitomets.monolit.model.dto.response.TokenResponse
 import com.pitomets.monolit.repository.UserRepo
@@ -229,6 +230,26 @@ class AuthFlowIntegrationTest : BaseContainers() {
             .statusCode(200)
             .extract()
             .`as`(TokenResponse::class.java)
+
+        // buyer не может создать объявление
+        val updateListingRequest = UpdateListingRequest(
+            faker.funnyName().name(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        )
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .param("id", faker.number().randomDigit())
+            .auth().oauth2(userTokens.accessToken)
+            .body(updateListingRequest)
+            .put("/listings/")
+            .then()
+            .statusCode(403)
 
         // 3. Создать профиль продавца
         val shopName = faker.company().name()

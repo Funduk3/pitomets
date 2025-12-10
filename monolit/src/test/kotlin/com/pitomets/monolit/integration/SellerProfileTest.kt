@@ -4,6 +4,7 @@ import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.LoginRequest
 import com.pitomets.monolit.model.dto.request.RegisterRequest
+import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
 import com.pitomets.monolit.model.dto.response.TokenResponse
 import com.pitomets.monolit.model.dto.response.UserResponse
@@ -165,13 +166,14 @@ class SellerProfileTest : BaseContainers() {
             species = faker.funnyName().name(),
             ageMonths = faker.number().randomDigit(),
             price = BigDecimal(faker.number().randomDigit()),
-            breed = null
+            breed = null,
+            title = faker.name().fullName(),
         )
         RestAssured.given()
             .contentType(ContentType.JSON)
             .auth().oauth2(sellerTokens.accessToken)
             .body(createListingRequest)
-            .post("/seller/listings")
+            .post("/listings/")
             .then()
             .statusCode(200)
 
@@ -193,6 +195,108 @@ class SellerProfileTest : BaseContainers() {
             createListingRequest.species,
             createdListing!!.species
         )
+        // Найти объявление без ауф токена
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .param("id", createdListing.id) // query params
+            .get("/listings/")
+            .then()
+            .statusCode(200)
+            .body("description", Matchers.equalTo(createListingRequest.description))
+            .body("species", Matchers.equalTo(createListingRequest.species))
+
+        val newDescription = faker.funnyName().name()
+        val updateListingRequest = UpdateListingRequest(
+            newDescription,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        )
+        // Исправить объявление без прав
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .param("id", createdListing.id)
+            .body(updateListingRequest)
+            .put("/listings/")
+            .then()
+            .statusCode(401)
+
+        // Success исправить объявление
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .param("id", createdListing.id)
+            .auth().oauth2(sellerTokens.accessToken)
+            .body(updateListingRequest)
+            .put("/listings/")
+            .then()
+            .statusCode(200)
+            .body(
+                "description",
+                Matchers.equalTo(newDescription)
+            )
+
+        Assertions.assertEquals(
+            newDescription,
+            listingsRepo.findById(createdListing.id!!).get().description
+        )
+
+        // Добавить объявление в избранное
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .body(mapOf("listingId" to createdListing.id))
+            .auth().oauth2(tokens.accessToken)
+            .post("/favourites")
+            .then()
+            .statusCode(200)
+
+        // Получить мои избранные
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .auth().oauth2(tokens.accessToken)
+            .get("/favourites")
+            .then()
+            .statusCode(200)
+            .body("[0].description", Matchers.equalTo(newDescription))
+
+        // удаляем избранное
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .body(mapOf("listingId" to createdListing.id))
+            .auth().oauth2(tokens.accessToken)
+            .delete("/favourites")
+            .then()
+            .statusCode(200)
+
+        // Получить мои избранные (ожидаем пустоту)
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .auth().oauth2(tokens.accessToken)
+            .get("/favourites")
+            .then()
+            .statusCode(200)
+            .body("size()", Matchers.equalTo(0))
+
+        // Success удалить объявление
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .param("id", createdListing.id)
+            .auth().oauth2(sellerTokens.accessToken)
+            .body(updateListingRequest)
+            .delete("/listings/")
+            .then()
+            .statusCode(200)
+
+        // не найдем объявление после удаления
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .param("id", createdListing.id)
+            .get("/listings/")
+            .then()
+            .statusCode(500)
     }
 
     @Test

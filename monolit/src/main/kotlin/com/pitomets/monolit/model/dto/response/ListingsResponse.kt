@@ -13,11 +13,11 @@ data class ListingsResponse(
 
     val ageMonths: Int,
 
-    val mother: Long?,
-
-    val father: Long?,
-
     val price: BigDecimal,
 
     val isArchived: Boolean,
+
+    val mother: Long?,
+
+    val father: Long?,
 )

@@ -63,6 +63,8 @@ dependencies {
 
     // detekt
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.8")
+
+    implementation("co.elastic.clients:elasticsearch-java:8.14.0")
 }
 
 kotlin {

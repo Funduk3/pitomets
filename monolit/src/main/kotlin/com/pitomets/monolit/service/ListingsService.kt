@@ -1,13 +1,17 @@
 package com.pitomets.monolit.service
 
+import com.pitomets.monolit.exceptions.ListingNotFoundException
+import com.pitomets.monolit.exceptions.PetNotFoundException
 import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.model.dto.request.ListingsRequest
+import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.ListingsResponse
 import com.pitomets.monolit.model.entity.Listing
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.PetsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
 import org.slf4j.LoggerFactory
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
 @Service
@@ -40,7 +44,8 @@ class ListingsService(
             father = father,
             mother = mother,
             price = request.price,
-            sellerProfile = seller
+            sellerProfile = seller,
+            title = request.title
         )
 
         listingsRepo.save(listing)
@@ -57,5 +62,83 @@ class ListingsService(
             price = listing.price,
             isArchived = listing.isArchived,
         )
+    }
+
+    fun getListing(
+        listingId: Long
+    ): ListingsResponse {
+        val response = listingsRepo.findByIdOrNull(listingId)
+            ?: throw ListingNotFoundException("Listing with id $listingId does not exist")
+        return ListingsResponse(
+            description = response.description,
+            species = response.species,
+            breed = response.breed,
+            ageMonths = response.ageMonths,
+            mother = response.mother?.id,
+            father = response.father?.id,
+            price = response.price,
+            isArchived = response.isArchived,
+            listingsId = listingId
+        )
+    }
+
+    fun updateListing(
+        listingId: Long,
+        sellerId: Long,
+        request: UpdateListingRequest
+    ): ListingsResponse {
+        val listing = listingsRepo.findByIdOrNull(listingId)
+            ?: throw ListingNotFoundException("Listing does not exist")
+        if (listing.sellerProfile.seller?.id != sellerId) {
+            throw UserNotFoundException(
+                "User with seller id $sellerId does not has this listing," +
+                    "excepted id ${listing.sellerProfile.seller?.id}"
+            )
+        }
+
+        request.species?.let { listing.species = it }
+        request.price?.let { listing.price = it }
+        request.ageMonths?.let { listing.ageMonths = it }
+        request.mother?.let {
+            listing.mother = petsRepo.findById(it).orElseThrow {
+                PetNotFoundException("Mother with id $it")
+            }
+        }
+        request.father?.let {
+            listing.father = petsRepo.findById(it).orElseThrow {
+                PetNotFoundException("Father with id $it")
+            }
+        }
+        request.breed?.let { listing.breed = it }
+        request.isArchived?.let { listing.isArchived = it }
+        request.description?.let { listing.description = it }
+
+        val updatedListing = listingsRepo.save(listing)
+
+        return ListingsResponse(
+            description = updatedListing.description,
+            species = updatedListing.species,
+            ageMonths = updatedListing.ageMonths,
+            price = updatedListing.price,
+            breed = updatedListing.breed,
+            isArchived = updatedListing.isArchived,
+            listingsId = listingId,
+            mother = updatedListing.mother?.id,
+            father = updatedListing.father?.id,
+        )
+    }
+
+    fun deleteListing(
+        listingId: Long,
+        userId: Long
+    ) {
+        val favourite = listingsRepo.findById(listingId).orElseThrow {
+            ListingNotFoundException("Listing does not exist")
+        }
+
+        if (favourite.sellerProfile.seller?.id != userId) {
+            throw UserNotFoundException("User is not seller of this listing")
+        }
+        listingsRepo.delete(favourite)
     }
 }

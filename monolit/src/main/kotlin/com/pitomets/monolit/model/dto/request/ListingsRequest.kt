@@ -3,6 +3,8 @@ package com.pitomets.monolit.model.dto.request
 import java.math.BigDecimal
 
 data class ListingsRequest(
+    val title: String,
+
     val description: String,
 
     val species: String,

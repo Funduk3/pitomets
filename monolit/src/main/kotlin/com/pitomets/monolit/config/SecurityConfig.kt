@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.AuthenticationProvider
@@ -77,6 +78,8 @@ class SecurityConfig(
                     "/login",
                     "/refresh"
                 ).permitAll()
+                it.requestMatchers(HttpMethod.GET, "/listings/**").permitAll()
+                it.requestMatchers("/listings/**").hasRole("SELLER")
                 it.requestMatchers("/seller/profile").authenticated() // Создание профиля для всех
                 it.requestMatchers("/seller/**").hasRole("SELLER")
                 it.anyRequest().authenticated()
