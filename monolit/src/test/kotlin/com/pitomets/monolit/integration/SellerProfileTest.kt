@@ -2,13 +2,9 @@ package com.pitomets.monolit.integration
 
 import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
 import com.pitomets.monolit.model.dto.request.ListingsRequest
-import com.pitomets.monolit.model.dto.request.LoginRequest
-import com.pitomets.monolit.model.dto.request.RegisterRequest
 import com.pitomets.monolit.model.dto.request.SearchListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
-import com.pitomets.monolit.model.dto.response.TokenResponse
-import com.pitomets.monolit.model.dto.response.UserResponse
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.PetsRepo
 import com.pitomets.monolit.repository.UserRepo
@@ -56,34 +52,6 @@ class SellerProfileTest : BaseContainers() {
         RestAssured.baseURI = "http://localhost"
         RestAssured.port = port
         println("Testing on port: $port")
-    }
-
-    private fun registerUser(email: String, password: String): UserResponse {
-        val registerReq = RegisterRequest(
-            email = email,
-            passwordHash = password,
-            fullName = faker.name().fullName()
-        )
-        return RestAssured.given()
-            .contentType(ContentType.JSON)
-            .body(registerReq)
-            .post("/register")
-            .then()
-            .statusCode(201)
-            .extract()
-            .`as`(UserResponse::class.java)
-    }
-
-    private fun login(email: String, password: String): TokenResponse {
-        val loginReq = LoginRequest(email = email, passwordHash = password)
-        return RestAssured.given()
-            .contentType(ContentType.JSON)
-            .body(loginReq)
-            .post("/login")
-            .then()
-            .statusCode(200)
-            .extract()
-            .`as`(TokenResponse::class.java)
     }
 
     @Test

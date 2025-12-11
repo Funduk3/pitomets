@@ -1,5 +1,12 @@
 package com.pitomets.monolit.integration
 
+import com.pitomets.monolit.model.dto.request.LoginRequest
+import com.pitomets.monolit.model.dto.request.RegisterRequest
+import com.pitomets.monolit.model.dto.response.TokenResponse
+import com.pitomets.monolit.model.dto.response.UserResponse
+import io.restassured.RestAssured
+import io.restassured.http.ContentType
+import net.datafaker.Faker
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.GenericContainer
@@ -13,6 +20,9 @@ import java.util.Base64
 abstract class BaseContainers {
 
     companion object {
+
+        val faker = Faker()
+
         @JvmStatic
         val postgres = PostgreSQLContainer<Nothing>("postgres:15-alpine")
             .apply {
@@ -66,5 +76,33 @@ abstract class BaseContainers {
                 .encodeToString("super-test-secret-key-which-is-long".toByteArray())
             registry.add("jwt.secret") { JWT_TEST_SECRET }
         }
+    }
+
+    fun registerUser(email: String, password: String): UserResponse {
+        val registerReq = RegisterRequest(
+            email = email,
+            passwordHash = password,
+            fullName = faker.name().fullName()
+        )
+        return RestAssured.given()
+            .contentType(ContentType.JSON)
+            .body(registerReq)
+            .post("/register")
+            .then()
+            .statusCode(201)
+            .extract()
+            .`as`(UserResponse::class.java)
+    }
+
+    fun login(email: String, password: String): TokenResponse {
+        val loginReq = LoginRequest(email = email, passwordHash = password)
+        return RestAssured.given()
+            .contentType(ContentType.JSON)
+            .body(loginReq)
+            .post("/login")
+            .then()
+            .statusCode(200)
+            .extract()
+            .`as`(TokenResponse::class.java)
     }
 }

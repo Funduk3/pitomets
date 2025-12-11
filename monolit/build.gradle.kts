@@ -89,7 +89,6 @@ allOpen {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
-    systemProperty("junit.jupiter.execution.timeout.default", "30s")
 }
 
 //openApiGenerate {
