@@ -1,12 +1,18 @@
 package com.pitomets.monolit.integration
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.pitomets.monolit.model.dto.request.LoginRequest
 import com.pitomets.monolit.model.dto.request.RegisterRequest
 import com.pitomets.monolit.model.dto.response.TokenResponse
 import com.pitomets.monolit.model.dto.response.UserResponse
+import com.pitomets.monolit.repository.ListingsRepo
+import com.pitomets.monolit.service.SearchService
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
 import net.datafaker.Faker
+import org.junit.jupiter.api.BeforeEach
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.GenericContainer
@@ -19,9 +25,29 @@ import java.util.Base64
 @Testcontainers
 abstract class BaseContainers {
 
+    @LocalServerPort
+    var port: Int = 0
+
+    @BeforeEach
+    fun setUp() {
+        RestAssured.baseURI = "http://localhost"
+        RestAssured.port = port
+        println("Testing on port: $port")
+    }
+
+    @Autowired
+    lateinit var listingsRepo: ListingsRepo
+
+    @Autowired
+    lateinit var searchService: SearchService
+
     companion object {
 
         val faker = Faker()
+
+        val mapper = jacksonObjectMapper().apply {
+            findAndRegisterModules()
+        }
 
         @JvmStatic
         val postgres = PostgreSQLContainer<Nothing>("postgres:15-alpine")

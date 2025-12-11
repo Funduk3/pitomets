@@ -5,21 +5,13 @@ import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.SearchListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
-import com.pitomets.monolit.repository.ListingsRepo
-import com.pitomets.monolit.repository.PetsRepo
-import com.pitomets.monolit.repository.UserRepo
-import com.pitomets.monolit.service.SearchService
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
-import net.datafaker.Faker
 import org.hamcrest.Matchers
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.math.BigDecimal
@@ -29,30 +21,6 @@ import java.math.BigDecimal
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")
 class SellerProfileTest : BaseContainers() {
-
-    @LocalServerPort
-    var port: Int = 0
-
-    val faker = Faker()
-
-    @Autowired
-    lateinit var userRepo: UserRepo
-
-    @Autowired
-    lateinit var petsRepo: PetsRepo
-
-    @Autowired
-    lateinit var listingsRepo: ListingsRepo
-
-    @Autowired
-    lateinit var searchService: SearchService
-
-    @BeforeEach
-    fun setUp() {
-        RestAssured.baseURI = "http://localhost"
-        RestAssured.port = port
-        println("Testing on port: $port")
-    }
 
     @Test
     fun `should fail to update seller profile when profile does not exist`() {

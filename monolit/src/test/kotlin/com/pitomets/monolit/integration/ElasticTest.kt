@@ -2,20 +2,13 @@ package com.pitomets.monolit.integration
 
 import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
 import com.pitomets.monolit.model.dto.request.ListingsRequest
-import com.pitomets.monolit.repository.ListingsRepo
-import com.pitomets.monolit.repository.PetsRepo
-import com.pitomets.monolit.repository.UserRepo
-import com.pitomets.monolit.service.SearchService
+import com.pitomets.monolit.model.dto.response.SearchListingsResponse
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
-import net.datafaker.Faker
-import org.hamcrest.Matchers
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.math.BigDecimal
@@ -26,33 +19,8 @@ import java.math.BigDecimal
 @ActiveProfiles("test")
 class ElasticTest : BaseContainers() {
 
-    @LocalServerPort
-    var port: Int = 0
-
-    val faker = Faker()
-
-    @Autowired
-    lateinit var userRepo: UserRepo
-
-    @Autowired
-    lateinit var petsRepo: PetsRepo
-
-    @Autowired
-    lateinit var listingsRepo: ListingsRepo
-
-    @Autowired
-    lateinit var searchService: SearchService
-
-    @BeforeEach
-    fun setUp() {
-        RestAssured.baseURI = "http://localhost"
-        RestAssured.port = port
-        println("Testing on port: $port")
-    }
-
     @Test
     fun `Create a lot of listings and search should return most similar`() {
-        // todo потом все тесты сделать красивыми
         val email = faker.internet().emailAddress()
         val password = faker.internet().password(8, 16)
         registerUser(email, password)
@@ -144,28 +112,25 @@ class ElasticTest : BaseContainers() {
         val searchBody = mapOf("query" to token, "page" to 0, "size" to 2)
 
         // Убедимся, что два результата содержат наш токен в title
-        RestAssured.given()
+        val list: List<SearchListingsResponse> = RestAssured.given()
             .contentType(ContentType.JSON)
             .body(searchBody)
             .post("/search/listings")
             .then()
             .statusCode(200)
-            .body("size()", Matchers.equalTo(2))
-            .body(
-                "[0].title",
-                Matchers.anyOf(
-                    Matchers.containsString(token),
-                    Matchers.equalTo(targetTitle1),
-                    Matchers.equalTo(targetTitle2)
-                )
+            .extract()
+            .`as`(Array<SearchListingsResponse>::class.java)
+            .toList()
+
+        Assertions.assertEquals(2, list.size, "Expected exactly 2 search results")
+        list.forEach { dto ->
+            Assertions.assertNotNull(dto.id, "id should not be null")
+            Assertions.assertNotNull(dto.title, "title should not be null")
+            Assertions.assertNotNull(dto.description, "description should not be null")
+            Assertions.assertTrue(
+                dto.title.contains(token) || dto.title == targetTitle1 || dto.title == targetTitle2,
+                "Title '${dto.title}' does not match expected token or target titles"
             )
-            .body(
-                "[1].title",
-                Matchers.anyOf(
-                    Matchers.containsString(token),
-                    Matchers.equalTo(targetTitle1),
-                    Matchers.equalTo(targetTitle2)
-                )
-            )
+        }
     }
 }
