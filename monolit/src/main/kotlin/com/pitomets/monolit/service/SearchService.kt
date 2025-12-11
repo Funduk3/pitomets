@@ -44,8 +44,6 @@ class SearchService(
             idx.index("listings")
                 .id(doc.id.toString())
                 .document(doc)
-                // Это плохо, потом поправить
-                .refresh(co.elastic.clients.elasticsearch._types.Refresh.True)
         }
     }
 
@@ -53,8 +51,6 @@ class SearchService(
         client.delete { d ->
             d.index("listings")
                 .id(id.toString())
-                // Это плохо, потом поправить
-                .refresh(co.elastic.clients.elasticsearch._types.Refresh.True)
         }
     }
 }

@@ -111,6 +111,8 @@ class ElasticTest : BaseContainers() {
 
         val searchBody = mapOf("query" to token, "page" to 0, "size" to 2)
 
+        elasticClient.indices().refresh { r -> r.index("listings") }
+
         // Убедимся, что два результата содержат наш токен в title
         val list: List<SearchListingsResponse> = RestAssured.given()
             .contentType(ContentType.JSON)

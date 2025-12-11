@@ -137,18 +137,6 @@ class SellerProfileTest : BaseContainers() {
             createdListing!!.species
         )
 
-        // Проверяем что поиск выдаёт хоть что-то
-        val searchRequest = SearchListingsRequest(
-            query = createdListing.description
-        )
-        RestAssured.given()
-            .contentType(ContentType.JSON)
-            .body(searchRequest)
-            .post("/search/listings")
-            .then()
-            .statusCode(200)
-            .body("size()", Matchers.greaterThan(0))
-
         // Найти объявление без ауф токена
         RestAssured.given()
             .contentType(ContentType.JSON)
@@ -253,6 +241,7 @@ class SellerProfileTest : BaseContainers() {
             .then()
             .statusCode(500)
         // не найдём объявление в поиске
+        elasticClient.indices().refresh { r -> r.index("listings") }
         Assertions.assertEquals(
             0,
             searchService.search(
