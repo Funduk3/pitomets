@@ -2,6 +2,8 @@ package com.pitomets.monolit.service
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient
 import co.elastic.clients.elasticsearch.core.IndexResponse
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.pitomets.monolit.model.dto.SearchListingDocument
 import com.pitomets.monolit.model.dto.request.SearchListingsRequest
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
@@ -28,18 +30,20 @@ class SearchService(
                         }
                     }
             },
-            SearchListingDocument::class.java
+            Map::class.java
         )
+
+        val mapper = jacksonObjectMapper().registerKotlinModule() // todo поправить
 
         return response.hits().hits()
             .mapNotNull { hit ->
-                hit.source()?.let { doc ->
-                    SearchListingsResponse(
-                        id = doc.id,
-                        title = doc.title,
-                        description = doc.description
-                    )
-                }
+                val source = hit.source() ?: return@mapNotNull null
+                val doc = mapper.convertValue(source, SearchListingDocument::class.java)
+                SearchListingsResponse(
+                    id = doc.id,
+                    title = doc.title,
+                    description = doc.description
+                )
             }
     }
 
@@ -48,6 +52,8 @@ class SearchService(
             idx.index("listings")
                 .id(doc.id.toString())
                 .document(doc)
+                // Это плохо, потом поправить
+                .refresh(co.elastic.clients.elasticsearch._types.Refresh.True)
         }
     }
 
@@ -55,6 +61,8 @@ class SearchService(
         client.delete { d ->
             d.index("listings")
                 .id(id.toString())
+                // Это плохо, потом поправить
+                .refresh(co.elastic.clients.elasticsearch._types.Refresh.True)
         }
     }
 }

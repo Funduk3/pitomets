@@ -201,10 +201,14 @@ class SellerProfileTest : BaseContainers() {
             createdListing!!.species
         )
 
+        // Проверяем что поиск выдаёт хоть что-то
+        val searchRequest = SearchListingsRequest(
+            query = createdListing.description
+        )
         RestAssured.given()
             .contentType(ContentType.JSON)
-            .body(mapOf("query" to createdListing.description))
-            .post("/search")
+            .body(searchRequest)
+            .post("/search/listings")
             .then()
             .statusCode(200)
             .body("size()", Matchers.greaterThan(0))
@@ -314,12 +318,12 @@ class SellerProfileTest : BaseContainers() {
             .statusCode(500)
         // не найдём объявление в поиске
         Assertions.assertEquals(
-            newDescription,
+            0,
             searchService.search(
                 SearchListingsRequest(
                     createdListing.description
                 )
-            )
+            ).size
         )
     }
 

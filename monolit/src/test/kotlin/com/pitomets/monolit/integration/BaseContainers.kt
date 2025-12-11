@@ -27,11 +27,14 @@ abstract class BaseContainers {
         @JvmStatic
         val elasticsearch = ElasticsearchContainer(
             "docker.elastic.co/elasticsearch/elasticsearch:8.15.0"
-        )
-            .apply {
-                withEnv("discovery.type", "single-node")
-                withExposedPorts(9200)
-            }
+        ).apply {
+            withEnv("discovery.type", "single-node")
+            withEnv("xpack.security.enabled", "false")
+            withEnv("xpack.security.transport.ssl.enabled", "false")
+            withEnv("xpack.security.http.ssl.enabled", "false")
+            withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m")
+            withExposedPorts(9200)
+        }
 
         init {
             postgres.start()
