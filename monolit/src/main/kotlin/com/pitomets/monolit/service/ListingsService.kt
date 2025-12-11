@@ -14,6 +14,8 @@ import com.pitomets.monolit.repository.SellerProfileRepo
 import org.slf4j.LoggerFactory
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
 @Service
 class ListingsService(
@@ -21,6 +23,7 @@ class ListingsService(
     private val listingsRepo: ListingsRepo,
     private val sellerProfileRepo: SellerProfileRepo,
     private val searchService: SearchService,
+    private val executor: ExecutorService,
 ) {
     private val log = LoggerFactory.getLogger(ListingsService::class.java)
 
@@ -123,16 +126,24 @@ class ListingsService(
         request.isArchived?.let { listing.isArchived = it }
         request.description?.let { listing.description = it }
 
-        if (request.description != null || request.title != null) {
-            val newElasticoDoc = SearchListingDocument(
-                id = listingId,
-                title = listing.title,
-                description = listing.description,
-            )
-            searchService.indexListing(newElasticoDoc)
-        }
+        val shouldIndex = request.description != null || request.title != null
 
-        val updatedListing = listingsRepo.save(listing)
+        val saveFuture = CompletableFuture.supplyAsync({ listingsRepo.save(listing) }, executor)
+        val indexFuture = if (shouldIndex) {
+            CompletableFuture.runAsync({
+                searchService.indexListing(
+                    SearchListingDocument(
+                        id = listingId,
+                        title = listing.title,
+                        description = listing.description
+                    )
+                )
+            }, executor)
+        } else {
+            null
+        }
+        val updatedListing = saveFuture.join()
+        indexFuture?.join()
 
         return ListingsResponse(
             description = updatedListing.description,
@@ -158,7 +169,12 @@ class ListingsService(
         if (favourite.sellerProfile.seller?.id != userId) {
             throw UserNotFoundException("User is not seller of this listing")
         }
-        searchService.deleteListing(listingId)
-        listingsRepo.delete(favourite)
+        val deleteDb = CompletableFuture.runAsync({ listingsRepo.delete(favourite) }, executor)
+        val deleteIndex = CompletableFuture.runAsync({
+            searchService.deleteListing(listingId)
+        }, executor)
+
+        deleteDb.join()
+        deleteIndex.join()
     }
 }

@@ -105,6 +105,8 @@ class UserService(
     }
 
     fun getAll(): List<UserResponse> {
+        val isVirual = Thread.currentThread().isVirtual
+        log.warn("$isVirual ASFADFDD")
         val users = repo.findAll()
         return users.map {
             UserResponse(
