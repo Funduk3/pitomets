@@ -20,7 +20,9 @@ class UserController(
 ) {
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    fun register(@RequestBody request: RegisterRequest): UserResponse =
+    fun register(
+        @RequestBody request: RegisterRequest
+    ): UserResponse =
         service.register(
             User(
                 email = request.email,
@@ -30,21 +32,28 @@ class UserController(
         )
 
     @PostMapping("/login")
-    fun login(@RequestBody request: LoginRequest): TokenResponse =
+    fun login(
+        @RequestBody request: LoginRequest
+    ): TokenResponse =
         service.login(
             request.email,
             request.passwordHash
         )
 
     @PostMapping("/refresh")
-    fun refresh(@RequestBody request: RefreshTokenRequest): TokenResponse =
+    fun refresh(
+        @RequestBody request: RefreshTokenRequest
+    ): TokenResponse =
         service.refreshAccessToken(request.refreshToken)
 
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.OK)
-    fun logout(@RequestBody request: RefreshTokenRequest) =
+    fun logout(
+        @RequestBody request: RefreshTokenRequest
+    ) =
         service.logout(request.refreshToken)
 
+    // todo delete
     @GetMapping("/all")
     fun getAll(): List<UserResponse> =
         service.getAll()

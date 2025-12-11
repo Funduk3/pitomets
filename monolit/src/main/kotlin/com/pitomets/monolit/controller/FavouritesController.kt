@@ -18,23 +18,20 @@ class FavouritesController(
     @GetMapping("/favourites")
     fun updateSellerProfile(
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
-    ): List<SearchListingsResponse> {
-        return favouritesService.getFavourites(userPrincipal.id)
-    }
+    ): List<SearchListingsResponse> =
+        favouritesService.getFavourites(userPrincipal.id)
 
     @PostMapping("/favourites")
     fun addToFavourite(
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
         @RequestBody request: FavouriteRequest
-    ): SearchListingsResponse {
-        return favouritesService.addFavourite(userPrincipal.id, request.listingId)
-    }
+    ): SearchListingsResponse =
+        favouritesService.addFavourite(userPrincipal.id, request.listingId)
 
     @DeleteMapping("/favourites")
     fun deleteFavourite(
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
         @RequestBody request: FavouriteRequest
-    ) {
+    ) =
         favouritesService.deleteFavourite(userPrincipal.id, request.listingId)
-    }
 }
