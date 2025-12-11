@@ -1,7 +1,11 @@
 package com.pitomets.monolit.model.dto
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class SearchListingDocument(
-    val id: Long,
-    val title: String,
-    val description: String
+    @JsonProperty("id") val id: Long,
+    @JsonProperty("title") val title: String,
+    @JsonProperty("description") val description: String
 )

@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Configuration
 class ElasticConfig(
     @Value("\${elasticsearch.host}") private val host: Int,
 ) {
-
     @Bean
     fun elasticClient(): ElasticsearchClient {
         val restClient = RestClient.builder(
