@@ -9,12 +9,14 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 class ElasticConfig(
-    @Value("\${elasticsearch.host}") private val host: Int,
+    @Value("\${elasticsearch.host}") private val host: String,
+    @Value("\${elasticsearch.port}") private val port: Int,
 ) {
+
     @Bean
     fun elasticClient(): ElasticsearchClient {
         val restClient = RestClient.builder(
-            HttpHost("localhost", host, "http")
+            HttpHost(host, port, "http")
         ).build()
 
         val transport = RestClientTransport(
