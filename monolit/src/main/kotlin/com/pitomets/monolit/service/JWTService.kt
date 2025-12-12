@@ -1,9 +1,6 @@
 package com.pitomets.monolit.service
 
 import com.pitomets.monolit.exceptions.jwtException.JWTException
-import com.pitomets.monolit.exceptions.jwtException.JWTExpiredException
-import com.pitomets.monolit.exceptions.jwtException.JWTMalformedException
-import com.pitomets.monolit.exceptions.jwtException.JWTValidationException
 import com.pitomets.monolit.exceptions.refreshTokenException.RefreshTokenNotFoundException
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
@@ -63,15 +60,7 @@ class JWTService(
     }
 
     fun extractUsername(token: String): String? =
-        try {
-            extractAllClaims(token)?.subject
-        } catch (ex: JWTExpiredException) {
-            throw JWTExpiredException("Token expired")
-        } catch (ex: JWTMalformedException) {
-            throw JWTMalformedException("Invalid token format: ${ex.message}")
-        } catch (ex: JWTValidationException) {
-            throw JWTValidationException("Token validation failed: ${ex.message}")
-        }
+        extractAllClaims(token)?.subject
 
     fun validateToken(token: String, username: String): Boolean {
         return try {
@@ -84,30 +73,14 @@ class JWTService(
     }
 
     private fun extractExpiration(token: String): Date? =
-        try {
-            extractAllClaims(token)?.expiration
-        } catch (ex: JWTExpiredException) {
-            throw JWTExpiredException("Token expired")
-        } catch (ex: JWTMalformedException) {
-            throw JWTMalformedException("Invalid token format")
-        } catch (ex: JWTValidationException) {
-            throw JWTValidationException("Token validation failed")
-        }
+        extractAllClaims(token)?.expiration
 
     private fun extractAllClaims(token: String): Claims? =
-        try {
-            Jwts.parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .payload
-        } catch (ex: JWTExpiredException) {
-            throw JWTExpiredException("Token expired")
-        } catch (ex: JWTMalformedException) {
-            throw JWTMalformedException("Invalid token format: ${ex.message}")
-        } catch (ex: JWTValidationException) {
-            throw JWTValidationException("Token validation failed: ${ex.message}")
-        }
+        Jwts.parser()
+            .verifyWith(secretKey)
+            .build()
+            .parseSignedClaims(token)
+            .payload
 
     // Refresh Token
 

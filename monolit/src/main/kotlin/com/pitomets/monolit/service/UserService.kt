@@ -70,12 +70,9 @@ class UserService(
                     refreshToken = refreshToken,
                 )
             }
-        } catch (ex: BadCredentialsException) {
+        } catch (ex: BadCredentialsException) { // todo посмотри Федя можно ли удалить это
             log.warn("Authentication failed for user {}: {}", email, ex.message)
             throw InvalidCredentialsException("Invalid email or password")
-        } catch (ex: AuthenticationException) {
-            log.warn("Authentication failed for user {}: {}", email, ex.message)
-            throw AuthenticationException("Authentication failed")
         }
         throw AuthenticationException("Authentication failed")
     }
@@ -97,11 +94,7 @@ class UserService(
     }
 
     fun logout(refreshToken: String) {
-        try {
-            jwtService.deleteRefreshToken(refreshToken)
-        } catch (ex: InvalidTokenException) {
-            throw InvalidTokenException("Invalid refresh token")
-        }
+        jwtService.deleteRefreshToken(refreshToken)
     }
 
     fun getAll(): List<UserResponse> {
