@@ -3,7 +3,6 @@ package com.pitomets.monolit.service
 import co.elastic.clients.elasticsearch.ElasticsearchClient
 import co.elastic.clients.elasticsearch.core.IndexResponse
 import com.pitomets.monolit.model.dto.SearchListingDocument
-import com.pitomets.monolit.model.dto.request.SearchListingsRequest
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
 import org.springframework.stereotype.Service
 
@@ -11,16 +10,20 @@ import org.springframework.stereotype.Service
 class SearchService(
     private val client: ElasticsearchClient
 ) {
-    fun search(query: SearchListingsRequest): List<SearchListingsResponse> {
-        val from = query.page * query.size
+    fun search(
+        query: String,
+        page: Int = 0,
+        size: Int = 10,
+    ): List<SearchListingsResponse> {
+        val from = page * size
         val response = client.search(
             { s ->
                 s.index(INDEX)
                     .from(from)
-                    .size(query.size)
+                    .size(size)
                     .query { q ->
                         q.multiMatch { mm ->
-                            mm.query(query.query)
+                            mm.query(query)
                                 .fields(listOf("title^3", "description"))
                         }
                     }

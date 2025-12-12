@@ -80,15 +80,13 @@ class ElasticTest : BaseContainers() {
             .then()
             .statusCode(200)
 
-        val searchBody = mapOf("query" to token, "page" to 0, "size" to 2)
-
         elasticClient.indices().refresh { r -> r.index("listings") }
 
         // Убедимся, что два результата содержат наш токен в title
         val list: List<SearchListingsResponse> = RestAssured.given()
             .contentType(ContentType.JSON)
-            .body(searchBody)
-            .post("/search/listings")
+            .param("query", token, "size", 2)
+            .get("/search/listings")
             .then()
             .statusCode(200)
             .extract()

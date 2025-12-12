@@ -1,11 +1,10 @@
 package com.pitomets.monolit.controller
 
-import com.pitomets.monolit.model.dto.request.SearchListingsRequest
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
 import com.pitomets.monolit.service.SearchService
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -13,9 +12,15 @@ import org.springframework.web.bind.annotation.RestController
 class SearchController(
     private val searchService: SearchService
 ) {
-    @PostMapping("/listings")
+    @GetMapping("/listings")
     fun searchListings(
-        @RequestBody query: SearchListingsRequest
+        @RequestParam("query") query: String,
+        @RequestParam("page", required = false, defaultValue = "0") page: Int = 0,
+        @RequestParam("size", required = false, defaultValue = "10") size: Int = 10,
     ): List<SearchListingsResponse> =
-        searchService.search(query)
+        searchService.search(
+            query,
+            page,
+            size
+        )
 }
