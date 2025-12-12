@@ -16,7 +16,7 @@ class FavouritesController(
     private val favouritesService: FavouritesService,
 ) {
     @GetMapping("/favourites")
-    fun updateSellerProfile(
+    fun getFavourites(
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
     ): List<SearchListingsResponse> =
         favouritesService.getFavourites(userPrincipal.id)

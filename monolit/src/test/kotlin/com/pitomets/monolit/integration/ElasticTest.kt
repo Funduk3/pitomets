@@ -1,6 +1,5 @@
 package com.pitomets.monolit.integration
 
-import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
 import io.restassured.RestAssured
@@ -21,35 +20,7 @@ class ElasticTest : BaseContainers() {
 
     @Test
     fun `Create a lot of listings and search should return most similar`() {
-        val email = faker.internet().emailAddress()
-        val password = faker.internet().password(8, 16)
-        registerUser(email, password)
-        val tokens = login(email, password)
-        // Создать профиль
-        val createRequest = CreateSellerProfileRequest(
-            shopName = faker.company().name(),
-            description = "Original description"
-        )
-        RestAssured.given()
-            .contentType(ContentType.JSON)
-            .auth().oauth2(tokens.accessToken)
-            .body(createRequest)
-            .post("/seller/profile")
-            .then()
-            .statusCode(201)
-        // Перелогиниться для роли SELLER
-        val sellerTokens = login(email, password)
-        val updateRequest = CreateSellerProfileRequest(
-            shopName = faker.company().name(),
-            description = "Updated description"
-        )
-        RestAssured.given()
-            .contentType(ContentType.JSON)
-            .auth().oauth2(sellerTokens.accessToken)
-            .body(updateRequest)
-            .put("/seller/profile")
-            .then()
-            .statusCode(200)
+        val tokenSeller = createBaseSeller()
 
         // уникальный токен, по которому будем искать
         val token = "unique-search-token-${System.currentTimeMillis()}"
@@ -66,7 +37,7 @@ class ElasticTest : BaseContainers() {
             )
             RestAssured.given()
                 .contentType(ContentType.JSON)
-                .auth().oauth2(sellerTokens.accessToken)
+                .auth().oauth2(tokenSeller.accessToken)
                 .body(req)
                 .post("/listings/")
                 .then()
@@ -87,7 +58,7 @@ class ElasticTest : BaseContainers() {
         )
         RestAssured.given()
             .contentType(ContentType.JSON)
-            .auth().oauth2(sellerTokens.accessToken)
+            .auth().oauth2(tokenSeller.accessToken)
             .body(targetReq1)
             .post("/listings/")
             .then()
@@ -103,7 +74,7 @@ class ElasticTest : BaseContainers() {
         )
         RestAssured.given()
             .contentType(ContentType.JSON)
-            .auth().oauth2(sellerTokens.accessToken)
+            .auth().oauth2(tokenSeller.accessToken)
             .body(targetReq2)
             .post("/listings/")
             .then()

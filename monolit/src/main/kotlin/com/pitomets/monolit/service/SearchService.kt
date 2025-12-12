@@ -15,7 +15,7 @@ class SearchService(
         val from = query.page * query.size
         val response = client.search(
             { s ->
-                s.index("listings")
+                s.index(INDEX)
                     .from(from)
                     .size(query.size)
                     .query { q ->
@@ -41,7 +41,7 @@ class SearchService(
 
     fun indexListing(doc: SearchListingDocument): IndexResponse {
         return client.index { idx ->
-            idx.index("listings")
+            idx.index(INDEX)
                 .id(doc.id.toString())
                 .document(doc)
         }
@@ -49,8 +49,11 @@ class SearchService(
 
     fun deleteListing(id: Long) {
         client.delete { d ->
-            d.index("listings")
+            d.index(INDEX)
                 .id(id.toString())
         }
+    }
+    companion object {
+        private const val INDEX = "listings"
     }
 }

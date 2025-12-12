@@ -2,6 +2,7 @@ package com.pitomets.monolit.integration
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
 import com.pitomets.monolit.model.dto.request.LoginRequest
 import com.pitomets.monolit.model.dto.request.RegisterRequest
 import com.pitomets.monolit.model.dto.response.TokenResponse
@@ -134,5 +135,26 @@ abstract class BaseContainers {
             .statusCode(200)
             .extract()
             .`as`(TokenResponse::class.java)
+    }
+
+    fun createBaseSeller(): TokenResponse {
+        val email = faker.internet().emailAddress()
+        val password = faker.internet().password(8, 16)
+        registerUser(email, password)
+        val tokens = login(email, password)
+        // Создать профиль
+        val createRequest = CreateSellerProfileRequest(
+            shopName = faker.company().name(),
+            description = "Original description"
+        )
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .auth().oauth2(tokens.accessToken)
+            .body(createRequest)
+            .post("/seller/profile")
+            .then()
+            .statusCode(201)
+        // Перелогиниться для роли SELLER
+        return login(email, password)
     }
 }
