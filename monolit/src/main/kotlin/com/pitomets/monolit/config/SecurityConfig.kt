@@ -79,6 +79,8 @@ class SecurityConfig(
                     "/refresh",
                     "/search/listings",
                     "/actuator/prometheus", // todo put in admin
+                    "/reviews/listing",
+                    "/reviews/seller/**",
                 ).permitAll()
                 it.requestMatchers(HttpMethod.GET, "/listings/**").permitAll()
                 it.requestMatchers("/listings/**").hasRole("SELLER")

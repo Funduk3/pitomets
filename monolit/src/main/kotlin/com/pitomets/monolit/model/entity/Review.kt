@@ -9,26 +9,33 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import java.time.OffsetDateTime
 
 @Entity
 @Table(name = "reviews")
 class Review(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
     var id: Long? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reviewer_id", nullable = false)
-    var reviewer: User? = null,
-
-    @Column(name = "stars_number", nullable = false)
-    var starsNumber: Short = 1, // 1..5
+    @Column(nullable = false)
+    var rating: Int,
 
     @Column(columnDefinition = "text")
-    var message: String? = null,
+    var text: String? = null,
+
+    @Column(name = "created_at", nullable = false)
+    var createdAt: OffsetDateTime = OffsetDateTime.now(),
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "seller_id", nullable = false)
-    var sellerProfile: SellerProfile? = null
+    @JoinColumn(name = "author_id")
+    var author: User,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_profile_id")
+    var sellerProfile: SellerProfile,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "listing_id")
+    var listing: Listing? = null,
 )
