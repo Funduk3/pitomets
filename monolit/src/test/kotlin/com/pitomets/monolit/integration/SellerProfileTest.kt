@@ -2,26 +2,15 @@ package com.pitomets.monolit.integration
 
 import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
 import com.pitomets.monolit.model.dto.request.ListingsRequest
-import com.pitomets.monolit.model.dto.request.LoginRequest
-import com.pitomets.monolit.model.dto.request.RegisterRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
-import com.pitomets.monolit.model.dto.response.TokenResponse
-import com.pitomets.monolit.model.dto.response.UserResponse
-import com.pitomets.monolit.repository.ListingsRepo
-import com.pitomets.monolit.repository.PetsRepo
-import com.pitomets.monolit.repository.UserRepo
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
-import net.datafaker.Faker
 import org.hamcrest.Matchers
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.math.BigDecimal
@@ -31,55 +20,6 @@ import java.math.BigDecimal
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")
 class SellerProfileTest : BaseContainers() {
-
-    @LocalServerPort
-    var port: Int = 0
-
-    val faker = Faker()
-
-    @Autowired
-    lateinit var userRepo: UserRepo
-
-    @Autowired
-    lateinit var petsRepo: PetsRepo
-
-    @Autowired
-    lateinit var listingsRepo: ListingsRepo
-
-    @BeforeEach
-    fun setUp() {
-        RestAssured.baseURI = "http://localhost"
-        RestAssured.port = port
-        println("Testing on port: $port")
-    }
-
-    private fun registerUser(email: String, password: String): UserResponse {
-        val registerReq = RegisterRequest(
-            email = email,
-            passwordHash = password,
-            fullName = faker.name().fullName()
-        )
-        return RestAssured.given()
-            .contentType(ContentType.JSON)
-            .body(registerReq)
-            .post("/register")
-            .then()
-            .statusCode(201)
-            .extract()
-            .`as`(UserResponse::class.java)
-    }
-
-    private fun login(email: String, password: String): TokenResponse {
-        val loginReq = LoginRequest(email = email, passwordHash = password)
-        return RestAssured.given()
-            .contentType(ContentType.JSON)
-            .body(loginReq)
-            .post("/login")
-            .then()
-            .statusCode(200)
-            .extract()
-            .`as`(TokenResponse::class.java)
-    }
 
     @Test
     fun `should fail to update seller profile when profile does not exist`() {
@@ -195,6 +135,7 @@ class SellerProfileTest : BaseContainers() {
             createListingRequest.species,
             createdListing!!.species
         )
+
         // Найти объявление без ауф токена
         RestAssured.given()
             .contentType(ContentType.JSON)
@@ -208,6 +149,7 @@ class SellerProfileTest : BaseContainers() {
         val newDescription = faker.funnyName().name()
         val updateListingRequest = UpdateListingRequest(
             newDescription,
+            null,
             null,
             null,
             null,
@@ -297,6 +239,14 @@ class SellerProfileTest : BaseContainers() {
             .get("/listings/")
             .then()
             .statusCode(500)
+        // не найдём объявление в поиске
+        elasticClient.indices().refresh { r -> r.index("listings") }
+        Assertions.assertEquals(
+            0,
+            searchService.search(
+                createdListing.description
+            ).size
+        )
     }
 
     @Test

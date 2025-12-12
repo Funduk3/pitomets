@@ -16,7 +16,6 @@ class ProfileController(
     @GetMapping("/me")
     fun getCurrentUserProfile(
         @AuthenticationPrincipal userPrincipal: UserPrincipal
-    ): UserWithProfilesResponse {
-        return profileService.getUserWithProfiles(userPrincipal.id)
-    }
+    ): UserWithProfilesResponse =
+        profileService.getUserWithProfiles(userPrincipal.id)
 }

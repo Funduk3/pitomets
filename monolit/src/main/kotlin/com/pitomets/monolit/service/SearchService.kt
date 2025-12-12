@@ -1,6 +1,8 @@
+package com.pitomets.monolit.service
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient
+import co.elastic.clients.elasticsearch.core.IndexResponse
 import com.pitomets.monolit.model.dto.SearchListingDocument
-import com.pitomets.monolit.model.dto.request.SearchListingsRequest
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
 import org.springframework.stereotype.Service
 
@@ -9,15 +11,20 @@ class SearchService(
     private val client: ElasticsearchClient
 ) {
     fun search(
-        query: SearchListingsRequest
+        query: String,
+        page: Int = 0,
+        size: Int = 10,
     ): List<SearchListingsResponse> {
+        val from = page * size
         val response = client.search(
             { s ->
-                s.index("listings")
+                s.index(INDEX)
+                    .from(from)
+                    .size(size)
                     .query { q ->
                         q.multiMatch { mm ->
-                            mm.query(query.query)
-                                .fields(listOf("tittle^3", "description")) // не доделал
+                            mm.query(query)
+                                .fields(listOf("title^3", "description"))
                         }
                     }
             },
@@ -25,14 +32,31 @@ class SearchService(
         )
 
         return response.hits().hits()
-            .mapNotNull { hit ->
-                hit.source()?.let { doc ->
-                    SearchListingsResponse(
-                        id = doc.id,
-                        title = doc.title,
-                        description = doc.description
-                    )
-                }
+            .mapNotNull { it.source() }
+            .map { doc ->
+                SearchListingsResponse(
+                    id = doc.id,
+                    title = doc.title,
+                    description = doc.description
+                )
             }
+    }
+
+    fun indexListing(doc: SearchListingDocument): IndexResponse {
+        return client.index { idx ->
+            idx.index(INDEX)
+                .id(doc.id.toString())
+                .document(doc)
+        }
+    }
+
+    fun deleteListing(id: Long) {
+        client.delete { d ->
+            d.index(INDEX)
+                .id(id.toString())
+        }
+    }
+    companion object {
+        private const val INDEX = "listings"
     }
 }

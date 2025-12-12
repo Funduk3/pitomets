@@ -23,15 +23,13 @@ class SellerProfileController(
     fun createSellerProfile(
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
         @RequestBody request: CreateSellerProfileRequest
-    ): SellerProfileResponse {
-        return profileService.createSellerProfile(userPrincipal.id, request)
-    }
+    ): SellerProfileResponse =
+        profileService.createSellerProfile(userPrincipal.id, request)
 
     @PutMapping("/profile")
     fun updateSellerProfile(
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
         @RequestBody request: CreateSellerProfileRequest
-    ): SellerProfileResponse {
-        return profileService.updateSellerProfile(userPrincipal.id, request)
-    }
+    ): SellerProfileResponse =
+        profileService.updateSellerProfile(userPrincipal.id, request)
 }

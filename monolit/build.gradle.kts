@@ -53,6 +53,7 @@ dependencies {
 
     // testcontainers
     testImplementation("org.testcontainers:junit-jupiter:1.21.3")
+    testImplementation("org.testcontainers:elasticsearch:1.20.0")
     testImplementation("org.testcontainers:testcontainers")
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
@@ -64,7 +65,7 @@ dependencies {
     // detekt
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.8")
 
-    implementation("co.elastic.clients:elasticsearch-java:8.14.0")
+    implementation("co.elastic.clients:elasticsearch-java:8.19.0")
 }
 
 kotlin {

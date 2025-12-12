@@ -23,34 +23,38 @@ class ListingController(
     @GetMapping("/")
     fun getListing(
         @RequestParam("id") listingId: Long
-    ): ListingsResponse = listingsService.getListing(listingId)
+    ): ListingsResponse =
+        listingsService.getListing(listingId)
 
     @PostMapping("/")
     fun createListings(
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
         @RequestBody request: ListingsRequest
-    ): ListingsResponse = listingsService.createListing(
-        userPrincipal.id,
-        request
-    )
+    ): ListingsResponse =
+        listingsService.createListing(
+            userPrincipal.id,
+            request
+        )
 
     @PutMapping("/")
     fun updateListing(
         @RequestParam("id") listingId: Long,
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
         @RequestBody updateListing: UpdateListingRequest,
-    ): ListingsResponse = listingsService.updateListing(
-        listingId,
-        userPrincipal.id,
-        updateListing
-    )
+    ): ListingsResponse =
+        listingsService.updateListing(
+            listingId,
+            userPrincipal.id,
+            updateListing
+        )
 
     @DeleteMapping("/")
     fun deleteListing(
         @RequestParam("id") listingId: Long,
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
-    ) = listingsService.deleteListing(
-        listingId,
-        userPrincipal.id,
-    )
+    ) =
+        listingsService.deleteListing(
+            listingId,
+            userPrincipal.id,
+        )
 }

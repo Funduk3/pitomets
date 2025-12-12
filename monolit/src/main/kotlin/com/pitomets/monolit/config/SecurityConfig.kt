@@ -76,7 +76,8 @@ class SecurityConfig(
                 it.requestMatchers(
                     "/register",
                     "/login",
-                    "/refresh"
+                    "/refresh",
+                    "/search/listings",
                 ).permitAll()
                 it.requestMatchers(HttpMethod.GET, "/listings/**").permitAll()
                 it.requestMatchers("/listings/**").hasRole("SELLER")

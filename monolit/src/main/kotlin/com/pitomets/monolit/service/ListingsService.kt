@@ -3,6 +3,7 @@ package com.pitomets.monolit.service
 import com.pitomets.monolit.exceptions.ListingNotFoundException
 import com.pitomets.monolit.exceptions.PetNotFoundException
 import com.pitomets.monolit.exceptions.UserNotFoundException
+import com.pitomets.monolit.model.dto.SearchListingDocument
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.ListingsResponse
@@ -13,12 +14,16 @@ import com.pitomets.monolit.repository.SellerProfileRepo
 import org.slf4j.LoggerFactory
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
 @Service
 class ListingsService(
     private val petsRepo: PetsRepo,
     private val listingsRepo: ListingsRepo,
-    private val sellerProfileRepo: SellerProfileRepo
+    private val sellerProfileRepo: SellerProfileRepo,
+    private val searchService: SearchService,
+    private val executor: ExecutorService,
 ) {
     private val log = LoggerFactory.getLogger(ListingsService::class.java)
 
@@ -49,7 +54,15 @@ class ListingsService(
         )
 
         listingsRepo.save(listing)
-        log.info("Created Listing: {}", listing)
+        searchService.indexListing(
+            SearchListingDocument(
+                id = requireNotNull(listing.id),
+                description = listing.description,
+                title = listing.title,
+            )
+        )
+
+        log.info("Created Listing and add in elastic: {}", listing)
 
         return ListingsResponse(
             description = listing.description,
@@ -95,7 +108,7 @@ class ListingsService(
                     "excepted id ${listing.sellerProfile.seller?.id}"
             )
         }
-
+        request.title?.let { listing.title = it }
         request.species?.let { listing.species = it }
         request.price?.let { listing.price = it }
         request.ageMonths?.let { listing.ageMonths = it }
@@ -113,7 +126,24 @@ class ListingsService(
         request.isArchived?.let { listing.isArchived = it }
         request.description?.let { listing.description = it }
 
-        val updatedListing = listingsRepo.save(listing)
+        val shouldIndex = request.description != null || request.title != null
+
+        val saveFuture = CompletableFuture.supplyAsync({ listingsRepo.save(listing) }, executor)
+        val indexFuture = if (shouldIndex) {
+            CompletableFuture.runAsync({
+                searchService.indexListing(
+                    SearchListingDocument(
+                        id = listingId,
+                        title = listing.title,
+                        description = listing.description
+                    )
+                )
+            }, executor)
+        } else {
+            null
+        }
+        val updatedListing = saveFuture.join()
+        indexFuture?.join()
 
         return ListingsResponse(
             description = updatedListing.description,
@@ -139,6 +169,12 @@ class ListingsService(
         if (favourite.sellerProfile.seller?.id != userId) {
             throw UserNotFoundException("User is not seller of this listing")
         }
-        listingsRepo.delete(favourite)
+        val deleteDb = CompletableFuture.runAsync({ listingsRepo.delete(favourite) }, executor)
+        val deleteIndex = CompletableFuture.runAsync({
+            searchService.deleteListing(listingId)
+        }, executor)
+
+        deleteDb.join()
+        deleteIndex.join()
     }
 }
