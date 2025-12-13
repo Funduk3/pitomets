@@ -17,10 +17,10 @@ class SellerProfile(
     @Column(name = "id")
     var id: Long? = null,
 
-    @OneToOne(fetch = FetchType.LAZY)
     @MapsId
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id")
-    var seller: User,
+    var seller: User? = null,
 
     @Column(name = "shop_name")
     var shopName: String,
@@ -31,15 +31,15 @@ class SellerProfile(
     @Column
     var rating: Double = 0.0,
 
+    @Column(name = "count_reviews")
+    var countReviews: Long = 0,
+
+    @Column(name = "sum_reviews")
+    var sumReviews: Long = 0,
+
     @Column(name = "created_at", nullable = false)
     var createdAt: OffsetDateTime = OffsetDateTime.now(),
 
     @Column(name = "is_verified", nullable = false)
     var isVerified: Boolean = false
-
-//    @OneToMany(mappedBy = "sellerProfile", cascade = [CascadeType.ALL], orphanRemoval = true)
-//    var listings: MutableList<Listing> = mutableListOf(),
-//
-//    @OneToMany(mappedBy = "sellerProfile", cascade = [CascadeType.ALL])
-//    var reviews: MutableList<Review> = mutableListOf()
 )
