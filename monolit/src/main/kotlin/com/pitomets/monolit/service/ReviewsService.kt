@@ -14,7 +14,8 @@ import java.time.OffsetDateTime
 
 /*
 Сейчас будто бы слишком много лишних походов в БД (даже lazy) в таком сервисе
-Подумать как починить + написать тесты + переделать avg оценку
+Подумать как починить + написать тесты + переделать avg оценку + нельзя писать отзыв на
+самого себя
  */
 @Service
 class ReviewsService(
@@ -31,15 +32,14 @@ class ReviewsService(
             .findById(authorId)
             .orElseThrow { UserNotFoundException("User not found") }
 
-        val sellerProfile = sellerProfileRepo
-            .findById(request.sellerProfileId)
-            .orElseThrow { RuntimeException("Seller profile not found") }
-
         val listing = request
             .listingId.let {
                 listingsRepo.findById(it)
                     .orElseThrow { ListingNotFoundException("Listing not found") }
             }
+
+        val sellerProfile = listing.sellerProfile
+
         val review = Review(
             rating = request.rating,
             text = request.text,
