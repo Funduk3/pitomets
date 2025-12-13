@@ -2,10 +2,14 @@ package com.pitomets.monolit.integration
 
 import com.pitomets.monolit.model.dto.request.CreateReviewRequest
 import com.pitomets.monolit.model.dto.request.ListingsRequest
+import com.pitomets.monolit.model.dto.response.ReviewResponse
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
+import junit.framework.TestCase.assertTrue
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.assertNotNull
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.junit.jupiter.Testcontainers
@@ -57,23 +61,32 @@ class ReviewsTest : BaseContainers() {
             .then()
             .statusCode(201)
             .extract()
-            .jsonPath()
-            .getLong("authorId")
+            .`as`(ReviewResponse::class.java)
 
         // все отзывы объявления
-        RestAssured.given()
+        val reviewsByListing = RestAssured.given()
             .contentType(ContentType.JSON)
             .param("id", listingId)
             .get("/listings/reviews")
             .then()
             .statusCode(200)
+            .extract()
+            .`as`(Array<ReviewResponse>::class.java)
+
+        Assertions.assertTrue(reviewsByListing.any { it.id == reviewResponse.id })
+        assert(reviewsByListing.size == 1)
 
         // все отзывы продавца
-        RestAssured.given()
+        val reviewsBySeller = RestAssured.given()
             .contentType(ContentType.JSON)
-            .param("id", reviewResponse)
+            .param("id", reviewResponse.sellerProfileId)
             .get("/seller/reviews")
             .then()
             .statusCode(200)
+            .extract()
+            .`as`(Array<ReviewResponse>::class.java)
+
+        Assertions.assertTrue(reviewsBySeller.any { it.id == reviewResponse.id })
+        assert(reviewsBySeller.size == 1)
     }
 }
