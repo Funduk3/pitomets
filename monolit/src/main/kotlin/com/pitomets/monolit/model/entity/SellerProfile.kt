@@ -3,10 +3,9 @@ package com.pitomets.monolit.model.entity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
+import jakarta.persistence.MapsId
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import java.time.OffsetDateTime
@@ -15,12 +14,12 @@ import java.time.OffsetDateTime
 @Table(name = "seller_profiles")
 class SellerProfile(
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false)
+    @Column(name = "id")
     var id: Long? = null,
 
+    @MapsId
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @JoinColumn(name = "id")
     var seller: User? = null,
 
     @Column(name = "shop_name")
@@ -32,15 +31,15 @@ class SellerProfile(
     @Column
     var rating: Double = 0.0,
 
+    @Column(name = "count_reviews")
+    var countReviews: Long = 0,
+
+    @Column(name = "sum_reviews")
+    var sumReviews: Long = 0,
+
     @Column(name = "created_at", nullable = false)
     var createdAt: OffsetDateTime = OffsetDateTime.now(),
 
     @Column(name = "is_verified", nullable = false)
     var isVerified: Boolean = false
-
-//    @OneToMany(mappedBy = "sellerProfile", cascade = [CascadeType.ALL], orphanRemoval = true)
-//    var listings: MutableList<Listing> = mutableListOf(),
-//
-//    @OneToMany(mappedBy = "sellerProfile", cascade = [CascadeType.ALL])
-//    var reviews: MutableList<Review> = mutableListOf()
 )

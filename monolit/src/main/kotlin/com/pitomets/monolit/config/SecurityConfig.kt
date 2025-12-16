@@ -78,7 +78,10 @@ class SecurityConfig(
                     "/login",
                     "/refresh",
                     "/search/listings",
+                    "/actuator/prometheus", // todo put in admin
+                    "/seller/reviews/**",
                 ).permitAll()
+                it.requestMatchers(HttpMethod.POST, "/listings/reviews/**").authenticated()
                 it.requestMatchers(HttpMethod.GET, "/listings/**").permitAll()
                 it.requestMatchers("/listings/**").hasRole("SELLER")
                 it.requestMatchers("/seller/profile").authenticated() // Создание профиля для всех

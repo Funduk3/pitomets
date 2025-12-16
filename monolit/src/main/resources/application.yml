@@ -34,3 +34,12 @@ jwt:
 
 elasticsearch:
   host: http://localhost:9200
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,httptrace
+  endpoint:
+    prometheus:
+      enabled: true

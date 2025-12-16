@@ -11,6 +11,7 @@ import com.pitomets.monolit.model.entity.Listing
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.PetsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
+import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -27,6 +28,7 @@ class ListingsService(
 ) {
     private val log = LoggerFactory.getLogger(ListingsService::class.java)
 
+    @Transactional
     fun createListing(
         userId: Long,
         request: ListingsRequest
@@ -95,6 +97,7 @@ class ListingsService(
         )
     }
 
+    @Transactional
     fun updateListing(
         listingId: Long,
         sellerId: Long,
@@ -158,6 +161,7 @@ class ListingsService(
         )
     }
 
+    @Transactional
     fun deleteListing(
         listingId: Long,
         userId: Long
