@@ -9,7 +9,7 @@ import com.pitomets.monolit.repository.ReviewsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
 import com.pitomets.monolit.repository.UserRepo
 import com.pitomets.monolit.utils.findListingOrThrow
-import com.pitomets.monolit.utils.fi
+import com.pitomets.monolit.utils.findUserOrThrow
 import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
 import java.time.OffsetDateTime
