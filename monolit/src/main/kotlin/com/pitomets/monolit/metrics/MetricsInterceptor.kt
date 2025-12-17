@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletResponse
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerInterceptor
 
+// todo посмотреть необходимость этого класса после раскатки клауда
 @Component
 class MetricsInterceptor(private val meterRegistry: MeterRegistry) : HandlerInterceptor {
     override fun afterCompletion(

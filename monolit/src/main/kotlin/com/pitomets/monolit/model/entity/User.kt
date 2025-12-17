@@ -21,7 +21,7 @@ class User(
     var id: Long? = null,
 
     @Column(unique = true)
-    var email: String? = null,
+    var email: String,
 
     @Column(name = "password_hash", nullable = false)
     var passwordHash: String,

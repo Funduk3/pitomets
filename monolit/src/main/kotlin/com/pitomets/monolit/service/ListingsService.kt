@@ -1,6 +1,5 @@
 package com.pitomets.monolit.service
 
-import com.pitomets.monolit.exceptions.ListingNotFoundException
 import com.pitomets.monolit.exceptions.PetNotFoundException
 import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.model.dto.SearchListingDocument
@@ -11,9 +10,9 @@ import com.pitomets.monolit.model.entity.Listing
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.PetsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
+import com.pitomets.monolit.utils.findListingOrThrow
 import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -82,8 +81,7 @@ class ListingsService(
     fun getListing(
         listingId: Long
     ): ListingsResponse {
-        val response = listingsRepo.findByIdOrNull(listingId)
-            ?: throw ListingNotFoundException("Listing with id $listingId does not exist")
+        val response = listingsRepo.findListingOrThrow(listingId)
         return ListingsResponse(
             description = response.description,
             species = response.species,
@@ -103,8 +101,8 @@ class ListingsService(
         sellerId: Long,
         request: UpdateListingRequest
     ): ListingsResponse {
-        val listing = listingsRepo.findByIdOrNull(listingId)
-            ?: throw ListingNotFoundException("Listing does not exist")
+        val listing = listingsRepo.findListingOrThrow(listingId)
+
         if (listing.sellerProfile.seller?.id != sellerId) {
             throw UserNotFoundException(
                 "User with seller id $sellerId does not has this listing," +
@@ -166,14 +164,13 @@ class ListingsService(
         listingId: Long,
         userId: Long
     ) {
-        val favourite = listingsRepo.findById(listingId).orElseThrow {
-            ListingNotFoundException("Listing does not exist")
-        }
+        val listing = listingsRepo.findListingOrThrow(listingId)
 
-        if (favourite.sellerProfile.seller?.id != userId) {
+        if (listing.sellerProfile.seller?.id != userId) {
             throw UserNotFoundException("User is not seller of this listing")
         }
-        val deleteDb = CompletableFuture.runAsync({ listingsRepo.delete(favourite) }, executor)
+
+        val deleteDb = CompletableFuture.runAsync({ listingsRepo.delete(listing) }, executor)
         val deleteIndex = CompletableFuture.runAsync({
             searchService.deleteListing(listingId)
         }, executor)
