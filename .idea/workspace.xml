@@ -6,9 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="c1985495-ba1b-4f82-9337-b9d4332cc5ff" name="Changes" comment="some files">
       <change beforePath="$PROJECT_DIR$/.github/workflows/ci.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/ci.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -109,6 +106,10 @@
     "jdk.selected.JAVA_MODULE": "openjdk-23",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "/Users/artemsharkov/Desktop/pitomets",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "vue.rearranger.settings.migration": "true"
   },
@@ -172,7 +173,7 @@
       <workItem from="1762372024374" duration="22599000" />
       <workItem from="1762619851170" duration="19514000" />
       <workItem from="1762853654055" duration="9137000" />
-      <workItem from="1766051403207" duration="113000" />
+      <workItem from="1766051403207" duration="344000" />
     </task>
     <task id="LOCAL-00001" summary="basic auth + classes">
       <option name="closed" value="true" />

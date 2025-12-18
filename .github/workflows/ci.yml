@@ -51,7 +51,7 @@ jobs:
         working-directory: monolit
         run: ./gradlew check --no-daemon || true
 
-      - name: Upload test results (JUnit XML)
+      - name: Upload test results (JUnit XML) (optional)
         if: always()
         uses: actions/upload-artifact@v4
         continue-on-error: true
@@ -62,6 +62,7 @@ jobs:
       - name: Upload build archive (optional)
         if: success()
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: build-artifacts
           path: monolit/**/build/libs/*.jar
