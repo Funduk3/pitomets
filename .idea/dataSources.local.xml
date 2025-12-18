@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="dataSourceStorageLocal" created-in="IU-242.21829.142">
+  <component name="dataSourceStorageLocal" created-in="IU-251.25410.129">
     <data-source name="testdb" uuid="96511999-038e-4ecc-995c-77c1f43b8069">
       <database-info product="H2" version="2.3.232 (2024-08-11)" jdbc-version="4.3" driver-name="H2 JDBC Driver" driver-version="2.3.232 (2024-08-11)" dbms="H2" exact-version="2.3.232" exact-driver-version="2.3">
         <identifier-quote-string>&quot;</identifier-quote-string>
@@ -17,9 +17,7 @@
       </schema-mapping>
     </data-source>
     <data-source name="0@localhost" uuid="5b26a345-1034-4215-afb2-f33934d91905">
-      <database-info product="Redis Standalone" version="8.0.2" jdbc-version="4.2" driver-name="Redis JDBC Driver" driver-version="1.5" dbms="REDIS" exact-version="8.0.2" exact-driver-version="1.5">
-        <jdbc-catalog-is-schema>true</jdbc-catalog-is-schema>
-      </database-info>
+      <database-info product="Redis Standalone" version="8.0.2" jdbc-version="4.2" driver-name="Redis JDBC Driver" driver-version="1.5" dbms="REDIS" exact-version="8.0.2" exact-driver-version="1.5" />
       <case-sensitivity plain-identifiers="mixed" quoted-identifiers="mixed" />
       <secret-storage>master_key</secret-storage>
       <auth-provider>no-auth</auth-provider>
