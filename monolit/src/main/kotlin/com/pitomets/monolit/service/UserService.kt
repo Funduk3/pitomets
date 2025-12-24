@@ -33,7 +33,7 @@ class UserService(
 
     @Transactional
     fun register(user: User): UserResponse {
-        if (repo.findByEmail(user.email!!) != null) { // fix
+        if (repo.findByEmail(user.email) != null) {
             throw UserAlreadyExistsException("User with this email already exists")
         }
         user.passwordHash = encoder.encode(user.passwordHash)
@@ -49,7 +49,7 @@ class UserService(
 
         return UserResponse(
             id = requireNotNull(savedUser.id) { "User ID cannot be null" },
-            email = savedUser.email!!, // fix
+            email = savedUser.email,
             fullName = savedUser.fullName,
             hasBuyerProfile = true,
             hasSellerProfile = false
@@ -102,7 +102,7 @@ class UserService(
         return users.map {
             UserResponse(
                 id = requireNotNull(it.id) { "User ID cannot be null" },
-                email = it.email!!,
+                email = it.email,
                 fullName = it.fullName,
                 hasBuyerProfile = it.buyerProfile != null,
                 hasSellerProfile = it.sellerProfile != null

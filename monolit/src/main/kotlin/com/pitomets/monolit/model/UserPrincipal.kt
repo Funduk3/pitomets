@@ -19,7 +19,7 @@ class UserPrincipal(private val user: User) : UserDetails {
     val isBuyer: Boolean
         get() = user.buyerProfile != null
 
-    override fun getUsername(): String = user.email!!
+    override fun getUsername(): String = user.email
 
     override fun getPassword(): String = user.passwordHash
 
@@ -34,7 +34,8 @@ class UserPrincipal(private val user: User) : UserDetails {
     override fun isAccountNonExpired(): Boolean = true
 
     override fun isAccountNonLocked(): Boolean {
-        return user.bannedUntil == null || user.bannedUntil!!.isBefore(java.time.OffsetDateTime.now())
+        return user.bannedUntil == null || requireNotNull(user.bannedUntil)
+            .isBefore(java.time.OffsetDateTime.now())
     }
 
     override fun isCredentialsNonExpired(): Boolean = true

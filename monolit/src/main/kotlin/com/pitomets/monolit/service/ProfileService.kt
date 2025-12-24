@@ -11,6 +11,7 @@ import com.pitomets.monolit.model.entity.User
 import com.pitomets.monolit.model.entity.UserRole
 import com.pitomets.monolit.repository.SellerProfileRepo
 import com.pitomets.monolit.repository.UserRepo
+import com.pitomets.monolit.utils.findUserOrThrow
 import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
@@ -26,12 +27,12 @@ class ProfileService(
 
     @Transactional
     fun createSellerProfile(userId: Long, request: CreateSellerProfileRequest): SellerProfileResponse {
-        val user = userRepo.findById(userId).orElseThrow {
-            UserNotFoundException("User not found")
-        }
+        val user = userRepo.findUserOrThrow(userId)
+
         if (user.sellerProfile != null) {
             throw ProfileAlreadyExistsException("Seller profile already exists for this user")
         }
+
         user.role = UserRole.SELLER
 
         val sellerProfile = SellerProfile(
@@ -70,9 +71,7 @@ class ProfileService(
     }
 
     fun getUserWithProfiles(userId: Long): UserWithProfilesResponse {
-        val user = userRepo.findById(userId).orElseThrow {
-            UserNotFoundException("User not found")
-        }
+        val user = userRepo.findUserOrThrow(userId)
 
         return UserWithProfilesResponse(
             id = requireNotNull(user.id),
@@ -88,9 +87,7 @@ class ProfileService(
 
     @Transactional
     fun updateSellerProfile(userId: Long, request: CreateSellerProfileRequest): SellerProfileResponse {
-        val user = userRepo.findById(userId).orElseThrow {
-            UserNotFoundException("User not found")
-        }
+        val user = userRepo.findUserOrThrow(userId)
 
         val sellerProfile = user.sellerProfile
             ?: throw UserNotFoundException("Seller profile not found for this user")
@@ -103,7 +100,7 @@ class ProfileService(
         log.info("Seller profile updated for user ID: {}", userId)
 
         return SellerProfileResponse(
-            id = updated.id!!,
+            id = requireNotNull(updated.id),
             shopName = updated.shopName,
             description = updated.description,
             rating = updated.rating,

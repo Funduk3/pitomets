@@ -1,8 +1,6 @@
 package com.pitomets.monolit.service
 
 import com.pitomets.monolit.exceptions.BadReviewException
-import com.pitomets.monolit.exceptions.ListingNotFoundException
-import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.model.dto.request.CreateReviewRequest
 import com.pitomets.monolit.model.dto.response.ReviewResponse
 import com.pitomets.monolit.model.entity.Review
@@ -10,6 +8,8 @@ import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.ReviewsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
 import com.pitomets.monolit.repository.UserRepo
+import com.pitomets.monolit.utils.findListingOrThrow
+import com.pitomets.monolit.utils.findUserOrThrow
 import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
 import java.time.OffsetDateTime
@@ -26,15 +26,9 @@ class ReviewsService(
         authorId: Long,
         request: CreateReviewRequest
     ): ReviewResponse {
-        val author = userRepo
-            .findById(authorId)
-            .orElseThrow { UserNotFoundException("User not found") }
+        val author = userRepo.findUserOrThrow(authorId)
 
-        val listing = request
-            .listingId.let {
-                listingsRepo.findById(it)
-                    .orElseThrow { ListingNotFoundException("Listing not found") }
-            }
+        val listing = listingsRepo.findListingOrThrow(request.listingId)
 
         val sellerProfile = listing.sellerProfile
 

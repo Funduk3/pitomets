@@ -6,6 +6,7 @@ import com.pitomets.monolit.model.dto.response.SearchListingsResponse
 import com.pitomets.monolit.model.entity.Favourite
 import com.pitomets.monolit.repository.FavouritesRepo
 import com.pitomets.monolit.repository.ListingsRepo
+import com.pitomets.monolit.utils.findListingOrThrow
 import org.springframework.stereotype.Service
 
 @Service
@@ -42,8 +43,7 @@ class FavouritesService(
             throw AlreadyException("Item already in favorites")
         }
 
-        val listing = listingsRepo.findById(listingId)
-            .orElseThrow { ListingNotFoundException("Listing not found") }
+        val listing = listingsRepo.findListingOrThrow(listingId)
 
         favouritesRepo.save(
             Favourite(userId = userId, listingId = listingId)
