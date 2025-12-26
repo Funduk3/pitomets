@@ -1,40 +1,18 @@
 package com.pitomets.monolit.controller.controllerAdvice
 
+import com.pitomets.monolit.exceptions.AvatarNotFoundException
 import com.pitomets.monolit.exceptions.ErrorResponse
-import com.pitomets.monolit.exceptions.InvalidCredentialsException
+import com.pitomets.monolit.exceptions.ListingNotFoundException
 import com.pitomets.monolit.exceptions.UserAlreadyExistsException
 import com.pitomets.monolit.exceptions.UserNotFoundException
-import com.pitomets.monolit.exceptions.authExceptions.AuthenticationException
-import com.pitomets.monolit.exceptions.jwtException.JWTException
-import com.pitomets.monolit.exceptions.refreshTokenException.RefreshTokenException
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import java.nio.file.AccessDeniedException
 
 @RestControllerAdvice
 class ControllerAdvice {
-
-    @ExceptionHandler(InvalidCredentialsException::class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    fun handleInvalidCredentialsException(ex: InvalidCredentialsException): ErrorResponse {
-        return ErrorResponse(
-            status = HttpStatus.UNAUTHORIZED.value(),
-            error = "Unauthorized",
-            message = ex.message
-        )
-    }
-
-    @ExceptionHandler(AuthenticationException::class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    fun handleAuthenticationException(ex: AuthenticationException): ErrorResponse {
-        return ErrorResponse(
-            status = HttpStatus.UNAUTHORIZED.value(),
-            error = "Unauthorized",
-            message = ex.message
-        )
-    }
-
     @ExceptionHandler(UserAlreadyExistsException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleUserAlreadyExistsException(ex: UserAlreadyExistsException): ErrorResponse {
@@ -65,6 +43,46 @@ class ControllerAdvice {
         )
     }
 
+    @ExceptionHandler(AccessDeniedException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    fun handleAccessDeniedException(ex: AccessDeniedException): ErrorResponse {
+        return ErrorResponse(
+            status = HttpStatus.FORBIDDEN.value(),
+            error = "Forbidden",
+            message = ex.message ?: "Access denied"
+        )
+    }
+
+    @ExceptionHandler(AvatarNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handleAvatarNotFoundException(ex: AvatarNotFoundException): ErrorResponse {
+        return ErrorResponse(
+            status = HttpStatus.NOT_FOUND.value(),
+            error = "Not Found",
+            message = ex.message
+        )
+    }
+
+    @ExceptionHandler(ListingNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handleListingNotFoundException(ex: ListingNotFoundException): ErrorResponse {
+        return ErrorResponse(
+            status = HttpStatus.NOT_FOUND.value(),
+            error = "Not Found",
+            message = ex.message
+        )
+    }
+
+    @ExceptionHandler(NoSuchElementException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handleNoSuchElementException(ex: NoSuchElementException): ErrorResponse {
+        return ErrorResponse(
+            status = HttpStatus.NOT_FOUND.value(),
+            error = "Not Found",
+            message = ex.message ?: "Resource not found"
+        )
+    }
+
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleGenericException(): ErrorResponse {
@@ -72,26 +90,6 @@ class ControllerAdvice {
             status = HttpStatus.INTERNAL_SERVER_ERROR.value(),
             error = "Internal Server Error",
             message = "An unexpected error occurred"
-        )
-    }
-
-    @ExceptionHandler(JWTException::class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    fun handleJWTException(ex: JWTException): ErrorResponse {
-        return ErrorResponse(
-            status = HttpStatus.UNAUTHORIZED.value(),
-            error = "Unauthorized",
-            message = ex.message
-        )
-    }
-
-    @ExceptionHandler(RefreshTokenException::class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    fun handleRefreshTokenException(ex: RefreshTokenException): ErrorResponse {
-        return ErrorResponse(
-            status = HttpStatus.UNAUTHORIZED.value(),
-            error = "Unauthorized",
-            message = ex.message
         )
     }
 }

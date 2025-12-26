@@ -238,7 +238,7 @@ class SellerProfileTest : BaseContainers() {
             .param("id", createdListing.id)
             .get("/listings/")
             .then()
-            .statusCode(500)
+            .statusCode(404)
         // не найдём объявление в поиске
         elasticClient.indices().refresh { r -> r.index("listings") }
         Assertions.assertEquals(

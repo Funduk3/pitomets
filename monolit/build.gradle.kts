@@ -25,6 +25,7 @@ repositories {
 }
 
 dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3") // core
     // spring
 	implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -56,6 +57,7 @@ dependencies {
     testImplementation("org.testcontainers:elasticsearch:1.20.0")
     testImplementation("org.testcontainers:testcontainers")
     testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.testcontainers:minio:1.19.3")  // Добавьте эту строку
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
     testImplementation("net.datafaker:datafaker:1.4.0")
     testImplementation("io.rest-assured:rest-assured:5.5.6")
@@ -69,6 +71,9 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("io.micrometer:micrometer-registry-prometheus")
+
+    implementation("io.minio:minio:8.5.7")
+
 }
 
 kotlin {

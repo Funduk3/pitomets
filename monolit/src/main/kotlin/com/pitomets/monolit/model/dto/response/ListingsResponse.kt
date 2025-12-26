@@ -20,4 +20,6 @@ data class ListingsResponse(
     val mother: Long?,
 
     val father: Long?,
+
+    val title: String?
 )

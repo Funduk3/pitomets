@@ -9,6 +9,9 @@ import com.pitomets.monolit.model.dto.response.TokenResponse
 import com.pitomets.monolit.model.dto.response.UserResponse
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.service.SearchService
+import io.minio.BucketExistsArgs
+import io.minio.MakeBucketArgs
+import io.minio.MinioClient
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
 import net.datafaker.Faker
@@ -63,7 +66,9 @@ abstract class BaseContainers {
             }
 
         @JvmStatic
-        val redis = GenericContainer<Nothing>("redis:7-alpine").apply { withExposedPorts(6379) }
+        val redis = GenericContainer<Nothing>("redis:7-alpine").apply {
+            withExposedPorts(6379)
+        }
 
         @JvmStatic
         val elasticsearch = ElasticsearchContainer(
@@ -77,10 +82,55 @@ abstract class BaseContainers {
             withExposedPorts(9200)
         }
 
+        @JvmStatic
+        val minio = GenericContainer<Nothing>("minio/minio:latest")
+            .apply {
+                withExposedPorts(9000, 9001)
+                withEnv("MINIO_ROOT_USER", "minioadmin")
+                withEnv("MINIO_ROOT_PASSWORD", "minioadmin")
+                withCommand("server", "/data", "--console-address", ":9001")
+                waitingFor(
+                    org.testcontainers.containers.wait.strategy.HttpWaitStrategy()
+                        .forPath("/minio/health/live")
+                        .forPort(9000)
+                        .withStartupTimeout(java.time.Duration.ofSeconds(60))
+                )
+            }
+
         init {
             postgres.start()
             redis.start()
             elasticsearch.start()
+            minio.start()
+
+            // Создаем bucket сразу после старта MinIO
+            createMinioBucket()
+        }
+
+        private fun createMinioBucket() {
+            val minioUrl = "http://${minio.host}:${minio.getMappedPort(9000)}"
+            val client = MinioClient.builder()
+                .endpoint(minioUrl)
+                .credentials("minioadmin", "minioadmin")
+                .build()
+
+            val bucketName = "test-bucket"
+            val exists = client.bucketExists(
+                BucketExistsArgs.builder()
+                    .bucket(bucketName)
+                    .build()
+            )
+
+            if (!exists) {
+                client.makeBucket(
+                    MakeBucketArgs.builder()
+                        .bucket(bucketName)
+                        .build()
+                )
+                println("MinIO bucket '$bucketName' created")
+            } else {
+                println("MinIO bucket '$bucketName' already exists")
+            }
         }
 
         @JvmStatic
@@ -101,6 +151,14 @@ abstract class BaseContainers {
             registry.add("spring.elasticsearch.uris") {
                 "http://${elasticsearch.host}:${elasticsearch.firstMappedPort}"
             }
+
+            // MinIO
+            registry.add("minio.url") {
+                "http://${minio.host}:${minio.getMappedPort(9000)}"
+            }
+            registry.add("minio.access-key") { "minioadmin" }
+            registry.add("minio.secret-key") { "minioadmin" }
+            registry.add("minio.bucket") { "test-bucket" }
 
             // JWT
             val JWT_TEST_SECRET = Base64.getEncoder()
@@ -142,7 +200,6 @@ abstract class BaseContainers {
         val password = faker.internet().password(8, 16)
         registerUser(email, password)
         val tokens = login(email, password)
-        // Создать профиль
         val createRequest = CreateSellerProfileRequest(
             shopName = faker.company().name(),
             description = "Original description"
@@ -154,7 +211,6 @@ abstract class BaseContainers {
             .post("/seller/profile")
             .then()
             .statusCode(201)
-        // Перелогиниться для роли SELLER
         return login(email, password)
     }
 }
