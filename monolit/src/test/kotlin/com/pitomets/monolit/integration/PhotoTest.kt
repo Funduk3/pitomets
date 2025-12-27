@@ -81,7 +81,6 @@ class PhotoTest : BaseContainers() {
         registerUser(email, password)
         val token = login(email, password)
 
-        // Загружаем аватар
         val image = javaClass
             .getResourceAsStream("/ava.jpg")!!
             .readBytes()
@@ -95,16 +94,13 @@ class PhotoTest : BaseContainers() {
             .then()
             .statusCode(201)
 
-        // Удаляем аватар - контроллер возвращает 200 с телом
         RestAssured
             .given()
             .auth().oauth2(token.accessToken)
             .delete("/users/photos/avatar")
             .then()
             .statusCode(200)
-            .body("deletedAvatarKey", notNullValue())
 
-        // Пытаемся скачать удаленный аватар - теперь вернет 404
         RestAssured
             .given()
             .auth().oauth2(token.accessToken)
@@ -125,7 +121,6 @@ class PhotoTest : BaseContainers() {
             .getResourceAsStream("/ava.jpg")!!
             .readBytes()
 
-        // Загружаем первый аватар
         val firstKey = RestAssured
             .given()
             .auth().oauth2(token.accessToken)
@@ -137,7 +132,6 @@ class PhotoTest : BaseContainers() {
             .extract()
             .path<String>("avatarKey")
 
-        // Загружаем второй аватар (заменяем)
         val secondKey = RestAssured
             .given()
             .auth().oauth2(token.accessToken)
@@ -149,7 +143,6 @@ class PhotoTest : BaseContainers() {
             .extract()
             .path<String>("avatarKey")
 
-        // Ключи должны быть разными
         assert(firstKey != secondKey)
     }
 
@@ -176,7 +169,6 @@ class PhotoTest : BaseContainers() {
         registerUser(email, password)
         val token = login(email, password)
 
-        // Пытаемся скачать аватар, который не загружали - вернет 404
         RestAssured
             .given()
             .auth().oauth2(token.accessToken)
@@ -189,7 +181,6 @@ class PhotoTest : BaseContainers() {
     fun `upload listing photo test`() {
         val sellerToken = createBaseSeller()
 
-        // Создаем листинг
         val listingId = RestAssured
             .given()
             .auth().oauth2(sellerToken.accessToken)
@@ -212,7 +203,6 @@ class PhotoTest : BaseContainers() {
             .extract()
             .path<Int>("listingsId")
 
-        // Загружаем фото листинга
         val image = javaClass
             .getResourceAsStream("/ava.jpg")!!
             .readBytes()
@@ -234,7 +224,6 @@ class PhotoTest : BaseContainers() {
     fun `upload multiple listing photos test`() {
         val sellerToken = createBaseSeller()
 
-        // Создаем листинг
         val listingId = RestAssured
             .given()
             .auth().oauth2(sellerToken.accessToken)

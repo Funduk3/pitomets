@@ -1,6 +1,7 @@
 package com.pitomets.monolit.controller
 
 import com.pitomets.monolit.model.UserPrincipal
+import com.pitomets.monolit.model.dto.response.DeleteAvatarResponse
 import com.pitomets.monolit.model.dto.response.UploadAvatarResponse
 import com.pitomets.monolit.service.UserPhotoService
 import org.springframework.core.io.InputStreamResource
@@ -47,8 +48,10 @@ class UserPhotoController(
     @DeleteMapping("/avatar")
     fun deleteAvatar(
         @AuthenticationPrincipal user: UserPrincipal
-    ): Map<String, String> {
+    ): DeleteAvatarResponse {
         val key = userPhotoService.deleteAvatar(user.id)
-        return mapOf("deletedAvatarKey" to key)
+        return DeleteAvatarResponse(
+            avatarKey = key
+        )
     }
 }
