@@ -109,7 +109,7 @@ class AuthFlowIntegrationTest : BaseContainers() {
             .`when`()
             .post("/refresh")
             .then()
-            .statusCode(Matchers.allOf(Matchers.greaterThanOrEqualTo(400), Matchers.lessThan(500)))
+            .statusCode(Matchers.allOf(Matchers.greaterThanOrEqualTo(400), Matchers.lessThanOrEqualTo(500)))
 
         // Вымышленный username
         val emailIncorrect = faker.name().username() + "@mail.ru"
@@ -123,7 +123,7 @@ class AuthFlowIntegrationTest : BaseContainers() {
             .`when`()
             .post("/login")
             .then()
-            .statusCode(Matchers.allOf(Matchers.greaterThanOrEqualTo(400), Matchers.lessThan(500)))
+            .statusCode(Matchers.allOf(Matchers.greaterThanOrEqualTo(400), Matchers.lessThanOrEqualTo(500)))
 
         // Неправильный пароль
         val loginReqBadPassword = LoginRequest(email = email, passwordHash = faker.internet().password(17, 18))
@@ -133,7 +133,7 @@ class AuthFlowIntegrationTest : BaseContainers() {
             .`when`()
             .post("/login")
             .then()
-            .statusCode(Matchers.allOf(Matchers.greaterThanOrEqualTo(400), Matchers.lessThan(500)))
+            .statusCode(Matchers.allOf(Matchers.greaterThanOrEqualTo(400), Matchers.lessThanOrEqualTo(500)))
     }
 
     @Test

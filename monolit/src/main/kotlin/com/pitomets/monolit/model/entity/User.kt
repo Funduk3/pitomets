@@ -49,5 +49,8 @@ class User(
     var adminProfile: AdminProfile? = null,
 
     @OneToOne(mappedBy = "user", cascade = [CascadeType.ALL], orphanRemoval = true)
-    var address: Address? = null
+    var address: Address? = null,
+
+    @Column(name = "avatar_key")
+    var avatarKey: String? = null
 )

@@ -14,6 +14,7 @@ import com.pitomets.monolit.utils.findListingOrThrow
 import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.nio.file.AccessDeniedException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
@@ -26,6 +27,16 @@ class ListingsService(
     private val executor: ExecutorService,
 ) {
     private val log = LoggerFactory.getLogger(ListingsService::class.java)
+
+    fun requireOwner(listingId: Long, userId: Long) {
+        val listing = listingsRepo.findListingOrThrow(listingId)
+
+        if (listing.sellerProfile.id != userId) {
+            throw AccessDeniedException(
+                "User $userId is not owner of listing $listingId"
+            )
+        }
+    }
 
     @Transactional
     fun createListing(
@@ -75,6 +86,7 @@ class ListingsService(
             listingsId = requireNotNull(listing.id),
             price = listing.price,
             isArchived = listing.isArchived,
+            title = listing.title
         )
     }
 
@@ -91,7 +103,8 @@ class ListingsService(
             father = response.father?.id,
             price = response.price,
             isArchived = response.isArchived,
-            listingsId = listingId
+            listingsId = listingId,
+            title = response.title
         )
     }
 
@@ -156,6 +169,7 @@ class ListingsService(
             listingsId = listingId,
             mother = updatedListing.mother?.id,
             father = updatedListing.father?.id,
+            title = updatedListing.title
         )
     }
 

@@ -46,5 +46,5 @@ class Listing(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_profile_id")
-    var sellerProfile: SellerProfile,
+    var sellerProfile: SellerProfile
 )
