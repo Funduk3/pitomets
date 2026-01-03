@@ -34,7 +34,7 @@ class ListingsService(
     fun requireOwner(listingId: Long, userId: Long) {
         val listing = listingsRepo.findListingOrThrow(listingId)
 
-        if (listing.sellerProfile.id != userId) {
+        if (listing.sellerProfile.seller?.id != userId) {
             throw AccessDeniedException(
                 "User $userId is not owner of listing $listingId"
             )
