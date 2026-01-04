@@ -17,9 +17,19 @@ export const Search = () => {
 
     try {
       const data = await searchAPI.searchListings(query);
+      // Ensure data is an array
+      if (Array.isArray(data)) {
       setResults(data);
+      } else {
+        console.error('Unexpected response format:', data);
+        setError('Invalid response format from server');
+        setResults([]);
+      }
     } catch (err) {
-      setError('Failed to search listings');
+      console.error('Search error:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to search listings';
+      setError(errorMessage);
+      setResults([]);
     } finally {
       setLoading(false);
     }

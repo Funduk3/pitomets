@@ -7,10 +7,14 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - redis
-      - postgres
-      - elasticsearch
-      - minio
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      minio:
+        condition: service_started
     environment:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
@@ -20,7 +24,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: password
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
 
-      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_HOST: host.docker.internal
       ELASTICSEARCH_PORT: 9200
 
       MINIO_URL: http://minio:9000
@@ -58,10 +62,26 @@ services:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
       - xpack.security.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - xpack.security.http.ssl.enabled=false
     ports:
       - "9200:9200"
     volumes:
       - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+
   prometheus:
     image: prom/prometheus:latest
     ports:

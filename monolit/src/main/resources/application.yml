@@ -28,6 +28,7 @@ spring:
 logging:
   level:
     com.pitomets.monolit: INFO
+    com.pitomets.monolit.config.ElasticConfig: DEBUG
     org.springframework.security: DEBUG
 
 jwt:
