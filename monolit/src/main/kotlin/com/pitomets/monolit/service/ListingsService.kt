@@ -6,13 +6,16 @@ import com.pitomets.monolit.model.dto.SearchListingDocument
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.ListingsResponse
-import com.pitomets.monolit.model.entity.Listing
-import com.pitomets.monolit.model.entity.Pet
-import com.pitomets.monolit.model.entity.SellerProfile
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.PetsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
+import com.pitomets.monolit.utils.buildListingsResponse
+import com.pitomets.monolit.utils.createListingEntity
 import com.pitomets.monolit.utils.findListingOrThrow
+import com.pitomets.monolit.utils.findParentPets
+import com.pitomets.monolit.utils.findSellerProfile
+import com.pitomets.monolit.utils.indexListingInElasticsearch
+import com.pitomets.monolit.utils.saveListing
 import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -21,7 +24,6 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
 @Service
-@Suppress("TooManyFunctions")
 class ListingsService(
     private val petsRepo: PetsRepo,
     private val listingsRepo: ListingsRepo,
@@ -48,8 +50,8 @@ class ListingsService(
     ): ListingsResponse {
         log.info("Creating listing for user ID: {}, request: {}", userId, request)
 
-        val seller = findSellerProfile(userId)
-        val (father, mother) = findParentPets(request)
+        val seller = findSellerProfile(userId, sellerProfileRepo, log)
+        val (father, mother) = findParentPets(request, petsRepo, log)
 
         log.info(
             "Creating listing entity with title: {}, species: {}, price: {}",
@@ -59,96 +61,13 @@ class ListingsService(
         )
 
         val listing = createListingEntity(request, seller, father, mother)
-        val savedListing = saveListing(listing)
-        indexListingInElasticsearch(savedListing)
+        val savedListing = saveListing(listing, listingsRepo, log)
+        indexListingInElasticsearch(savedListing, searchService, log)
 
         log.info("Successfully created listing with ID: {}, title: {}", savedListing.id, savedListing.title)
 
         return buildListingsResponse(savedListing, father, mother)
     }
-
-    private fun findSellerProfile(userId: Long): SellerProfile {
-        val seller = sellerProfileRepo.findBySellerId(userId)
-        if (seller == null) {
-            log.error("Seller profile not found for user ID: {}", userId)
-            throw UserNotFoundException("User with seller id $userId does not exist")
-        }
-        log.info("Found seller profile: ID={}, shopName={}", seller.id, seller.shopName)
-        return seller
-    }
-
-    private fun findParentPets(request: ListingsRequest): Pair<Pet?, Pet?> {
-        val father = request.father?.let { id ->
-            log.debug("Looking up father pet with ID: {}", id)
-            petsRepo.findById(id).orElse(null)
-        }
-        val mother = request.mother?.let { id ->
-            log.debug("Looking up mother pet with ID: {}", id)
-            petsRepo.findById(id).orElse(null)
-        }
-        return Pair(father, mother)
-    }
-
-    private fun createListingEntity(
-        request: ListingsRequest,
-        seller: SellerProfile,
-        father: Pet?,
-        mother: Pet?
-    ) = Listing(
-        description = request.description,
-        species = request.species,
-        breed = request.breed,
-        ageMonths = request.ageMonths,
-        father = father,
-        mother = mother,
-        price = request.price,
-        sellerProfile = seller,
-        title = request.title
-    )
-
-    private fun saveListing(listing: Listing): Listing {
-        log.info("Saving listing to database...")
-        val saved = listingsRepo.save(listing)
-        log.info("Listing saved with ID: {}", saved.id)
-        return saved
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    private fun indexListingInElasticsearch(savedListing: Listing) {
-        val listingId = requireNotNull(savedListing.id) { "Listing ID is null after save" }
-        log.info("Indexing listing in Elasticsearch with ID: {}", listingId)
-
-        try {
-            searchService.indexListing(
-                SearchListingDocument(
-                    id = listingId,
-                    description = savedListing.description,
-                    title = savedListing.title
-                )
-            )
-            log.info("Successfully indexed listing in Elasticsearch")
-        } catch (e: Exception) {
-            log.error("Failed to index listing in Elasticsearch: {}", e.message, e)
-            // Не прерываем создание объявления, если индексация не удалась
-        }
-    }
-
-    private fun buildListingsResponse(
-        savedListing: Listing,
-        father: Pet?,
-        mother: Pet?
-    ) = ListingsResponse(
-        description = savedListing.description,
-        species = savedListing.species,
-        breed = savedListing.breed,
-        ageMonths = savedListing.ageMonths,
-        father = father?.id,
-        mother = mother?.id,
-        listingsId = requireNotNull(savedListing.id),
-        price = savedListing.price,
-        isArchived = savedListing.isArchived,
-        title = savedListing.title
-    )
 
     fun getListing(
         listingId: Long
@@ -169,7 +88,7 @@ class ListingsService(
     }
 
     fun getUserListings(userId: Long): List<ListingsResponse> {
-        val seller = findSellerProfile(userId)
+        val seller = findSellerProfile(userId, sellerProfileRepo, log)
         val listings = listingsRepo.findBySellerProfile(seller)
         return listings.map { listing ->
             ListingsResponse(
