@@ -24,6 +24,8 @@ spring:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
       port: ${SPRING_DATA_REDIS_PORT:6379}
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URI:http://elasticsearch:9200}
 
 logging:
   level:
@@ -35,9 +37,6 @@ jwt:
   secret: "" # todo dev
   access-token-ttl: 1
   refresh-token-ttl: 168
-
-elasticsearch:
-  uris: ${ELASTICSEARCH_URI:http://localhost:9200}
 
 management:
   endpoints:
