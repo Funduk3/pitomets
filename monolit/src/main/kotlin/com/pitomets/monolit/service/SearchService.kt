@@ -25,31 +25,29 @@ class SearchService(
 
         synchronized(this) {
             // Двойная проверка
-            if (indexInitialized.get()) {
-                return
-            }
-
-            try {
-                val existsResponse = client.indices().exists { e ->
-                    e.index(INDEX)
-                }
-
-                if (!existsResponse.value()) {
-                    log.info("Creating Elasticsearch index: {}", INDEX)
-                    client.indices().create { c ->
-                        c.index(INDEX)
+            if (!indexInitialized.get()) {
+                try {
+                    val existsResponse = client.indices().exists { e ->
+                        e.index(INDEX)
                     }
-                    log.info("Successfully created Elasticsearch index: {}", INDEX)
-                } else {
-                    log.debug("Elasticsearch index '{}' already exists", INDEX)
+
+                    if (!existsResponse.value()) {
+                        log.info("Creating Elasticsearch index: {}", INDEX)
+                        client.indices().create { c ->
+                            c.index(INDEX)
+                        }
+                        log.info("Successfully created Elasticsearch index: {}", INDEX)
+                    } else {
+                        log.debug("Elasticsearch index '{}' already exists", INDEX)
+                    }
+                    indexInitialized.set(true)
+                } catch (e: ConnectException) {
+                    log.debug("Elasticsearch connection refused. Will retry later. Index: {}", INDEX)
+                    // Не помечаем как инициализированный, чтобы попробовать снова позже
+                } catch (e: Exception) {
+                    log.error("Error creating Elasticsearch index: {}", INDEX, e)
+                    // Не помечаем как инициализированный, чтобы попробовать снова позже
                 }
-                indexInitialized.set(true)
-            } catch (e: ConnectException) {
-                log.debug("Elasticsearch connection refused. Will retry later. Index: {}", INDEX)
-                // Не помечаем как инициализированный, чтобы попробовать снова позже
-            } catch (e: Exception) {
-                log.error("Error creating Elasticsearch index: {}", INDEX, e)
-                // Не помечаем как инициализированный, чтобы попробовать снова позже
             }
         }
     }
@@ -57,8 +55,8 @@ class SearchService(
     @Suppress("TooGenericExceptionCaught")
     fun search(
         query: String,
-        page: Int = 0,
-        size: Int = 10,
+        page: Int = DEFAULT_PAGE,
+        size: Int = DEFAULT_SIZE,
     ): List<SearchListingsResponse> {
         ensureIndexExists()
 
@@ -154,5 +152,7 @@ class SearchService(
     }
     companion object {
         private const val INDEX = "listings"
+        private const val DEFAULT_PAGE = 0
+        private const val DEFAULT_SIZE = 10
     }
 }

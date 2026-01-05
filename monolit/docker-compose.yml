@@ -24,7 +24,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: password
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
 
-      ELASTICSEARCH_HOST: host.docker.internal
+      # Use the Docker service name so the app container can reach Elasticsearch
+      ELASTICSEARCH_HOST: elasticsearch
       ELASTICSEARCH_PORT: 9200
 
       MINIO_URL: http://minio:9000
