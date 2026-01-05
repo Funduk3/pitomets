@@ -43,6 +43,7 @@ class ReviewsService(
 
         val review = Review(
             rating = request.rating,
+            starsNumber = request.rating,
             text = request.text,
             createdAt = OffsetDateTime.now(),
             author = author,

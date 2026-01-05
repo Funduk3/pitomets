@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 
 export const ListingDetail = () => {
   const { id } = useParams();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [listing, setListing] = useState(null);
   const [photos, setPhotos] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -60,7 +60,14 @@ export const ListingDetail = () => {
       await favouritesAPI.addFavourite(parseInt(id));
       setIsFavourite(true);
     } catch (err) {
-      alert('Failed to add to favourites');
+      const msg = err.response?.data?.message;
+      const status = err.response?.status;
+      if (status === 409 || (msg && msg.toLowerCase().includes('already'))) {
+        setIsFavourite(true);
+        alert('This listing is already in your favourites.');
+      } else {
+        alert(msg || 'Failed to add to favourites');
+      }
     }
   };
 
@@ -71,6 +78,11 @@ export const ListingDetail = () => {
   return (
     <div>
       <h2>{listing.title || 'Untitled'}</h2>
+      <p style={{ marginTop: '0.25rem', color: '#555' }}>
+        <strong>Rating:</strong>{' '}
+        {listing.sellerRating != null ? `${listing.sellerRating.toFixed(2)} / 5` : 'No ratings yet'}
+        {listing.sellerReviewsCount != null && ` (${listing.sellerReviewsCount} reviews)`}
+      </p>
       <div style={{ display: 'flex', gap: '2rem', marginTop: '2rem' }}>
         <div style={{ flex: 1 }}>
           {photos.length > 0 ? (
@@ -98,6 +110,22 @@ export const ListingDetail = () => {
           <p><strong>Age:</strong> {listing.ageMonths} months</p>
           {listing.mother && <p><strong>Mother ID:</strong> {listing.mother}</p>}
           {listing.father && <p><strong>Father ID:</strong> {listing.father}</p>}
+          {isAuthenticated() && user?.id === listing.sellerId && (
+            <Link
+              to={`/listings/${id}/photos`}
+              style={{
+                display: 'inline-block',
+                marginTop: '0.75rem',
+                padding: '0.5rem 1rem',
+                backgroundColor: '#f39c12',
+                color: 'white',
+                textDecoration: 'none',
+                borderRadius: '4px'
+              }}
+            >
+              Manage Photos
+            </Link>
+          )}
           {isAuthenticated() && (
             <button
               onClick={handleAddFavourite}

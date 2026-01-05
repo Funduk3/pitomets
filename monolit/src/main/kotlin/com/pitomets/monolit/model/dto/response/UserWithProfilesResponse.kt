@@ -7,6 +7,8 @@ data class UserWithProfilesResponse(
     val email: String,
     val fullName: String,
 
+    val isSeller: Boolean,
+
     // seller
     val shopName: String?,
     val description: String?,

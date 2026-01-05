@@ -2,13 +2,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export const Layout = ({ children }) => {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
+
+  const isSeller = Boolean(user?.shopName);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -27,7 +29,9 @@ export const Layout = ({ children }) => {
           <Link to="/search" style={{ color: 'white', textDecoration: 'none' }}>Search</Link>
           {isAuthenticated() && (
             <>
-              <Link to="/listings" style={{ color: 'white', textDecoration: 'none' }}>My Listings</Link>
+              {isSeller && (
+                <Link to="/listings" style={{ color: 'white', textDecoration: 'none' }}>My Listings</Link>
+              )}
               <Link to="/favourites" style={{ color: 'white', textDecoration: 'none' }}>Favourites</Link>
               <Link to="/profile" style={{ color: 'white', textDecoration: 'none' }}>Profile</Link>
             </>

@@ -95,6 +95,9 @@ internal fun buildListingsResponse(
     mother: Pet?
 ) = ListingsResponse(
     description = savedListing.description,
+    sellerId = requireNotNull(savedListing.sellerProfile.seller?.id),
+    sellerRating = savedListing.sellerProfile.rating,
+    sellerReviewsCount = savedListing.sellerProfile.countReviews,
     species = savedListing.species,
     breed = savedListing.breed,
     ageMonths = savedListing.ageMonths,

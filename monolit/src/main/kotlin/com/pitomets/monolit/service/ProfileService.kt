@@ -77,6 +77,7 @@ class ProfileService(
             id = requireNotNull(user.id),
             email = requireNotNull(user.email),
             fullName = user.fullName,
+            isSeller = user.sellerProfile != null,
             shopName = user.sellerProfile?.shopName,
             description = user.sellerProfile?.description,
             rating = user.sellerProfile?.rating,

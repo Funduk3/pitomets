@@ -75,6 +75,9 @@ class ListingsService(
         val response = listingsRepo.findListingOrThrow(listingId)
         return ListingsResponse(
             description = response.description,
+            sellerId = requireNotNull(response.sellerProfile.seller?.id),
+            sellerRating = response.sellerProfile.rating,
+            sellerReviewsCount = response.sellerProfile.countReviews,
             species = response.species,
             breed = response.breed,
             ageMonths = response.ageMonths,
@@ -93,6 +96,9 @@ class ListingsService(
         return listings.map { listing ->
             ListingsResponse(
                 description = listing.description,
+                sellerId = requireNotNull(listing.sellerProfile.seller?.id),
+                sellerRating = listing.sellerProfile.rating,
+                sellerReviewsCount = listing.sellerProfile.countReviews,
                 species = listing.species,
                 breed = listing.breed,
                 ageMonths = listing.ageMonths,
@@ -159,6 +165,9 @@ class ListingsService(
 
         return ListingsResponse(
             description = updatedListing.description,
+            sellerId = sellerId,
+            sellerRating = updatedListing.sellerProfile.rating,
+            sellerReviewsCount = updatedListing.sellerProfile.countReviews,
             species = updatedListing.species,
             ageMonths = updatedListing.ageMonths,
             price = updatedListing.price,

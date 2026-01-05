@@ -1,6 +1,8 @@
 package com.pitomets.monolit.controller.controllerAdvice
 
+import com.pitomets.monolit.exceptions.AlreadyException
 import com.pitomets.monolit.exceptions.AvatarNotFoundException
+import com.pitomets.monolit.exceptions.BadReviewException
 import com.pitomets.monolit.exceptions.ErrorResponse
 import com.pitomets.monolit.exceptions.ListingNotFoundException
 import com.pitomets.monolit.exceptions.UserAlreadyExistsException
@@ -57,12 +59,32 @@ class ControllerAdvice {
         )
     }
 
+    @ExceptionHandler(BadReviewException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handleBadReviewException(ex: BadReviewException): ErrorResponse {
+        return ErrorResponse(
+            status = HttpStatus.BAD_REQUEST.value(),
+            error = "Bad Request",
+            message = ex.message
+        )
+    }
+
     @ExceptionHandler(AvatarNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handleAvatarNotFoundException(ex: AvatarNotFoundException): ErrorResponse {
         return ErrorResponse(
             status = HttpStatus.NOT_FOUND.value(),
             error = "Not Found",
+            message = ex.message
+        )
+    }
+
+    @ExceptionHandler(AlreadyException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    fun handleAlreadyException(ex: AlreadyException): ErrorResponse {
+        return ErrorResponse(
+            status = HttpStatus.CONFLICT.value(),
+            error = "Conflict",
             message = ex.message
         )
     }

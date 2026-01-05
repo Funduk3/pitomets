@@ -24,7 +24,12 @@ export const ReviewForm = () => {
       });
       navigate(`/listings/${id}`);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create review');
+      const backendMessage = err.response?.data?.message;
+      if (backendMessage?.toLowerCase()?.includes('own listing')) {
+        setError('Нельзя оставлять отзыв на своё объявление.');
+      } else {
+        setError(backendMessage || 'Failed to create review');
+      }
     } finally {
       setLoading(false);
     }
