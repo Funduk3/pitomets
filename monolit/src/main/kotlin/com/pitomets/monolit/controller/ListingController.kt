@@ -42,6 +42,12 @@ class ListingController(
             request
         )
 
+    @GetMapping("/my")
+    fun getMyListings(
+        @AuthenticationPrincipal userPrincipal: UserPrincipal
+    ): List<ListingsResponse> =
+        listingsService.getUserListings(userPrincipal.id)
+
     @PutMapping("/")
     fun updateListing(
         @RequestParam("id") listingId: Long,

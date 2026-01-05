@@ -7,6 +7,7 @@ import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.ListingsResponse
 import com.pitomets.monolit.model.entity.Listing
+import com.pitomets.monolit.model.entity.SellerProfile
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.PetsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
@@ -31,7 +32,7 @@ class ListingsService(
     fun requireOwner(listingId: Long, userId: Long) {
         val listing = listingsRepo.findListingOrThrow(listingId)
 
-        if (listing.sellerProfile.id != userId) {
+        if (listing.sellerProfile.seller?.id != userId) {
             throw AccessDeniedException(
                 "User $userId is not owner of listing $listingId"
             )
@@ -191,5 +192,35 @@ class ListingsService(
 
         deleteDb.join()
         deleteIndex.join()
+    }
+
+    fun getUserListings(userId: Long): List<ListingsResponse> {
+        val seller = findSellerProfile(userId)
+        val listings = listingsRepo.findBySellerProfile(seller)
+        return listings.map { listing ->
+            ListingsResponse(
+                description = listing.description,
+                species = listing.species,
+                breed = listing.breed,
+                ageMonths = listing.ageMonths,
+                mother = listing.mother?.id,
+                father = listing.father?.id,
+                price = listing.price,
+                isArchived = listing.isArchived,
+                listingsId = requireNotNull(listing.id),
+                title = listing.title
+            )
+        }
+    }
+
+    // use it
+    private fun findSellerProfile(userId: Long): SellerProfile {
+        val seller = sellerProfileRepo.findBySellerId(userId)
+        if (seller == null) {
+            log.error("Seller profile not found for user ID: {}", userId)
+            throw UserNotFoundException("User with seller id $userId does not exist")
+        }
+        log.info("Found seller profile: ID={}, shopName={}", seller.id, seller.shopName)
+        return seller
     }
 }

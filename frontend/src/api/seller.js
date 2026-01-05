@@ -1,0 +1,21 @@
+import api from './axios';
+
+export const sellerAPI = {
+  createSellerProfile: async (profileData) => {
+    const response = await api.post('/seller/profile', profileData);
+    return response.data;
+  },
+
+  updateSellerProfile: async (profileData) => {
+    const response = await api.put('/seller/profile', profileData);
+    return response.data;
+  },
+
+  getSellerReviews: async (sellerProfileId) => {
+    const response = await api.get('/seller/reviews', {
+      params: { id: sellerProfileId },
+    });
+    return response.data;
+  },
+};
+

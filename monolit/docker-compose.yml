@@ -10,6 +10,7 @@ services:
       - redis
       - postgres
       - elasticsearch
+      - minio
     environment:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379

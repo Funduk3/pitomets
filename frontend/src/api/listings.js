@@ -1,0 +1,46 @@
+import api from './axios';
+
+export const listingsAPI = {
+  getListing: async (listingId) => {
+    const response = await api.get('/listings/', {
+      params: { id: listingId },
+    });
+    return response.data;
+  },
+
+  getMyListings: async () => {
+    const response = await api.get('/listings/my');
+    return response.data;
+  },
+
+  createListing: async (listingData) => {
+    const response = await api.post('/listings/', listingData);
+    return response.data;
+  },
+
+  updateListing: async (listingId, updateData) => {
+    const response = await api.put('/listings/', updateData, {
+      params: { id: listingId },
+    });
+    return response.data;
+  },
+
+  deleteListing: async (listingId) => {
+    await api.delete('/listings/', {
+      params: { id: listingId },
+    });
+  },
+
+  getListingReviews: async (listingId) => {
+    const response = await api.get('/listings/reviews', {
+      params: { id: listingId },
+    });
+    return response.data;
+  },
+
+  createReview: async (reviewData) => {
+    const response = await api.post('/listings/reviews', reviewData);
+    return response.data;
+  },
+};
+
