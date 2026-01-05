@@ -113,6 +113,7 @@ class ListingsService(
     }
 
     @Transactional
+    @Suppress("LongMethod")
     fun updateListing(
         listingId: Long,
         sellerId: Long,
@@ -145,10 +146,33 @@ class ListingsService(
         request.description?.let { listing.description = it }
 
         val shouldIndex = request.description != null || request.title != null
+        val sellerIdValue = requireNotNull(listing.sellerProfile.seller?.id)
+        val sellerRating = listing.sellerProfile.rating
+        val sellerReviewsCount = listing.sellerProfile.countReviews
 
-        val saveFuture = CompletableFuture.supplyAsync({ listingsRepo.save(listing) }, executor)
-        val indexFuture = if (shouldIndex) {
-            CompletableFuture.runAsync({
+        val saveFuture = CompletableFuture.supplyAsync({
+            val saved = listingsRepo.save(listing)
+
+            ListingsResponse(
+                description = saved.description,
+                sellerId = sellerIdValue,
+                sellerRating = sellerRating,
+                sellerReviewsCount = sellerReviewsCount,
+                species = saved.species,
+                ageMonths = saved.ageMonths,
+                price = saved.price,
+                breed = saved.breed,
+                isArchived = saved.isArchived,
+                listingsId = listingId,
+                mother = saved.mother?.id,
+                father = saved.father?.id,
+                title = saved.title
+            )
+        }, executor)
+
+        var indexFuture: CompletableFuture<*>? = null
+        if (shouldIndex) {
+            indexFuture = CompletableFuture.runAsync({
                 searchService.indexListing(
                     SearchListingDocument(
                         id = listingId,
@@ -157,27 +181,11 @@ class ListingsService(
                     )
                 )
             }, executor)
-        } else {
-            null
         }
-        val updatedListing = saveFuture.join()
-        indexFuture?.join()
 
-        return ListingsResponse(
-            description = updatedListing.description,
-            sellerId = sellerId,
-            sellerRating = updatedListing.sellerProfile.rating,
-            sellerReviewsCount = updatedListing.sellerProfile.countReviews,
-            species = updatedListing.species,
-            ageMonths = updatedListing.ageMonths,
-            price = updatedListing.price,
-            breed = updatedListing.breed,
-            isArchived = updatedListing.isArchived,
-            listingsId = listingId,
-            mother = updatedListing.mother?.id,
-            father = updatedListing.father?.id,
-            title = updatedListing.title
-        )
+        val response = saveFuture.join()
+        indexFuture?.join()
+        return response
     }
 
     @Transactional
