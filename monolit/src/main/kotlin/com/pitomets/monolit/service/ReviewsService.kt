@@ -31,9 +31,14 @@ class ReviewsService(
         val listing = listingsRepo.findListingOrThrow(request.listingId)
 
         val sellerProfile = listing.sellerProfile
+        val sellerUserId = sellerProfile.seller?.id
 
-        if (authorId == sellerProfile.id) {
-            throw BadReviewException("User cant write review yourself")
+        if (sellerUserId == null) {
+            throw BadReviewException("Seller profile has no associated user")
+        }
+
+        if (authorId == sellerUserId) {
+            throw BadReviewException("User cannot write a review on their own listing")
         }
 
         val review = Review(

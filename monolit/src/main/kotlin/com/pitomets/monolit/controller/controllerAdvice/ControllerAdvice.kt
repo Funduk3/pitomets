@@ -5,6 +5,7 @@ import com.pitomets.monolit.exceptions.ErrorResponse
 import com.pitomets.monolit.exceptions.ListingNotFoundException
 import com.pitomets.monolit.exceptions.UserAlreadyExistsException
 import com.pitomets.monolit.exceptions.UserNotFoundException
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -13,6 +14,8 @@ import java.nio.file.AccessDeniedException
 
 @RestControllerAdvice
 class ControllerAdvice {
+    private val log = LoggerFactory.getLogger(ControllerAdvice::class.java)
+
     @ExceptionHandler(UserAlreadyExistsException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleUserAlreadyExistsException(ex: UserAlreadyExistsException): ErrorResponse {
@@ -26,6 +29,7 @@ class ControllerAdvice {
     @ExceptionHandler(UserNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handleUserNotFoundException(ex: UserNotFoundException): ErrorResponse {
+        log.error("UserNotFoundException: {}", ex.message, ex)
         return ErrorResponse(
             status = HttpStatus.NOT_FOUND.value(),
             error = "Not Found",
@@ -66,6 +70,7 @@ class ControllerAdvice {
     @ExceptionHandler(ListingNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handleListingNotFoundException(ex: ListingNotFoundException): ErrorResponse {
+        log.error("ListingNotFoundException: {}", ex.message, ex)
         return ErrorResponse(
             status = HttpStatus.NOT_FOUND.value(),
             error = "Not Found",
@@ -85,7 +90,8 @@ class ControllerAdvice {
 
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handleGenericException(): ErrorResponse {
+    fun handleGenericException(ex: Exception): ErrorResponse {
+        log.error("Unhandled exception: {}", ex.message, ex)
         return ErrorResponse(
             status = HttpStatus.INTERNAL_SERVER_ERROR.value(),
             error = "Internal Server Error",

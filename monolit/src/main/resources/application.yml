@@ -24,19 +24,19 @@ spring:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
       port: ${SPRING_DATA_REDIS_PORT:6379}
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URI:http://elasticsearch:9200}
 
 logging:
   level:
     com.pitomets.monolit: INFO
+    com.pitomets.monolit.config.ElasticConfig: DEBUG
     org.springframework.security: DEBUG
 
 jwt:
   secret: "" # todo dev
   access-token-ttl: 1
   refresh-token-ttl: 168
-
-elasticsearch:
-  host: http://localhost:9200
 
 management:
   endpoints:
@@ -48,7 +48,7 @@ management:
       enabled: true
 
 minio:
-  url: http://localhost:9000
+  url: ${MINIO_URL:http://localhost:9000}
   access-key: minioadmin
   secret-key: minioadmin
   bucket: my-bucket
