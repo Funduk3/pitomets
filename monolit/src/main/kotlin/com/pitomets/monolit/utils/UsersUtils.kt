@@ -8,6 +8,7 @@ import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.UserRepo
 import org.springframework.data.repository.findByIdOrNull
 
+// use it anywhere plz
 fun UserRepo.findUserOrThrow(userId: Long): User =
     findByIdOrNull(userId)
         ?: throw UserNotFoundException("User with id $userId not found")

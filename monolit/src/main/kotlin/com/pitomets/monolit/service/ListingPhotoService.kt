@@ -15,7 +15,7 @@ class ListingPhotoService(
     private val listingPhotoRepo: ListingPhotoRepo,
     private val listingsRepo: ListingsRepo,
     private val minioService: MinioService,
-    private val listingsService: ListingsService
+    private val listingsService: ListingsService,
 ) : PhotoService() {
 
     @Transactional
@@ -24,7 +24,7 @@ class ListingPhotoService(
         listingId: Long,
         userId: Long
     ): ListingPhoto {
-        listingsService.requireOwner(listingId, userId)
+        listingsService.requireOwnerAndReturnListing(listingId, userId)
 
         validateImage(file)
 
@@ -78,7 +78,7 @@ class ListingPhotoService(
         photoId: Long,
         userId: Long
     ) {
-        listingsService.requireOwner(listingId, userId)
+        listingsService.requireOwnerAndReturnListing(listingId, userId)
 
         val photo = listingPhotoRepo.findById(photoId)
             .orElseThrow { NoSuchElementException("Photo with id $photoId not found") }
@@ -93,6 +93,7 @@ class ListingPhotoService(
         reindexPhotos(listingId)
     }
 
+    // не используется ???
     fun deleteAllListingPhotos(listingId: Long) {
         val keys = listingPhotoRepo.findObjectKeysByListingId(listingId)
 

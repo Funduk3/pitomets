@@ -6,17 +6,15 @@ import com.pitomets.monolit.model.dto.SearchListingDocument
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.ListingsResponse
+import com.pitomets.monolit.model.entity.Listing
+import com.pitomets.monolit.model.entity.Pet
+import com.pitomets.monolit.model.entity.SellerProfile
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.PetsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
-import com.pitomets.monolit.utils.buildListingsResponse
-import com.pitomets.monolit.utils.createListingEntity
 import com.pitomets.monolit.utils.findListingOrThrow
-import com.pitomets.monolit.utils.findParentPets
-import com.pitomets.monolit.utils.findSellerProfile
-import com.pitomets.monolit.utils.indexListingInElasticsearch
-import com.pitomets.monolit.utils.saveListing
 import jakarta.transaction.Transactional
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.nio.file.AccessDeniedException
@@ -24,6 +22,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
 @Service
+@Suppress("TooManyFunctions")
 class ListingsService(
     private val petsRepo: PetsRepo,
     private val listingsRepo: ListingsRepo,
@@ -31,17 +30,7 @@ class ListingsService(
     private val searchService: SearchService,
     private val executor: ExecutorService,
 ) {
-    private val log = LoggerFactory.getLogger(ListingsService::class.java)
-
-    fun requireOwner(listingId: Long, userId: Long) {
-        val listing = listingsRepo.findListingOrThrow(listingId)
-
-        if (listing.sellerProfile.seller?.id != userId) {
-            throw AccessDeniedException(
-                "User $userId is not owner of listing $listingId"
-            )
-        }
-    }
+    // Controller functions
 
     @Transactional
     fun createListing(
@@ -73,20 +62,10 @@ class ListingsService(
         listingId: Long
     ): ListingsResponse {
         val response = listingsRepo.findListingOrThrow(listingId)
-        return ListingsResponse(
-            description = response.description,
-            sellerId = requireNotNull(response.sellerProfile.seller?.id),
-            sellerRating = response.sellerProfile.rating,
-            sellerReviewsCount = response.sellerProfile.countReviews,
-            species = response.species,
-            breed = response.breed,
-            ageMonths = response.ageMonths,
-            mother = response.mother?.id,
-            father = response.father?.id,
-            price = response.price,
-            isArchived = response.isArchived,
-            listingsId = listingId,
-            title = response.title
+        return buildListingsResponse(
+            response,
+            response.father,
+            response.mother
         )
     }
 
@@ -94,20 +73,10 @@ class ListingsService(
         val seller = findSellerProfile(userId, sellerProfileRepo, log)
         val listings = listingsRepo.findBySellerProfile(seller)
         return listings.map { listing ->
-            ListingsResponse(
-                description = listing.description,
-                sellerId = requireNotNull(listing.sellerProfile.seller?.id),
-                sellerRating = listing.sellerProfile.rating,
-                sellerReviewsCount = listing.sellerProfile.countReviews,
-                species = listing.species,
-                breed = listing.breed,
-                ageMonths = listing.ageMonths,
-                mother = listing.mother?.id,
-                father = listing.father?.id,
-                price = listing.price,
-                isArchived = listing.isArchived,
-                listingsId = requireNotNull(listing.id),
-                title = listing.title
+            buildListingsResponse(
+                listing,
+                listing.father,
+                listing.mother
             )
         }
     }
@@ -119,14 +88,8 @@ class ListingsService(
         sellerId: Long,
         request: UpdateListingRequest
     ): ListingsResponse {
-        val listing = listingsRepo.findListingOrThrow(listingId)
+        val listing = requireOwnerAndReturnListing(listingId, sellerId)
 
-        if (listing.sellerProfile.seller?.id != sellerId) {
-            throw UserNotFoundException(
-                "User with seller id $sellerId does not has this listing," +
-                    "excepted id ${listing.sellerProfile.seller?.id}"
-            )
-        }
         request.title?.let { listing.title = it }
         request.species?.let { listing.species = it }
         request.price?.let { listing.price = it }
@@ -193,11 +156,7 @@ class ListingsService(
         listingId: Long,
         userId: Long
     ) {
-        val listing = listingsRepo.findListingOrThrow(listingId)
-
-        if (listing.sellerProfile.seller?.id != userId) {
-            throw UserNotFoundException("User is not seller of this listing")
-        }
+        val listing = requireOwnerAndReturnListing(listingId, userId)
 
         val deleteDb = CompletableFuture.runAsync({ listingsRepo.delete(listing) }, executor)
         val deleteIndex = CompletableFuture.runAsync({
@@ -207,4 +166,117 @@ class ListingsService(
         deleteDb.join()
         deleteIndex.join()
     }
+
+    // use it in any class
+
+    fun requireOwnerAndReturnListing(listingId: Long, userId: Long): Listing {
+        val listing = listingsRepo.findListingOrThrow(listingId)
+
+        if (listing.sellerProfile.seller?.id != userId) {
+            throw AccessDeniedException(
+                "User $userId is not owner of listing $listingId"
+            )
+        }
+        return listing
+    }
+
+    // private methods (you can do it public if you need)
+
+    private fun findSellerProfile(
+        userId: Long,
+        sellerProfileRepo: SellerProfileRepo,
+        log: Logger
+    ): SellerProfile {
+        val seller = sellerProfileRepo.findBySellerId(userId)
+        if (seller == null) {
+            log.error("Seller profile not found for user ID: {}", userId)
+            throw UserNotFoundException("User with seller id $userId does not exist")
+        }
+        log.info("Found seller profile: ID={}, shopName={}", seller.id, seller.shopName)
+        return seller
+    }
+
+    private fun findParentPets(
+        request: ListingsRequest,
+        petsRepo: PetsRepo,
+        log: Logger
+    ): Pair<Pet?, Pet?> {
+        val father = request.father?.let { id ->
+            log.debug("Looking up father pet with ID: {}", id)
+            petsRepo.findById(id).orElse(null)
+        }
+        val mother = request.mother?.let { id ->
+            log.debug("Looking up mother pet with ID: {}", id)
+            petsRepo.findById(id).orElse(null)
+        }
+        return Pair(father, mother)
+    }
+
+    private fun createListingEntity(
+        request: ListingsRequest,
+        seller: SellerProfile,
+        father: Pet?,
+        mother: Pet?
+    ) = Listing(
+        description = request.description,
+        species = request.species,
+        breed = request.breed,
+        ageMonths = request.ageMonths,
+        father = father,
+        mother = mother,
+        price = request.price,
+        sellerProfile = seller,
+        title = request.title
+    )
+
+    private fun saveListing(
+        listing: Listing,
+        listingsRepo: ListingsRepo,
+        log: Logger
+    ): Listing {
+        log.info("Saving listing to database...")
+        val saved = listingsRepo.save(listing)
+        log.info("Listing saved with ID: {}", saved.id)
+        return saved
+    }
+
+    private fun indexListingInElasticsearch(
+        savedListing: Listing,
+        searchService: SearchService,
+        log: Logger
+    ) {
+        val listingId = requireNotNull(savedListing.id) { "Listing ID is null after save" }
+        log.info("Indexing listing in Elasticsearch with ID: {}", listingId)
+
+        searchService.indexListing(
+            SearchListingDocument(
+                id = listingId,
+                description = savedListing.description,
+                title = savedListing.title
+            )
+        )
+        log.info("Successfully indexed listing in Elasticsearch")
+    }
+
+    private fun buildListingsResponse(
+        savedListing: Listing,
+        father: Pet?,
+        mother: Pet?
+    ) = ListingsResponse(
+        description = savedListing.description,
+        sellerId = requireNotNull(savedListing.sellerProfile.seller?.id),
+        sellerRating = savedListing.sellerProfile.rating,
+        sellerReviewsCount = savedListing.sellerProfile.countReviews,
+        species = savedListing.species,
+        breed = savedListing.breed,
+        ageMonths = savedListing.ageMonths,
+        father = father?.id,
+        mother = mother?.id,
+        listingsId = requireNotNull(savedListing.id),
+        price = savedListing.price,
+        isArchived = savedListing.isArchived,
+        title = savedListing.title
+    )
+
+    private val log = LoggerFactory.getLogger(ListingsService::class.java)
 }
