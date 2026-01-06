@@ -8,7 +8,6 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
-import jakarta.persistence.PrePersist
 import jakarta.persistence.Table
 import java.time.OffsetDateTime
 
@@ -21,9 +20,6 @@ class Review(
 
     @Column(name = "rating", nullable = false)
     var rating: Int,
-
-    @Column(name = "stars_number", nullable = false)
-    var starsNumber: Int = 0,
 
     @Column(columnDefinition = "text")
     var text: String? = null,
@@ -42,9 +38,4 @@ class Review(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "listing_id")
     var listing: Listing? = null,
-) {
-    @PrePersist
-    fun fillStarsAndRating() {
-        if (starsNumber == 0) starsNumber = rating
-    }
-}
+)
