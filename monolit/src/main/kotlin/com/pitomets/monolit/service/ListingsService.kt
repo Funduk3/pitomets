@@ -2,13 +2,15 @@ package com.pitomets.monolit.service
 
 import com.pitomets.monolit.exceptions.PetNotFoundException
 import com.pitomets.monolit.exceptions.UserNotFoundException
-import com.pitomets.monolit.model.dto.SearchListingDocument
+import com.pitomets.monolit.model.EventType
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.ListingsResponse
 import com.pitomets.monolit.model.entity.Listing
+import com.pitomets.monolit.model.entity.ListingOutbox
 import com.pitomets.monolit.model.entity.Pet
 import com.pitomets.monolit.model.entity.SellerProfile
+import com.pitomets.monolit.repository.ListingOutboxRepository
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.PetsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
@@ -18,8 +20,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.nio.file.AccessDeniedException
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
 
 @Service
 @Suppress("TooManyFunctions")
@@ -27,8 +27,7 @@ class ListingsService(
     private val petsRepo: PetsRepo,
     private val listingsRepo: ListingsRepo,
     private val sellerProfileRepo: SellerProfileRepo,
-    private val searchService: SearchService,
-    private val executor: ExecutorService,
+    private val outboxRepo: ListingOutboxRepository,
 ) {
     // Controller functions
 
@@ -37,25 +36,22 @@ class ListingsService(
         userId: Long,
         request: ListingsRequest
     ): ListingsResponse {
-        log.info("Creating listing for user ID: {}, request: {}", userId, request)
-
         val seller = findSellerProfile(userId, sellerProfileRepo, log)
         val (father, mother) = findParentPets(request, petsRepo, log)
 
-        log.info(
-            "Creating listing entity with title: {}, species: {}, price: {}",
-            request.title,
-            request.species,
-            request.price
+        val listing = createListingEntity(request, seller, father, mother)
+        val saved = listingsRepo.save(listing)
+
+        outboxRepo.save(
+            ListingOutbox(
+                listingId = requireNotNull(saved.id),
+                eventType = EventType.CREATE,
+                title = saved.title,
+                description = saved.description
+            )
         )
 
-        val listing = createListingEntity(request, seller, father, mother)
-        val savedListing = saveListing(listing, listingsRepo, log)
-        indexListingInElasticsearch(savedListing, searchService, log)
-
-        log.info("Successfully created listing with ID: {}, title: {}", savedListing.id, savedListing.title)
-
-        return buildListingsResponse(savedListing, father, mother)
+        return buildListingsResponse(saved, father, mother)
     }
 
     fun getListing(
@@ -82,7 +78,6 @@ class ListingsService(
     }
 
     @Transactional
-    @Suppress("LongMethod")
     fun updateListing(
         listingId: Long,
         sellerId: Long,
@@ -91,64 +86,53 @@ class ListingsService(
         val listing = requireOwnerAndReturnListing(listingId, sellerId)
 
         request.title?.let { listing.title = it }
+        request.description?.let { listing.description = it }
         request.species?.let { listing.species = it }
         request.price?.let { listing.price = it }
         request.ageMonths?.let { listing.ageMonths = it }
-        request.mother?.let {
-            listing.mother = petsRepo.findById(it).orElseThrow {
-                PetNotFoundException("Mother with id $it")
-            }
-        }
-        request.father?.let {
-            listing.father = petsRepo.findById(it).orElseThrow {
-                PetNotFoundException("Father with id $it")
-            }
-        }
         request.breed?.let { listing.breed = it }
         request.isArchived?.let { listing.isArchived = it }
-        request.description?.let { listing.description = it }
 
-        val shouldIndex = request.description != null || request.title != null
-        val sellerIdValue = requireNotNull(listing.sellerProfile.seller?.id)
-        val sellerRating = listing.sellerProfile.rating
-        val sellerReviewsCount = listing.sellerProfile.countReviews
-
-        val saveFuture = CompletableFuture.supplyAsync({
-            val saved = listingsRepo.save(listing)
-
-            ListingsResponse(
-                description = saved.description,
-                sellerId = sellerIdValue,
-                sellerRating = sellerRating,
-                sellerReviewsCount = sellerReviewsCount,
-                species = saved.species,
-                ageMonths = saved.ageMonths,
-                price = saved.price,
-                breed = saved.breed,
-                isArchived = saved.isArchived,
-                listingsId = listingId,
-                mother = saved.mother?.id,
-                father = saved.father?.id,
-                title = saved.title
-            )
-        }, executor)
-
-        var indexFuture: CompletableFuture<*>? = null
-        if (shouldIndex) {
-            indexFuture = CompletableFuture.runAsync({
-                searchService.indexListing(
-                    SearchListingDocument(
-                        id = listingId,
-                        title = listing.title,
-                        description = listing.description
-                    )
-                )
-            }, executor)
+        request.mother?.let {
+            listing.mother = petsRepo.findById(it)
+                .orElseThrow { PetNotFoundException("Mother with id $it") }
         }
 
-        val response = saveFuture.join()
-        indexFuture?.join()
-        return response
+        request.father?.let {
+            listing.father = petsRepo.findById(it)
+                .orElseThrow { PetNotFoundException("Father with id $it") }
+        }
+
+        val saved = listingsRepo.save(listing)
+
+        val shouldIndex = request.title != null || request.description != null
+
+        if (shouldIndex) {
+            outboxRepo.save(
+                ListingOutbox(
+                    listingId = listingId,
+                    eventType = EventType.UPDATE,
+                    title = saved.title,
+                    description = saved.description
+                )
+            )
+        }
+
+        return ListingsResponse(
+            listingsId = listingId,
+            title = saved.title,
+            description = saved.description,
+            species = saved.species,
+            ageMonths = saved.ageMonths,
+            price = saved.price,
+            breed = saved.breed,
+            isArchived = saved.isArchived,
+            sellerId = requireNotNull(saved.sellerProfile.seller?.id),
+            sellerRating = saved.sellerProfile.rating,
+            sellerReviewsCount = saved.sellerProfile.countReviews,
+            mother = saved.mother?.id,
+            father = saved.father?.id
+        )
     }
 
     @Transactional
@@ -158,13 +142,16 @@ class ListingsService(
     ) {
         val listing = requireOwnerAndReturnListing(listingId, userId)
 
-        val deleteDb = CompletableFuture.runAsync({ listingsRepo.delete(listing) }, executor)
-        val deleteIndex = CompletableFuture.runAsync({
-            searchService.deleteListing(listingId)
-        }, executor)
+        listingsRepo.delete(listing)
 
-        deleteDb.join()
-        deleteIndex.join()
+        outboxRepo.save(
+            ListingOutbox(
+                listingId = listingId,
+                eventType = EventType.DELETE,
+                title = null,
+                description = null
+            )
+        )
     }
 
     // use it in any class
@@ -228,35 +215,6 @@ class ListingsService(
         sellerProfile = seller,
         title = request.title
     )
-
-    private fun saveListing(
-        listing: Listing,
-        listingsRepo: ListingsRepo,
-        log: Logger
-    ): Listing {
-        log.info("Saving listing to database...")
-        val saved = listingsRepo.save(listing)
-        log.info("Listing saved with ID: {}", saved.id)
-        return saved
-    }
-
-    private fun indexListingInElasticsearch(
-        savedListing: Listing,
-        searchService: SearchService,
-        log: Logger
-    ) {
-        val listingId = requireNotNull(savedListing.id) { "Listing ID is null after save" }
-        log.info("Indexing listing in Elasticsearch with ID: {}", listingId)
-
-        searchService.indexListing(
-            SearchListingDocument(
-                id = listingId,
-                description = savedListing.description,
-                title = savedListing.title
-            )
-        )
-        log.info("Successfully indexed listing in Elasticsearch")
-    }
 
     private fun buildListingsResponse(
         savedListing: Listing,

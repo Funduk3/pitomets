@@ -80,6 +80,7 @@ class ElasticTest : BaseContainers() {
             .then()
             .statusCode(200)
 
+        listingOutboxProcessor.processOutbox()
         elasticClient.indices().refresh { r -> r.index("listings") }
 
         // Убедимся, что два результата содержат наш токен в title

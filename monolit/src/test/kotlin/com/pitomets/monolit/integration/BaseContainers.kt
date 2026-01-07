@@ -2,6 +2,7 @@ package com.pitomets.monolit.integration
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.pitomets.monolit.components.ListingOutboxProcessor
 import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
 import com.pitomets.monolit.model.dto.request.LoginRequest
 import com.pitomets.monolit.model.dto.request.RegisterRequest
@@ -48,6 +49,9 @@ abstract class BaseContainers {
 
     @Autowired
     lateinit var elasticClient: ElasticsearchClient
+
+    @Autowired
+    lateinit var listingOutboxProcessor: ListingOutboxProcessor
 
     companion object {
 
