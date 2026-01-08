@@ -9,6 +9,6 @@ scrape_configs:
   - job_name: 'spring-app'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['host.docker.internal:8080']  # Для Docker Desktop на Mac
+      - targets: ['host.docker.internal:8080']
     scrape_interval: 5s
     scrape_timeout: 4s

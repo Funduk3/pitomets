@@ -65,7 +65,7 @@ class ReviewsService(
             rating = request.rating,
             text = request.text,
             authorId = requireNotNull(author.id),
-            listingId = listing.id,
+            listingId = requireNotNull(listing.id),
             sellerProfileId = requireNotNull(sellerProfile.id),
             createdAt = saved.createdAt,
         )
@@ -78,7 +78,7 @@ class ReviewsService(
                 rating = r.rating,
                 text = r.text,
                 authorId = requireNotNull(r.author.id),
-                listingId = r.listing?.id,
+                listingId = requireNotNull(r.listing?.id),
                 sellerProfileId = requireNotNull(r.sellerProfile.id),
                 createdAt = r.createdAt
             )
@@ -91,7 +91,7 @@ class ReviewsService(
                 rating = r.rating,
                 text = r.text,
                 authorId = requireNotNull(r.author.id),
-                listingId = r.listing?.id,
+                listingId = requireNotNull(r.listing?.id),
                 sellerProfileId = requireNotNull(r.sellerProfile.id),
                 createdAt = r.createdAt
             )

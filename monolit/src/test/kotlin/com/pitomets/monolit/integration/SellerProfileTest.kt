@@ -240,6 +240,7 @@ class SellerProfileTest : BaseContainers() {
             .then()
             .statusCode(404)
         // не найдём объявление в поиске
+        listingOutboxProcessor.processOutbox()
         elasticClient.indices().refresh { r -> r.index("listings") }
         Assertions.assertEquals(
             0,

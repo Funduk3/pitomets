@@ -2,7 +2,9 @@ package com.pitomets.monolit.integration
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.pitomets.monolit.components.ListingOutboxProcessor
 import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
+import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.LoginRequest
 import com.pitomets.monolit.model.dto.request.RegisterRequest
 import com.pitomets.monolit.model.dto.response.TokenResponse
@@ -24,6 +26,7 @@ import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.elasticsearch.ElasticsearchContainer
 import org.testcontainers.junit.jupiter.Testcontainers
+import java.math.BigDecimal
 import java.util.Base64
 
 @Suppress("UtilityClassWithPublicConstructor")
@@ -48,6 +51,9 @@ abstract class BaseContainers {
 
     @Autowired
     lateinit var elasticClient: ElasticsearchClient
+
+    @Autowired
+    lateinit var listingOutboxProcessor: ListingOutboxProcessor
 
     companion object {
 
@@ -212,5 +218,25 @@ abstract class BaseContainers {
             .then()
             .statusCode(201)
         return login(email, password)
+    }
+
+    fun createSomeListings(count: Int, sellerToken: TokenResponse) {
+        repeat(count) {
+            val req = ListingsRequest(
+                description = faker.lorem().sentence(),
+                species = faker.animal().name(),
+                ageMonths = faker.number().numberBetween(1, 24),
+                price = BigDecimal.valueOf(faker.number().numberBetween(1, 100).toLong()),
+                breed = null,
+                title = faker.book().title()
+            )
+            RestAssured.given()
+                .contentType(ContentType.JSON)
+                .auth().oauth2(sellerToken.accessToken)
+                .body(req)
+                .post("/listings/")
+                .then()
+                .statusCode(200)
+        }
     }
 }

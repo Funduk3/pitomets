@@ -56,6 +56,30 @@ class SearchService(
                 .id(id.toString())
         }
     }
+
+    fun moreLikeThis(listingId: Long, size: Int = 10): List<SearchListingsResponse> {
+        val response = client.search({ s ->
+            s.index(INDEX)
+                .size(size)
+                .query { q ->
+                    q.moreLikeThis { mlt ->
+                        mlt.fields(listOf("title", "description"))
+                        mlt.like { l ->
+                            l.document { d ->
+                                d.index(INDEX)
+                                    .id(listingId.toString())
+                            }
+                        }
+                        mlt.minTermFreq(1)
+                        mlt.minDocFreq(1)
+                    }
+                }
+        }, SearchListingDocument::class.java)
+        return response.hits().hits()
+            .mapNotNull { it.source() }
+            .map { SearchListingsResponse(it.id, it.title, it.description) }
+    }
+
     companion object {
         private const val INDEX = "listings"
     }

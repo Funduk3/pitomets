@@ -42,27 +42,19 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x monolit/gradlew
 
-      - name: Build & run tests
+      - name: Build (without tests)
         working-directory: monolit
-        run: ./gradlew clean build --no-daemon --parallel
+        run: ./gradlew clean assemble --no-daemon --parallel
 
-      - name: Run additional checks (optional)
-        if: always()
+      - name: Run tests
+        id: tests
         working-directory: monolit
-        run: ./gradlew check --no-daemon || true
+        run: ./gradlew test --no-daemon --parallel
 
-      - name: Upload test results (JUnit XML) (optional)
-        if: always()
+
+      - name: Upload test results (JUnit XML)
+        if: steps.tests.outcome == 'failure'
         uses: actions/upload-artifact@v4
-        continue-on-error: true
         with:
           name: test-results
           path: monolit/**/build/test-results
-
-      - name: Upload build archive (optional)
-        if: success()
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: build-artifacts
-          path: monolit/**/build/libs/*.jar

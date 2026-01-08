@@ -1,8 +1,8 @@
 package com.pitomets.monolit.service
 
 import com.pitomets.monolit.exceptions.AvatarNotFoundException
-import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.repository.UserRepo
+import com.pitomets.monolit.utils.findUserOrThrow
 import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
@@ -19,15 +19,11 @@ class UserPhotoService(
     fun uploadAvatar(file: MultipartFile, userId: Long): String {
         validateImage(file)
 
-        val user = userRepo.findById(userId)
-            .orElseThrow { UserNotFoundException("User with id $userId not found") }
+        val user = userRepo.findUserOrThrow(userId)
 
         // Удаляем старый аватар, если есть
         user.avatarKey?.let { oldKey ->
-            try {
-                minioService.delete(oldKey)
-            } catch (_: Exception) {
-            }
+            minioService.delete(oldKey)
         }
 
         val objectKey = buildAvatarKey(userId, file)
@@ -47,8 +43,7 @@ class UserPhotoService(
 
     @Transactional
     fun downloadAvatar(userId: Long): InputStream {
-        val user = userRepo.findById(userId)
-            .orElseThrow { UserNotFoundException("User with id $userId not found") }
+        val user = userRepo.findUserOrThrow(userId)
 
         val avatarKey = user.avatarKey
             ?: throw AvatarNotFoundException("User $userId has no avatar")
@@ -58,8 +53,7 @@ class UserPhotoService(
 
     @Transactional
     fun deleteAvatar(userId: Long): String {
-        val user = userRepo.findById(userId)
-            .orElseThrow { UserNotFoundException("User with id $userId not found") }
+        val user = userRepo.findUserOrThrow(userId)
 
         val avatarKey = user.avatarKey
             ?: throw AvatarNotFoundException("User $userId has no avatar")
