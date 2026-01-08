@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.math.BigDecimal
+import kotlin.test.assertEquals
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -25,24 +26,7 @@ class ElasticTest : BaseContainers() {
         // уникальный токен, по которому будем искать
         val token = "unique-search-token-${System.currentTimeMillis()}"
 
-        // Создаём 8 шумовых объявлений
-        repeat(8) {
-            val req = ListingsRequest(
-                description = faker.lorem().sentence(),
-                species = faker.animal().name(),
-                ageMonths = faker.number().numberBetween(1, 24),
-                price = BigDecimal.valueOf(faker.number().numberBetween(1, 100).toLong()),
-                breed = null,
-                title = faker.book().title()
-            )
-            RestAssured.given()
-                .contentType(ContentType.JSON)
-                .auth().oauth2(tokenSeller.accessToken)
-                .body(req)
-                .post("/listings/")
-                .then()
-                .statusCode(200)
-        }
+        createSomeListings(8, tokenSeller)
 
         // Создаём 2 целевых объявления, где токен в title
         val targetTitle1 = "Best match A $token"
@@ -104,5 +88,67 @@ class ElasticTest : BaseContainers() {
                 "Title '${dto.title}' does not match expected token or target titles"
             )
         }
+    }
+
+    @Test
+    fun `should create listing and fetch similar listings`() {
+        val sellerTokens = createBaseSeller()
+
+        val token = "SIMILAR-${System.currentTimeMillis()}"
+
+        val createListingRequest = ListingsRequest(
+            description = "Base desc $token",
+            species = faker.funnyName().name(),
+            ageMonths = faker.number().randomDigit(),
+            price = BigDecimal(faker.number().randomDigit()),
+            breed = null,
+            title = "Base title $token"
+        )
+
+        val similarListingRequest = ListingsRequest(
+            description = "Similar desc $token",
+            species = faker.funnyName().name(),
+            ageMonths = faker.number().randomDigit(),
+            price = BigDecimal(faker.number().randomDigit()),
+            breed = null,
+            title = "Similar title $token"
+        )
+
+        createSomeListings(8, sellerTokens)
+
+        val createdListingId: Long = RestAssured.given()
+            .contentType(ContentType.JSON)
+            .auth().oauth2(sellerTokens.accessToken)
+            .body(createListingRequest)
+            .post("/listings/")
+            .then()
+            .statusCode(200)
+            .extract()
+            .path("listingsId")
+
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .auth().oauth2(sellerTokens.accessToken)
+            .body(similarListingRequest)
+            .post("/listings/")
+            .then()
+            .statusCode(200)
+
+        // Обрабатываем Outbox для индексации в Elasticsearch
+        listingOutboxProcessor.processOutbox()
+        elasticClient.indices().refresh { it.index("listings") }
+
+        // Ищем похожие
+        val similarListings: List<SearchListingsResponse> = RestAssured.given()
+            .contentType(ContentType.JSON)
+            .param("size", 3)
+            .get("/search/listings/$createdListingId/similar")
+            .then()
+            .statusCode(200)
+            .extract()
+            .`as`(Array<SearchListingsResponse>::class.java)
+            .toList()
+
+        assertEquals(1, similarListings.size)
     }
 }

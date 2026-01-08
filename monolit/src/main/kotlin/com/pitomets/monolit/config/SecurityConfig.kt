@@ -77,7 +77,7 @@ class SecurityConfig(
                     "/register",
                     "/login",
                     "/refresh",
-                    "/search/listings",
+                    "/search/listings/**",
                     "/actuator/prometheus", // todo put in admin
                     "/seller/reviews/**",
                 ).permitAll()
