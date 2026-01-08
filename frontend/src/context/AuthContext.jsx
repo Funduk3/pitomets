@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../api/auth';
+import { userAPI } from '../api/user';
 
 const AuthContext = createContext(null);
 
@@ -17,12 +18,24 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
-    if (token) {
-      // Optionally verify token and load user
+    if (!token) {
       setLoading(false);
-    } else {
-      setLoading(false);
+      return;
     }
+
+    const loadUser = async () => {
+      try {
+        const profile = await userAPI.getCurrentProfile();
+        setUser(profile);
+      } catch (err) {
+        console.error('Failed to load user profile:', err);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUser();
   }, []);
 
   const login = async (email, passwordHash) => {
@@ -30,6 +43,8 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.login(email, passwordHash);
       localStorage.setItem('accessToken', response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
+      const profile = await userAPI.getCurrentProfile();
+      setUser(profile);
       return response;
     } catch (error) {
       throw error;

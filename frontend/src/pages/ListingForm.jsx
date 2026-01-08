@@ -98,7 +98,9 @@ export const ListingForm = () => {
       if (isEdit) {
         await listingsAPI.updateListing(parseInt(id), data);
       } else {
-        await listingsAPI.createListing(data);
+        const created = await listingsAPI.createListing(data);
+        navigate(`/listings/${created.listingsId}/photos`);
+        return;
       }
       navigate('/listings');
     } catch (err) {

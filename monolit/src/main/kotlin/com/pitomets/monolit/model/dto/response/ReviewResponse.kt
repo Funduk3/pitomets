@@ -7,7 +7,7 @@ data class ReviewResponse(
     val rating: Int,
     val text: String?,
     val authorId: Long,
-    val listingId: Long?,
+    val listingId: Long,
     val sellerProfileId: Long,
     val createdAt: OffsetDateTime,
 )

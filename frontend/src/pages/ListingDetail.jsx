@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 
 export const ListingDetail = () => {
   const { id } = useParams();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [listing, setListing] = useState(null);
   const [photos, setPhotos] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -19,6 +19,7 @@ export const ListingDetail = () => {
     loadListing();
     loadPhotos();
     loadReviews();
+    loadFavouriteStatus();
   }, [id]);
 
   const loadListing = async () => {
@@ -50,17 +51,44 @@ export const ListingDetail = () => {
     }
   };
 
-  const handleAddFavourite = async () => {
+  const loadFavouriteStatus = async () => {
+    if (!isAuthenticated()) {
+      setIsFavourite(false);
+      return;
+    }
+    try {
+      const favourites = await favouritesAPI.getFavourites();
+      const exists = favourites.some((f) => f.id === parseInt(id));
+      setIsFavourite(exists);
+    } catch (err) {
+      console.error('Failed to load favourites status:', err);
+      setIsFavourite(false);
+    }
+  };
+
+  const handleToggleFavourite = async () => {
     if (!isAuthenticated()) {
       alert('Please login to add favourites');
       return;
     }
 
     try {
-      await favouritesAPI.addFavourite(parseInt(id));
-      setIsFavourite(true);
+      if (isFavourite) {
+        await favouritesAPI.deleteFavourite(parseInt(id));
+        setIsFavourite(false);
+      } else {
+        await favouritesAPI.addFavourite(parseInt(id));
+        setIsFavourite(true);
+      }
     } catch (err) {
-      alert('Failed to add to favourites');
+      const msg = err.response?.data?.message;
+      const status = err.response?.status;
+      if (!isFavourite && (status === 409 || (msg && msg.toLowerCase().includes('already')))) {
+        setIsFavourite(true);
+        alert('This listing is already in your favourites.');
+        return;
+      }
+      alert(msg || 'Failed to update favourites');
     }
   };
 
@@ -71,6 +99,11 @@ export const ListingDetail = () => {
   return (
     <div>
       <h2>{listing.title || 'Untitled'}</h2>
+      <p style={{ marginTop: '0.25rem', color: '#555' }}>
+        <strong>Rating:</strong>{' '}
+        {listing.sellerRating != null ? `${listing.sellerRating.toFixed(2)} / 5` : 'No ratings yet'}
+        {listing.sellerReviewsCount != null && ` (${listing.sellerReviewsCount} reviews)`}
+      </p>
       <div style={{ display: 'flex', gap: '2rem', marginTop: '2rem' }}>
         <div style={{ flex: 1 }}>
           {photos.length > 0 ? (
@@ -98,10 +131,25 @@ export const ListingDetail = () => {
           <p><strong>Age:</strong> {listing.ageMonths} months</p>
           {listing.mother && <p><strong>Mother ID:</strong> {listing.mother}</p>}
           {listing.father && <p><strong>Father ID:</strong> {listing.father}</p>}
+          {isAuthenticated() && user?.id === listing.sellerId && (
+            <Link
+              to={`/listings/${id}/photos`}
+              style={{
+                display: 'inline-block',
+                marginTop: '0.75rem',
+                padding: '0.5rem 1rem',
+                backgroundColor: '#f39c12',
+                color: 'white',
+                textDecoration: 'none',
+                borderRadius: '4px'
+              }}
+            >
+              Manage Photos
+            </Link>
+          )}
           {isAuthenticated() && (
             <button
-              onClick={handleAddFavourite}
-              disabled={isFavourite}
+              onClick={handleToggleFavourite}
               style={{
                 marginTop: '1rem',
                 padding: '0.75rem 1.5rem',
@@ -109,10 +157,10 @@ export const ListingDetail = () => {
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
-                cursor: isFavourite ? 'not-allowed' : 'pointer'
+                cursor: 'pointer'
               }}
             >
-              {isFavourite ? 'In Favourites' : 'Add to Favourites'}
+              {isFavourite ? 'Remove from Favourites' : 'Add to Favourites'}
             </button>
           )}
         </div>

@@ -55,7 +55,7 @@ class ListingPhotoController(
         val photos = listingPhotoService.getListingPhotos(listingId)
 
         return ListingPhotoResponse(
-            title = listing.title ?: "Untitled",
+            title = listing.title,
             photos = photos.map { "/listings/$listingId/photos/${it.id}" }
         )
     }

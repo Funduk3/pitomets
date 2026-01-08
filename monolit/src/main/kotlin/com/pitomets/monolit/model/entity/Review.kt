@@ -18,7 +18,7 @@ class Review(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
 
-    @Column(nullable = false)
+    @Column(name = "rating", nullable = false)
     var rating: Int,
 
     @Column(columnDefinition = "text")
@@ -28,11 +28,11 @@ class Review(
     var createdAt: OffsetDateTime = OffsetDateTime.now(),
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "author_id")
+    @JoinColumn(name = "reviewer_id", nullable = false)
     var author: User,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "seller_profile_id")
+    @JoinColumn(name = "seller_id", nullable = false)
     var sellerProfile: SellerProfile,
 
     @ManyToOne(fetch = FetchType.LAZY)

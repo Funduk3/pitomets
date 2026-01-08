@@ -7,6 +7,12 @@ data class ListingsResponse(
 
     val description: String,
 
+    val sellerId: Long,
+
+    val sellerRating: Double?,
+
+    val sellerReviewsCount: Long?,
+
     val species: String?,
 
     val breed: String?,
@@ -21,5 +27,5 @@ data class ListingsResponse(
 
     val father: Long?,
 
-    val title: String?
+    val title: String
 )
