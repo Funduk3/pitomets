@@ -1,0 +1,48 @@
+# src/test/resources/application-test.yml
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092  # Ваш реальный Kafka
+    consumer:
+      group-id: notification-service-test
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.value.default.type: java.util.HashMap
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/notification_db  # Ваш реальный PostgreSQL
+    driver-class-name: org.postgresql.Driver
+    username: notification
+    password: notification
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
+  mail:
+    host: localhost
+    port: 1025
+    username: test
+    password: test
+    properties:
+      mail.smtp.auth: false
+      mail.smtp.starttls.enable: false
+
+logging:
+  level:
+    root: WARN
+    com.pitomets.notifications: DEBUG
+    org.springframework.kafka: INFO
+    org.hibernate.SQL: DEBUG
+
+kafka:
+  topics:
+    notifications: notification.send  # Топик из вашего docker-compose
