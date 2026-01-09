@@ -4,6 +4,9 @@ services:
     container_name: spring-app
     ports:
       - "8080:8080"
+    extra_hosts:
+      # ensure host.docker.internal resolves inside Linux containers (Docker Desktop)
+      - "host.docker.internal:host-gateway"
     depends_on:
       redis:
         condition: service_started
