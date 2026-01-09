@@ -31,7 +31,7 @@ class WebSocketManager {
      */
     private val connections = ConcurrentHashMap<Long, WebSocketServerSession>()
 
-    fun addConnection(userId: Long, session: WebSocketServerSession) {
+    suspend fun addConnection(userId: Long, session: WebSocketServerSession) {
         // Закрываем старую сессию, если была
         val prev = connections.put(userId, session)
         if (prev != null && prev !== session) {
