@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { messengerAPI } from '../api/messenger';
+import { userAPI } from '../api/user';
 import { useAuth } from '../context/AuthContext';
 
 export const Chats = () => {
@@ -8,6 +9,7 @@ export const Chats = () => {
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [profilesByUserId, setProfilesByUserId] = useState({});
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -19,6 +21,37 @@ export const Chats = () => {
     try {
       const data = await messengerAPI.getUserChats();
       setChats(data);
+
+      // подтягиваем профили собеседников пачкой (для отображения имени человека/магазина)
+      const myId = user?.id;
+      const otherIds = Array.from(
+        new Set(
+          (data || [])
+            .map((chat) => (chat.user1Id === myId ? chat.user2Id : chat.user1Id))
+            .filter((id) => id != null)
+        )
+      );
+
+      const missingIds = otherIds.filter((id) => profilesByUserId[id] == null);
+      if (missingIds.length) {
+        const results = await Promise.all(
+          missingIds.map(async (id) => {
+            try {
+              const profile = await userAPI.getUserProfile(id);
+              return [id, profile];
+            } catch (e) {
+              console.warn('Failed to load profile for userId', id, e);
+              return [id, null];
+            }
+          })
+        );
+
+        setProfilesByUserId((prev) => {
+          const next = { ...prev };
+          for (const [id, profile] of results) next[id] = profile;
+          return next;
+        });
+      }
     } catch (err) {
       console.error('Failed to load chats:', err);
       setError('Failed to load chats');
@@ -26,6 +59,28 @@ export const Chats = () => {
       setLoading(false);
     }
   };
+
+  const getDisplayName = (profile, fallbackUserId) => {
+    if (!profile) return `Пользователь #${fallbackUserId}`;
+    return profile.shopName || profile.fullName || `Пользователь #${fallbackUserId}`;
+  };
+
+  const formatPreview = (text, maxLen = 60) => {
+    if (!text) return '';
+    const cleaned = String(text).replace(/\s+/g, ' ').trim();
+    if (cleaned.length <= maxLen) return cleaned;
+    return `${cleaned.slice(0, maxLen)}…`;
+  };
+
+  const sortedChats = useMemo(() => {
+    const arr = [...(chats || [])];
+    arr.sort((a, b) => {
+      const aTs = a?.lastMessage?.createdAt ? Date.parse(a.lastMessage.createdAt) : Date.parse(a?.updatedAt || 0);
+      const bTs = b?.lastMessage?.createdAt ? Date.parse(b.lastMessage.createdAt) : Date.parse(b?.updatedAt || 0);
+      return (bTs || 0) - (aTs || 0);
+    });
+    return arr;
+  }, [chats]);
 
   if (!isAuthenticated()) {
     return <div>Please login to view your chats</div>;
@@ -41,8 +96,14 @@ export const Chats = () => {
         <p>У вас пока нет чатов</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
-          {chats.map((chat) => {
+          {sortedChats.map((chat) => {
             const otherUserId = chat.user1Id === user?.id ? chat.user2Id : chat.user1Id;
+            const profile = profilesByUserId[otherUserId];
+            const displayName = getDisplayName(profile, otherUserId);
+            const last = chat.lastMessage;
+            const lastTime = last?.createdAt ? new Date(last.createdAt).toLocaleTimeString() : null;
+            const lastText = last?.content ? formatPreview(last.content) : 'Нет сообщений';
+            const isUnread = last?.isRead === false && last?.senderId !== user?.id;
             return (
               <Link
                 key={chat.id}
@@ -59,10 +120,21 @@ export const Chats = () => {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <strong>Чат с пользователем #{otherUserId}</strong>
-                    <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: '#666' }}>
-                      {new Date(chat.updatedAt).toLocaleString()}
-                    </p>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'baseline' }}>
+                      <strong>{displayName}</strong>
+                      <span style={{ fontSize: '0.85rem', color: '#888' }}>#{otherUserId}</span>
+                    </div>
+
+                    <div style={{ marginTop: '0.35rem', fontSize: '0.95rem', color: '#333' }}>
+                      <span style={{ fontWeight: isUnread ? 700 : 400 }}>
+                        {lastText}
+                      </span>
+                    </div>
+
+                    <div style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: '#666' }}>
+                      {lastTime ? lastTime : new Date(chat.updatedAt).toLocaleString()}
+                      {isUnread ? ' • новое' : ''}
+                    </div>
                   </div>
                   <span style={{ fontSize: '1.5rem' }}>→</span>
                 </div>

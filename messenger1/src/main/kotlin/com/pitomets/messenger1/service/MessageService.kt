@@ -47,6 +47,16 @@ class MessageService {
         }
     }
 
+    fun getLastMessageByChatId(chatId: Long): MessageEntity? {
+        return transaction {
+            Messages.select { Messages.chatId eq chatId }
+                .orderBy(Messages.createdAt to SortOrder.DESC)
+                .limit(1)
+                .map { rowToMessage(it) }
+                .singleOrNull()
+        }
+    }
+
     fun markMessagesAsRead(chatId: Long, userId: Long) {
         transaction {
             Messages.update(

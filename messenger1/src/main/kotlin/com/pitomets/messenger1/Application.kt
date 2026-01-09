@@ -72,7 +72,7 @@ fun Application.module() {
         }
 
         messageRoutes(messageService, chatService)
-        chatRoutes(chatService)
+        chatRoutes(chatService, messageService)
         webSocketRoutes(messageService, chatService, webSocketManager)
     }
 }

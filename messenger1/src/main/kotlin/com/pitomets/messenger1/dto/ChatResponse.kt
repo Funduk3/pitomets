@@ -9,16 +9,18 @@ data class ChatResponse(
     val user1Id: Long,
     val user2Id: Long,
     val createdAt: String,
-    val updatedAt: String
+    val updatedAt: String,
+    val lastMessage: MessageResponse? = null
 ) {
     companion object {
-        fun from(entity: ChatEntity): ChatResponse {
+        fun from(entity: ChatEntity, lastMessage: MessageResponse? = null): ChatResponse {
             return ChatResponse(
                 id = entity.id,
                 user1Id = entity.user1Id,
                 user2Id = entity.user2Id,
                 createdAt = entity.createdAt.toString(),
-                updatedAt = entity.updatedAt.toString()
+                updatedAt = entity.updatedAt.toString(),
+                lastMessage = lastMessage
             )
         }
     }

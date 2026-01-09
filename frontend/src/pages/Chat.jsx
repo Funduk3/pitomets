@@ -75,6 +75,9 @@ export const Chat = () => {
   const connectWebSocket = () => {
     if (!user?.id) return;
 
+    const debugId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    console.log('[WS] connectWebSocket()', { chatId, userId: user.id, debugId });
+
     // Не плодим соединения: если уже OPEN/CONNECTING — выходим.
     // Важно: если сокет "завис" в CLOSING, лучше принудительно закрыть и создать новый,
     // иначе можно получить 2 активных сокета и дубль входящих сообщений.
@@ -105,18 +108,27 @@ export const Chat = () => {
     // Пока используем прямой WebSocket к messenger1 с userId в query параметрах
     const wsUrl = `ws://localhost:8081/ws/chat?userId=${user.id}`;
     const ws = new WebSocket(wsUrl);
+    // метка соединения для дебага
+    ws.__debugId = debugId;
     wsRef.current = ws;
 
     ws.onopen = () => {
       setWsConnected(true);
       // Отправляем userId для аутентификации
       // В реальности нужно будет проксировать WebSocket через monolit
-      console.log('WebSocket connected');
+      console.log('[WS] open', { debugId: ws.__debugId, readyState: ws.readyState });
     };
 
     ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
+        console.log('[WS] message', {
+          debugId: ws.__debugId,
+          id: message?.id,
+          chatId: message?.chatId,
+          senderId: message?.senderId,
+          raw: event.data,
+        });
         setMessages((prev) => {
           // Игнорируем сообщения не из текущего чата (WS шлёт по пользователю, не по чату)
           const currentChatId = parseInt(chatId);
@@ -140,11 +152,12 @@ export const Chat = () => {
     };
 
     ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.error('[WS] error', { debugId: ws.__debugId, error });
       setWsConnected(false);
     };
 
     ws.onclose = () => {
+      console.log('[WS] close', { debugId: ws.__debugId });
       setWsConnected(false);
       // Считаем соединение мёртвым, чтобы не копились ссылки на старые WS
       if (wsRef.current === ws) {
