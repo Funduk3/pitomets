@@ -26,6 +26,8 @@ services:
       ELASTICSEARCH_PORT: 9200
 
       MINIO_URL: http://minio:9000
+      # messenger1 runs separately; from inside Docker use host.docker.internal to reach host-mapped 8081
+      MESSENGER_URL: http://host.docker.internal:8081
 
   redis:
     image: redis:7-alpine
