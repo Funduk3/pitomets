@@ -54,4 +54,6 @@ minio:
   bucket: my-bucket
 
 messenger:
-  url: ${MESSENGER_URL:http://localhost:8081}
+  # When monolit runs in Docker and messenger1 is published on host port 8081,
+  # use host.docker.internal. Override via env MESSENGER_URL if needed.
+  url: ${MESSENGER_URL:http://host.docker.internal:8081}

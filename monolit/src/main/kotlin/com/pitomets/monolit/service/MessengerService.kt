@@ -1,5 +1,6 @@
 package com.pitomets.monolit.service
 
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
@@ -10,10 +11,15 @@ import org.springframework.web.client.RestTemplate
 
 @Service
 class MessengerService(
-    @Value("\${messenger.url:http://localhost:8081}")
+    @Value("\${messenger.url}")
     private val messengerUrl: String
 ) {
     private val restTemplate = RestTemplate()
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    init {
+        log.info("MessengerService proxy base URL: {}", messengerUrl)
+    }
 
     fun proxyRequest(
         userId: Long,
