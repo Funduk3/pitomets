@@ -33,6 +33,7 @@ export const Layout = ({ children }) => {
                 <Link to="/listings" style={{ color: 'white', textDecoration: 'none' }}>My Listings</Link>
               )}
               <Link to="/favourites" style={{ color: 'white', textDecoration: 'none' }}>Favourites</Link>
+              <Link to="/chats" style={{ color: 'white', textDecoration: 'none' }}>Мои чаты</Link>
               <Link to="/profile" style={{ color: 'white', textDecoration: 'none' }}>Profile</Link>
             </>
           )}

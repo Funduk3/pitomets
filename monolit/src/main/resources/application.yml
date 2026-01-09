@@ -52,3 +52,6 @@ minio:
   access-key: minioadmin
   secret-key: minioadmin
   bucket: my-bucket
+
+messenger:
+  url: ${MESSENGER_URL:http://localhost:8081}

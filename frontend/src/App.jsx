@@ -13,6 +13,8 @@ import { ListingPhotos } from './pages/ListingPhotos';
 import { Search } from './pages/Search';
 import { Favourites } from './pages/Favourites';
 import { ReviewForm } from './pages/ReviewForm';
+import { Chats } from './pages/Chats';
+import { Chat } from './pages/Chat';
 
 function App() {
   return (
@@ -33,6 +35,8 @@ function App() {
             <Route path="/listings/:id/review" element={<ReviewForm />} />
             <Route path="/search" element={<Search />} />
             <Route path="/favourites" element={<Favourites />} />
+            <Route path="/chats" element={<Chats />} />
+            <Route path="/chats/:chatId" element={<Chat />} />
           </Routes>
         </Layout>
       </BrowserRouter>

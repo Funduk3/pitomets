@@ -1,0 +1,232 @@
+import { useState, useEffect, useRef } from 'react';
+import { useParams } from 'react-router-dom';
+import { messengerAPI } from '../api/messenger';
+import { useAuth } from '../context/AuthContext';
+
+export const Chat = () => {
+  const { chatId } = useParams();
+  const { isAuthenticated, user } = useAuth();
+  const [chat, setChat] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [wsConnected, setWsConnected] = useState(false);
+  const wsRef = useRef(null);
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    if (isAuthenticated() && chatId) {
+      loadChat();
+      loadMessages();
+      connectWebSocket();
+    }
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [chatId, isAuthenticated]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const loadChat = async () => {
+    try {
+      const data = await messengerAPI.getChat(parseInt(chatId));
+      setChat(data);
+    } catch (err) {
+      console.error('Failed to load chat:', err);
+      setError('Failed to load chat');
+    }
+  };
+
+  const loadMessages = async () => {
+    try {
+      const data = await messengerAPI.getChatMessages(parseInt(chatId));
+      setMessages(data);
+      await messengerAPI.markMessagesAsRead(parseInt(chatId));
+    } catch (err) {
+      console.error('Failed to load messages:', err);
+      setError('Failed to load messages');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const connectWebSocket = () => {
+    if (!user?.id) return;
+
+    // WebSocket через monolit не будет работать напрямую, нужно будет проксировать
+    // Пока используем прямой WebSocket к messenger1 с userId в query параметрах
+    const wsUrl = `ws://localhost:8081/ws/chat?userId=${user.id}`;
+    const ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      setWsConnected(true);
+      // Отправляем userId для аутентификации
+      // В реальности нужно будет проксировать WebSocket через monolit
+      console.log('WebSocket connected');
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        setMessages((prev) => [...prev, message]);
+        scrollToBottom();
+      } catch (err) {
+        console.error('Failed to parse WebSocket message:', err);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      setWsConnected(false);
+    };
+
+    ws.onclose = () => {
+      setWsConnected(false);
+      // Попытка переподключения через 3 секунды
+      setTimeout(() => {
+        if (isAuthenticated()) {
+          connectWebSocket();
+        }
+      }, 3000);
+    };
+
+    wsRef.current = ws;
+  };
+
+  const sendMessage = async () => {
+    if (!newMessage.trim() || !wsConnected) return;
+
+    try {
+      const message = {
+        type: 'send_message',
+        chatId: parseInt(chatId),
+        content: newMessage.trim(),
+      };
+
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify(message));
+        setNewMessage('');
+      } else {
+        // Fallback: отправка через HTTP
+        await messengerAPI.createMessage(parseInt(chatId), newMessage.trim());
+        setNewMessage('');
+        loadMessages();
+      }
+    } catch (err) {
+      console.error('Failed to send message:', err);
+      alert('Failed to send message');
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  if (!isAuthenticated()) {
+    return <div>Please login to view chat</div>;
+  }
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div style={{ color: 'red' }}>{error}</div>;
+  if (!chat) return <div>Chat not found</div>;
+
+  const otherUserId = chat.user1Id === user?.id ? chat.user2Id : chat.user1Id;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }}>
+      <div style={{ padding: '1rem', borderBottom: '1px solid #ddd', backgroundColor: '#f9f9f9' }}>
+        <h3>Чат с пользователем #{otherUserId}</h3>
+        <div style={{ fontSize: '0.9rem', color: '#666' }}>
+          {wsConnected ? '🟢 Подключено' : '🔴 Отключено'}
+        </div>
+      </div>
+
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '1rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem',
+        }}
+      >
+        {messages.map((msg) => {
+          const isOwn = msg.senderId === user?.id;
+          return (
+            <div
+              key={msg.id}
+              style={{
+                alignSelf: isOwn ? 'flex-end' : 'flex-start',
+                maxWidth: '70%',
+                padding: '0.75rem',
+                borderRadius: '8px',
+                backgroundColor: isOwn ? '#3498db' : '#ecf0f1',
+                color: isOwn ? 'white' : 'black',
+              }}
+            >
+              <div>{msg.content}</div>
+              <div
+                style={{
+                  fontSize: '0.75rem',
+                  marginTop: '0.25rem',
+                  opacity: 0.7,
+                }}
+              >
+                {new Date(msg.createdAt).toLocaleTimeString()}
+              </div>
+            </div>
+          );
+        })}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div style={{ padding: '1rem', borderTop: '1px solid #ddd', backgroundColor: '#f9f9f9' }}>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Введите сообщение..."
+            style={{
+              flex: 1,
+              padding: '0.75rem',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+            }}
+            disabled={!wsConnected}
+          />
+          <button
+            onClick={sendMessage}
+            disabled={!newMessage.trim() || !wsConnected}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: wsConnected ? '#27ae60' : '#95a5a6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: wsConnected ? 'pointer' : 'not-allowed',
+            }}
+          >
+            Отправить
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
