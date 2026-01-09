@@ -75,13 +75,30 @@ export const Chat = () => {
   const connectWebSocket = () => {
     if (!user?.id) return;
 
-    // Не плодим соединения
-    if (
-      wsRef.current &&
-      (wsRef.current.readyState === WebSocket.OPEN ||
-        wsRef.current.readyState === WebSocket.CONNECTING)
-    ) {
-      return;
+    // Не плодим соединения: если уже OPEN/CONNECTING — выходим.
+    // Важно: если сокет "завис" в CLOSING, лучше принудительно закрыть и создать новый,
+    // иначе можно получить 2 активных сокета и дубль входящих сообщений.
+    if (wsRef.current) {
+      if (
+        wsRef.current.readyState === WebSocket.OPEN ||
+        wsRef.current.readyState === WebSocket.CONNECTING
+      ) {
+        return;
+      }
+
+      try {
+        wsRef.current.close();
+      } catch (_) {
+        // ignore
+      } finally {
+        wsRef.current = null;
+      }
+    }
+
+    // Сбрасываем отложенный reconnect, чтобы не получить параллельные коннекты
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
 
     // WebSocket через monolit не будет работать напрямую, нужно будет проксировать
@@ -101,8 +118,19 @@ export const Chat = () => {
       try {
         const message = JSON.parse(event.data);
         setMessages((prev) => {
-          // Дедуп по id на случай нескольких соединений/повторных событий
-          if (message?.id != null && prev.some((m) => m.id === message.id)) return prev;
+          // Игнорируем сообщения не из текущего чата (WS шлёт по пользователю, не по чату)
+          const currentChatId = parseInt(chatId);
+          if (message?.chatId != null && Number(message.chatId) !== currentChatId) return prev;
+
+          // Дедуп по id (нормализуем тип, чтобы "1" и 1 считались одинаковыми)
+          const incomingId = message?.id != null ? String(message.id) : null;
+          if (incomingId && prev.some((m) => m?.id != null && String(m.id) === incomingId)) {
+            return prev;
+          }
+
+          // Если id нет — это не MessageResponse (ошибка/служебное) — не добавляем в ленту
+          if (!incomingId) return prev;
+
           return [...prev, message];
         });
         scrollToBottom();
