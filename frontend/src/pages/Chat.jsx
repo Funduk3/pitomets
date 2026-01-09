@@ -16,18 +16,19 @@ export const Chat = () => {
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    if (isAuthenticated() && chatId) {
-      loadChat();
-      loadMessages();
-      connectWebSocket();
-    }
+    if (!isAuthenticated() || !chatId) return;
+    loadChat();
+    loadMessages();
+    // WS подключаем отдельным эффектом, когда точно есть user.id
+  }, [chatId]);
 
+  useEffect(() => {
+    if (!isAuthenticated() || !chatId || !user?.id) return;
+    connectWebSocket();
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
+      if (wsRef.current) wsRef.current.close();
     };
-  }, [chatId, isAuthenticated]);
+  }, [chatId, user?.id]);
 
   useEffect(() => {
     scrollToBottom();
@@ -104,7 +105,7 @@ export const Chat = () => {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !wsConnected) return;
+    if (!newMessage.trim()) return;
 
     try {
       const message = {
@@ -208,18 +209,17 @@ export const Chat = () => {
               border: '1px solid #ddd',
               borderRadius: '4px',
             }}
-            disabled={!wsConnected}
           />
           <button
             onClick={sendMessage}
-            disabled={!newMessage.trim() || !wsConnected}
+            disabled={!newMessage.trim()}
             style={{
               padding: '0.75rem 1.5rem',
-              backgroundColor: wsConnected ? '#27ae60' : '#95a5a6',
+              backgroundColor: '#27ae60',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: wsConnected ? 'pointer' : 'not-allowed',
+              cursor: 'pointer',
             }}
           >
             Отправить
