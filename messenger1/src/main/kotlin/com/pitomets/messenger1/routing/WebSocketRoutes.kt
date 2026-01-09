@@ -12,6 +12,7 @@ import kotlinx.coroutines.channels.consumeEach
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
+import java.util.concurrent.ConcurrentHashMap
 
 @Serializable
 data class WebSocketMessage(
@@ -22,26 +23,37 @@ data class WebSocketMessage(
 )
 
 class WebSocketManager {
-    private val connections = mutableMapOf<Long, MutableSet<WebSocketServerSession>>()
+    /**
+     * Важно: в dev (и при глюках сети) клиент может открыть 2 WS-сессии на одного юзера.
+     * Тогда одно сообщение приходит в UI два раза, хотя в БД оно одно.
+     *
+     * Поэтому держим ровно ОДНО активное соединение на пользователя (последнее wins).
+     */
+    private val connections = ConcurrentHashMap<Long, WebSocketServerSession>()
 
     fun addConnection(userId: Long, session: WebSocketServerSession) {
-        connections.getOrPut(userId) { mutableSetOf() }.add(session)
-    }
-
-    fun removeConnection(userId: Long, session: WebSocketServerSession) {
-        connections[userId]?.remove(session)
-        if (connections[userId]?.isEmpty() == true) {
-            connections.remove(userId)
+        // Закрываем старую сессию, если была
+        val prev = connections.put(userId, session)
+        if (prev != null && prev !== session) {
+            try {
+                prev.close(CloseReason(CloseReason.Codes.NORMAL, "Replaced by a new connection"))
+            } catch (_: Exception) {
+                // ignore
+            }
         }
     }
 
+    fun removeConnection(userId: Long, session: WebSocketServerSession) {
+        // удаляем только если это текущая сессия (иначе можно снести новую)
+        connections.remove(userId, session)
+    }
+
     suspend fun sendToUser(userId: Long, message: String) {
-        connections[userId]?.forEach { session ->
-            try {
-                session.send(Frame.Text(message))
-            } catch (e: Exception) {
-                removeConnection(userId, session)
-            }
+        val session = connections[userId] ?: return
+        try {
+            session.send(Frame.Text(message))
+        } catch (_: Exception) {
+            removeConnection(userId, session)
         }
     }
 
