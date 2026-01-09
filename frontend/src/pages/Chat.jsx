@@ -118,6 +118,10 @@ export const Chat = () => {
 
     ws.onclose = () => {
       setWsConnected(false);
+      // Считаем соединение мёртвым, чтобы не копились ссылки на старые WS
+      if (wsRef.current === ws) {
+        wsRef.current = null;
+      }
       // Попытка переподключения через 3 секунды
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
