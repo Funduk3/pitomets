@@ -13,6 +13,8 @@ export const Chat = () => {
   const [error, setError] = useState('');
   const [wsConnected, setWsConnected] = useState(false);
   const wsRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
+  const shouldReconnectRef = useRef(true);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -24,9 +26,18 @@ export const Chat = () => {
 
   useEffect(() => {
     if (!isAuthenticated() || !chatId || !user?.id) return;
+    shouldReconnectRef.current = true;
     connectWebSocket();
     return () => {
-      if (wsRef.current) wsRef.current.close();
+      shouldReconnectRef.current = false;
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
     };
   }, [chatId, user?.id]);
 
@@ -64,10 +75,20 @@ export const Chat = () => {
   const connectWebSocket = () => {
     if (!user?.id) return;
 
+    // Не плодим соединения
+    if (
+      wsRef.current &&
+      (wsRef.current.readyState === WebSocket.OPEN ||
+        wsRef.current.readyState === WebSocket.CONNECTING)
+    ) {
+      return;
+    }
+
     // WebSocket через monolit не будет работать напрямую, нужно будет проксировать
     // Пока используем прямой WebSocket к messenger1 с userId в query параметрах
     const wsUrl = `ws://localhost:8081/ws/chat?userId=${user.id}`;
     const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
 
     ws.onopen = () => {
       setWsConnected(true);
@@ -79,7 +100,11 @@ export const Chat = () => {
     ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
-        setMessages((prev) => [...prev, message]);
+        setMessages((prev) => {
+          // Дедуп по id на случай нескольких соединений/повторных событий
+          if (message?.id != null && prev.some((m) => m.id === message.id)) return prev;
+          return [...prev, message];
+        });
         scrollToBottom();
       } catch (err) {
         console.error('Failed to parse WebSocket message:', err);
@@ -94,14 +119,15 @@ export const Chat = () => {
     ws.onclose = () => {
       setWsConnected(false);
       // Попытка переподключения через 3 секунды
-      setTimeout(() => {
-        if (isAuthenticated()) {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      reconnectTimeoutRef.current = setTimeout(() => {
+        if (shouldReconnectRef.current && isAuthenticated()) {
           connectWebSocket();
         }
       }, 3000);
     };
-
-    wsRef.current = ws;
   };
 
   const sendMessage = async () => {
