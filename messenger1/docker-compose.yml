@@ -18,6 +18,21 @@ services:
       timeout: 5s
       retries: 5
 
+  app:
+    build: .
+    container_name: messenger1-app
+    ports:
+      - "8081:8081"
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: messenger1
+      DATABASE_USER: user
+      DATABASE_PASSWORD: password
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
 
