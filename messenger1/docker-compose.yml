@@ -24,9 +24,7 @@ services:
     ports:
       - "8081:8081"
     environment:
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_NAME: messenger1
+      DATABASE_URL: jdbc:postgresql://postgres:5432/messenger1
       DATABASE_USER: user
       DATABASE_PASSWORD: password
     depends_on:

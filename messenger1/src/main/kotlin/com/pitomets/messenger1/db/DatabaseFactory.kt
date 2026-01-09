@@ -11,16 +11,8 @@ import org.jetbrains.exposed.sql.transactions.transaction
 object DatabaseFactory {
     fun init() {
         val config = HikariConfig().apply {
-            // Поддержка как DATABASE_URL, так и отдельных переменных
-            val dbUrl = System.getenv("DATABASE_URL")
-            if (dbUrl != null) {
-                jdbcUrl = dbUrl
-            } else {
-                val dbHost = System.getenv("DATABASE_HOST") ?: "localhost"
-                val dbPort = System.getenv("DATABASE_PORT") ?: "5432"
-                val dbName = System.getenv("DATABASE_NAME") ?: "messenger1"
-                jdbcUrl = "jdbc:postgresql://$dbHost:$dbPort/$dbName"
-            }
+            // Аналогично monolit - используем полный DATABASE_URL
+            jdbcUrl = System.getenv("DATABASE_URL") ?: "jdbc:postgresql://localhost:5432/messenger1"
             driverClassName = "org.postgresql.Driver"
             username = System.getenv("DATABASE_USER") ?: "user"
             password = System.getenv("DATABASE_PASSWORD") ?: "password"
