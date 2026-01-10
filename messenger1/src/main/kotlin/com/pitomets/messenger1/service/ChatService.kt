@@ -62,7 +62,9 @@ class ChatService {
             user1Id = row[Chats.user1Id],
             user2Id = row[Chats.user2Id],
             createdAt = row[Chats.createdAt],
-            updatedAt = row[Chats.updatedAt]
+            updatedAt = row[Chats.updatedAt],
+            unreadCountUser1 = row[Chats.unreadCountUser1],
+            unreadCountUser2 = row[Chats.unreadCountUser2],
         )
     }
 }

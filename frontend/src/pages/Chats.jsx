@@ -103,7 +103,8 @@ export const Chats = () => {
             const last = chat.lastMessage;
             const lastTime = last?.createdAt ? new Date(last.createdAt).toLocaleTimeString() : null;
             const lastText = last?.content ? formatPreview(last.content) : 'Нет сообщений';
-            const isUnread = last?.isRead === false && last?.senderId !== user?.id;
+            const unreadCount = Number(chat?.unreadCount || 0);
+            const isUnread = unreadCount > 0;
             return (
               <Link
                 key={chat.id}
@@ -123,6 +124,22 @@ export const Chats = () => {
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'baseline' }}>
                       <strong>{displayName}</strong>
                       <span style={{ fontSize: '0.85rem', color: '#888' }}>#{otherUserId}</span>
+                      {unreadCount > 0 && (
+                        <span
+                          style={{
+                            marginLeft: '0.25rem',
+                            backgroundColor: '#e74c3c',
+                            color: 'white',
+                            borderRadius: '999px',
+                            padding: '0.1rem 0.5rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {unreadCount}
+                        </span>
+                      )}
                     </div>
 
                     <div style={{ marginTop: '0.35rem', fontSize: '0.95rem', color: '#333' }}>
@@ -133,7 +150,7 @@ export const Chats = () => {
 
                     <div style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: '#666' }}>
                       {lastTime ? lastTime : new Date(chat.updatedAt).toLocaleString()}
-                      {isUnread ? ' • новое' : ''}
+                      {isUnread ? ' • новые' : ''}
                     </div>
                   </div>
                   <span style={{ fontSize: '1.5rem' }}>→</span>

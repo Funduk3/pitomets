@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { messengerAPI } from '../api/messenger';
+import { userAPI } from '../api/user';
 import { useAuth } from '../context/AuthContext';
 
 export const Chat = () => {
@@ -12,6 +13,7 @@ export const Chat = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [wsConnected, setWsConnected] = useState(false);
+  const [otherProfile, setOtherProfile] = useState(null);
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const shouldReconnectRef = useRef(true);
@@ -97,6 +99,25 @@ export const Chat = () => {
       setError('Failed to load chat');
     }
   };
+
+  useEffect(() => {
+    const otherUserId = chat?.user1Id === user?.id ? chat?.user2Id : chat?.user1Id;
+    if (!otherUserId) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const profile = await userAPI.getUserProfile(otherUserId);
+        if (!cancelled) setOtherProfile(profile);
+      } catch (e) {
+        if (!cancelled) setOtherProfile(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [chat?.id, chat?.user1Id, chat?.user2Id, user?.id]);
 
   const loadMessages = async () => {
     try {
@@ -258,11 +279,12 @@ export const Chat = () => {
   if (!chat) return <div>Chat not found</div>;
 
   const otherUserId = chat.user1Id === user?.id ? chat.user2Id : chat.user1Id;
+  const otherName = otherProfile?.shopName || otherProfile?.fullName || `Пользователь #${otherUserId}`;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }}>
       <div style={{ padding: '1rem', borderBottom: '1px solid #ddd', backgroundColor: '#f9f9f9' }}>
-        <h3>Чат с пользователем #{otherUserId}</h3>
+        <h3>{otherName}</h3>
         <div style={{ fontSize: '0.9rem', color: '#666' }}>
           {wsConnected ? '🟢 Подключено' : '🔴 Отключено'}
         </div>

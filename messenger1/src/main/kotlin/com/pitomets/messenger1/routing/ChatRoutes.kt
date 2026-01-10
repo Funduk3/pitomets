@@ -30,7 +30,12 @@ fun Route.chatRoutes(chatService: ChatService, messageService: MessageService) {
             val chats = chatService.getUserChats(userId)
             val result = chats.map { chat ->
                 val last = messageService.getLastMessageByChatId(chat.id)
-                ChatResponse.from(chat, lastMessage = last?.let { com.pitomets.messenger1.dto.MessageResponse.from(it) })
+                val unreadCount = if (userId == chat.user1Id) chat.unreadCountUser1 else chat.unreadCountUser2
+                ChatResponse.from(
+                    chat,
+                    unreadCount = unreadCount,
+                    lastMessage = last?.let { com.pitomets.messenger1.dto.MessageResponse.from(it) }
+                )
             }
             call.respond(result)
         }
@@ -51,7 +56,14 @@ fun Route.chatRoutes(chatService: ChatService, messageService: MessageService) {
             }
 
             val last = messageService.getLastMessageByChatId(chat.id)
-            call.respond(ChatResponse.from(chat, lastMessage = last?.let { com.pitomets.messenger1.dto.MessageResponse.from(it) }))
+            val unreadCount = if (userId == chat.user1Id) chat.unreadCountUser1 else chat.unreadCountUser2
+            call.respond(
+                ChatResponse.from(
+                    chat,
+                    unreadCount = unreadCount,
+                    lastMessage = last?.let { com.pitomets.messenger1.dto.MessageResponse.from(it) }
+                )
+            )
         }
     }
 }

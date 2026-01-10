@@ -26,7 +26,8 @@ object DatabaseFactory {
         Database.connect(dataSource)
 
         transaction {
-            SchemaUtils.create(Chats, Messages)
+            // keep schema in sync (adds missing columns too)
+            SchemaUtils.createMissingTablesAndColumns(Chats, Messages)
         }
     }
 }
