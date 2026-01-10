@@ -15,6 +15,7 @@ export const Chat = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [otherProfile, setOtherProfile] = useState(null);
+  const [isTabVisible, setIsTabVisible] = useState(!document.hidden);
   const syncIntervalRef = useRef(null);
   const markReadTimeoutRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -49,6 +50,12 @@ export const Chat = () => {
     };
   }, [chatId, user?.id]);
 
+  useEffect(() => {
+    const onVisibility = () => setIsTabVisible(!document.hidden);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
   // Надёжность: периодически синхронизируем последние сообщения по HTTP.
   // Это компенсирует любые краткие разрывы WS/пропуски событий: сообщение может не прийти в моменте,
   // но гарантированно появится через несколько секунд без F5.
@@ -56,6 +63,14 @@ export const Chat = () => {
     if (!isAuthenticated() || !chatId) return;
 
     if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
+    // Когда WS подключён — синхронизируем редко (страховка).
+    // Когда WS отключён — синхронизируем чаще, но только если вкладка видима.
+    const intervalMs = wsConnected ? 60000 : 5000;
+    if (!isTabVisible && !wsConnected) {
+      // вкладка скрыта, а WS нет — не долбим сервер; догонит при фокусе/переподключении
+      return;
+    }
+
     syncIntervalRef.current = setInterval(async () => {
       try {
         const data = await messengerAPI.getChatMessages(parseInt(chatId));
@@ -65,7 +80,7 @@ export const Chat = () => {
       } catch (_) {
         // ignore
       }
-    }, 4000);
+    }, intervalMs);
 
     return () => {
       if (syncIntervalRef.current) {
@@ -73,7 +88,7 @@ export const Chat = () => {
         syncIntervalRef.current = null;
       }
     };
-  }, [chatId]);
+  }, [chatId, wsConnected, isTabVisible]);
 
   useEffect(() => {
     scrollToBottom();
