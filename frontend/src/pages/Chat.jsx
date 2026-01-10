@@ -168,6 +168,8 @@ export const Chat = () => {
       // Скролл вниз делаем через useLayoutEffect (без видимого "прыжка"), тут ничего не делаем
 
       await messengerAPI.markMessagesAsRead(parseInt(chatId));
+      // гасим глобальный индикатор непрочитанных для этого чата сразу, без refresh
+      markChatRead(parseInt(chatId));
     } catch (err) {
       console.error('Failed to load messages:', err);
       setError('Failed to load messages');
