@@ -79,17 +79,24 @@ export const MessengerWSProvider = ({ children }) => {
     ws.onclose = () => {
       setConnected(false);
       if (wsRef.current === ws) wsRef.current = null;
-      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+
+      if (!shouldReconnectRef.current || document.hidden) {
+        return;
+      }
+
       reconnectTimeoutRef.current = setTimeout(() => {
-        if (shouldReconnectRef.current && isAuthenticated()) connect();
+        if (shouldReconnectRef.current && isAuthenticated()) {
+          connect();
+        }
       }, 1500);
     };
+
   };
 
   useEffect(() => {
     if (!isAuthenticated() || !user?.id) return;
     shouldReconnectRef.current = true;
-    connect();
+    // connect();
     return () => {
       shouldReconnectRef.current = false;
       if (reconnectTimeoutRef.current) {
@@ -103,6 +110,64 @@ export const MessengerWSProvider = ({ children }) => {
       setConnected(false);
     };
   }, [user?.id]);
+
+  // == Background-aware disconnect: закрываем WS когда вкладка скрыта, реконнектим при видимости ==
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) {
+        // Остановить автоматические реконнекты и закрыть сокет
+        shouldReconnectRef.current = false;
+
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = null;
+        }
+
+        if (wsRef.current) {
+          try {
+            wsRef.current.close();
+          } catch (e) {
+            // ignore
+          }
+          wsRef.current = null;
+        }
+      } else {
+        // Вкладка видима — разрешаем реконнекты и пробуем подключиться (с небольшой задержкой)
+        shouldReconnectRef.current = true;
+
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = null;
+        }
+
+        // Небольшая задержка, чтобы избежать флуда при быстрых переключениях
+        reconnectTimeoutRef.current = setTimeout(() => {
+          // check auth before connect
+          if (typeof isAuthenticated === 'function' ? isAuthenticated() : true) {
+            connect();
+          }
+        }, 300);
+      }
+      if (document.hidden) {
+        setConnected(false);
+      }
+
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    // Выполнить один раз при монтировании, чтобы привести поведение в соответствие с текущим состоянием вкладки
+    handleVisibility();
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+    };
+  }, [user?.id]);
+
 
   const send = (payload) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return false;

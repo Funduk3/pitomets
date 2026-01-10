@@ -22,7 +22,6 @@ class MessengerService(
         log.info("MessengerService proxy base URL: {}", messengerUrl)
     }
 
-    @Suppress("TooGenericExceptionThrown")
     fun proxyRequest(
         userId: Long,
         method: HttpMethod,

@@ -20,9 +20,7 @@ class ProfileController(
     ): UserWithProfilesResponse =
         profileService.getUserWithProfiles(userPrincipal.id)
 
-    /**
-     * Публичный для авторизованных: нужен, чтобы показывать имя (человек/магазин) в списках чатов.
-     */
+    // нужен, чтобы показывать имя в списках чатов (нужна авторизация)
     @GetMapping("/user/{userId}")
     fun getUserProfile(
         @PathVariable userId: Long

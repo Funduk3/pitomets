@@ -14,12 +14,8 @@ import kotlinx.serialization.encodeToString
 import java.util.concurrent.ConcurrentHashMap
 
 class WebSocketManager {
-    /**
-     * Важно: в dev (и при глюках сети) клиент может открыть 2 WS-сессии на одного юзера.
-     * Тогда одно сообщение приходит в UI два раза, хотя в БД оно одно.
-     *
-     * Поэтому держим ровно ОДНО активное соединение на пользователя (последнее wins).
-     */
+
+    // сейчас держим максимум 1 коннект, todo убрать это в пользу редиса
     private val connections = ConcurrentHashMap<Long, WebSocketServerSession>()
 
     suspend fun addConnection(userId: Long, session: WebSocketServerSession) {
@@ -94,7 +90,7 @@ fun Route.webSocketRoutes(
                         val text = frame.readText()
                         val wsMessage = try {
                             Json.decodeFromString<WebSocketMessage>(text)
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             send(Frame.Text("""{"error": "Invalid message format"}"""))
                             return@consumeEach
                         }
