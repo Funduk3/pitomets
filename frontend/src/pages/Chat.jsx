@@ -16,9 +16,11 @@ export const Chat = () => {
   const [error, setError] = useState('');
   const [otherProfile, setOtherProfile] = useState(null);
   const [isTabVisible, setIsTabVisible] = useState(!document.hidden);
+  const [unreadBoundaryId, setUnreadBoundaryId] = useState(null);
   const syncIntervalRef = useRef(null);
   const markReadTimeoutRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const didInitialScrollRef = useRef(false);
 
   const mergeMessagesById = (prev, incoming) => {
     if (!Array.isArray(incoming) || incoming.length === 0) return prev;
@@ -98,6 +100,10 @@ export const Chat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const scrollToBottomInstant = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+  };
+
   const loadChat = async () => {
     try {
       const data = await messengerAPI.getChat(parseInt(chatId));
@@ -131,6 +137,20 @@ export const Chat = () => {
     try {
       const data = await messengerAPI.getChatMessages(parseInt(chatId));
       setMessages((prev) => mergeMessagesById(prev, data));
+
+      // Запоминаем "с какого места" были непрочитанные на момент входа в чат
+      const me = Number(user?.id);
+      const firstUnread = (data || []).find(
+        (m) => m?.id != null && Number(m.senderId) !== me && m.isRead === false
+      );
+      setUnreadBoundaryId(firstUnread?.id != null ? String(firstUnread.id) : null);
+
+      // Скроллим вниз один раз при первом заходе/загрузке
+      if (!didInitialScrollRef.current) {
+        didInitialScrollRef.current = true;
+        setTimeout(() => scrollToBottomInstant(), 0);
+      }
+
       await messengerAPI.markMessagesAsRead(parseInt(chatId));
     } catch (err) {
       console.error('Failed to load messages:', err);
@@ -247,31 +267,57 @@ export const Chat = () => {
         {messages.map((msg) => {
           const isOwn = msg.senderId === user?.id;
           const statusMark = isOwn ? (msg.isRead ? '✓✓' : '✓') : null;
+          const isBoundary = unreadBoundaryId != null && String(msg.id) === String(unreadBoundaryId);
           return (
-            <div
-              key={msg.id}
-              style={{
-                alignSelf: isOwn ? 'flex-end' : 'flex-start',
-                maxWidth: '70%',
-                padding: '0.75rem',
-                borderRadius: '8px',
-                backgroundColor: isOwn ? '#3498db' : '#ecf0f1',
-                color: isOwn ? 'white' : 'black',
-              }}
-            >
-              <div>{msg.content}</div>
+            <div key={msg.id}>
+              {isBoundary && (
+                <div
+                  style={{
+                    alignSelf: 'center',
+                    textAlign: 'center',
+                    margin: '0.5rem 0',
+                    color: '#666',
+                    fontSize: '0.85rem',
+                  }}
+                >
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '999px',
+                      backgroundColor: '#f0f0f0',
+                      border: '1px solid #e0e0e0',
+                    }}
+                  >
+                    Непрочитанные с {new Date(msg.createdAt).toLocaleString()}
+                  </span>
+                </div>
+              )}
+
               <div
                 style={{
-                  fontSize: '0.75rem',
-                  marginTop: '0.25rem',
-                  opacity: 0.7,
-                  display: 'flex',
-                  gap: '0.5rem',
-                  justifyContent: 'flex-end',
+                  alignSelf: isOwn ? 'flex-end' : 'flex-start',
+                  maxWidth: '70%',
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  backgroundColor: isOwn ? '#3498db' : '#ecf0f1',
+                  color: isOwn ? 'white' : 'black',
                 }}
               >
-                {statusMark && <span>{statusMark}</span>}
-                <span>{new Date(msg.createdAt).toLocaleTimeString()}</span>
+                <div>{msg.content}</div>
+                <div
+                  style={{
+                    fontSize: '0.75rem',
+                    marginTop: '0.25rem',
+                    opacity: 0.7,
+                    display: 'flex',
+                    gap: '0.5rem',
+                    justifyContent: 'flex-end',
+                  }}
+                >
+                  {statusMark && <span>{statusMark}</span>}
+                  <span>{new Date(msg.createdAt).toLocaleTimeString()}</span>
+                </div>
               </div>
             </div>
           );
