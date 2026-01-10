@@ -8,7 +8,7 @@ import { useMessengerWS } from '../context/MessengerWSContext';
 export const Chat = () => {
   const { chatId } = useParams();
   const { isAuthenticated, user } = useAuth();
-  const { connected: wsConnected, subscribe, send } = useMessengerWS();
+  const { connected: wsConnected, subscribe, send, markChatRead } = useMessengerWS();
   const [chat, setChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -194,6 +194,7 @@ export const Chat = () => {
     markReadTimeoutRef.current = setTimeout(async () => {
       try {
         await messengerAPI.markMessagesAsRead(parseInt(chatId));
+        markChatRead(parseInt(chatId));
       } catch (_) {
         // ignore
       }

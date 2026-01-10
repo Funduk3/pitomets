@@ -1,8 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useMessengerWS } from '../context/MessengerWSContext';
 
 export const Layout = ({ children }) => {
   const { isAuthenticated, logout, user, loading } = useAuth();
+  const { hasUnread } = useMessengerWS();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -33,7 +35,21 @@ export const Layout = ({ children }) => {
                 <Link to="/listings" style={{ color: 'white', textDecoration: 'none' }}>My Listings</Link>
               )}
               <Link to="/favourites" style={{ color: 'white', textDecoration: 'none' }}>Favourites</Link>
-              <Link to="/chats" style={{ color: 'white', textDecoration: 'none' }}>Мои чаты</Link>
+              <Link to="/chats" style={{ color: hasUnread ? '#e74c3c' : 'white', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                Мои чаты
+                {hasUnread && (
+                  <span
+                    aria-label="Есть непрочитанные"
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '999px',
+                      backgroundColor: '#e74c3c',
+                      display: 'inline-block',
+                    }}
+                  />
+                )}
+              </Link>
               <Link to="/profile" style={{ color: 'white', textDecoration: 'none' }}>Profile</Link>
             </>
           )}

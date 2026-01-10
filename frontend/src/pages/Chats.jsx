@@ -7,7 +7,7 @@ import { useMessengerWS } from '../context/MessengerWSContext';
 
 export const Chats = () => {
   const { isAuthenticated, user } = useAuth();
-  const { subscribe } = useMessengerWS();
+  const { subscribe, setUnreadFromChats, markChatUnread } = useMessengerWS();
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -34,6 +34,10 @@ export const Chats = () => {
       // Если чат ещё не в списке — подтянем его через API и добавим
       const chatId = Number(msg.chatId);
       if (!Number.isFinite(chatId)) return;
+      // глобальный индикатор: появился непрочитанный чат
+      if (Number(msg.senderId) !== Number(user?.id)) {
+        markChatUnread(chatId);
+      }
       if (!pendingChatFetchRef.current.has(chatId)) {
         pendingChatFetchRef.current.add(chatId);
         (async () => {
@@ -104,6 +108,7 @@ export const Chats = () => {
     try {
       const data = await messengerAPI.getUserChats();
       setChats(data);
+      setUnreadFromChats(data);
 
       // подтягиваем профили собеседников пачкой (для отображения имени человека/магазина)
       const myId = user?.id;

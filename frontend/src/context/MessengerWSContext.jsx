@@ -12,6 +12,7 @@ export const useMessengerWS = () => {
 export const MessengerWSProvider = ({ children }) => {
   const { isAuthenticated, user } = useAuth();
   const [connected, setConnected] = useState(false);
+  const [unreadChatIds, setUnreadChatIds] = useState(() => new Set());
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const shouldReconnectRef = useRef(true);
@@ -106,11 +107,48 @@ export const MessengerWSProvider = ({ children }) => {
     }
   };
 
+  const markChatUnread = (chatId) => {
+    const id = Number(chatId);
+    if (!Number.isFinite(id)) return;
+    setUnreadChatIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  };
+
+  const markChatRead = (chatId) => {
+    const id = Number(chatId);
+    if (!Number.isFinite(id)) return;
+    setUnreadChatIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
+
+  const setUnreadFromChats = (chats) => {
+    const next = new Set();
+    for (const c of chats || []) {
+      const id = Number(c?.id);
+      const unread = Number(c?.unreadCount || 0);
+      if (Number.isFinite(id) && unread > 0) next.add(id);
+    }
+    setUnreadChatIds(next);
+  };
+
   const value = useMemo(() => ({
     connected,
     subscribe,
     send,
-  }), [connected]);
+    // unread indicator
+    hasUnread: unreadChatIds.size > 0,
+    unreadChatIds,
+    markChatUnread,
+    markChatRead,
+    setUnreadFromChats,
+  }), [connected, unreadChatIds]);
 
   return <MessengerWSContext.Provider value={value}>{children}</MessengerWSContext.Provider>;
 };
