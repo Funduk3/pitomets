@@ -24,7 +24,7 @@ data class WebSocketMessage(
 
 @Serializable
 data class ReadReceiptEvent(
-    val type: String = "read_receipt",
+    val type: String,
     val chatId: Long,
     val readerId: Long,
 )
@@ -75,7 +75,13 @@ class WebSocketManager {
     suspend fun sendReadReceipt(chatId: Long, readerId: Long, chatService: ChatService) {
         val chat = chatService.getChatById(chatId) ?: return
         val recipientId = if (chat.user1Id == readerId) chat.user2Id else chat.user1Id
-        val payload = Json.encodeToString(ReadReceiptEvent(chatId = chatId, readerId = readerId))
+        val payload = Json.encodeToString(
+            ReadReceiptEvent(
+                type = "read_receipt",
+                chatId = chatId,
+                readerId = readerId
+            )
+        )
         sendToUser(recipientId, payload)
     }
 }
