@@ -11,11 +11,10 @@ import org.jetbrains.exposed.sql.transactions.transaction
 object DatabaseFactory {
     fun init() {
         val config = HikariConfig().apply {
-            // Аналогично monolit - используем полный DATABASE_URL
-            jdbcUrl = System.getenv("DATABASE_URL") ?: "jdbc:postgresql://localhost:5432/messenger1"
+            jdbcUrl = System.getenv("DATABASE_URL")
             driverClassName = "org.postgresql.Driver"
-            username = System.getenv("DATABASE_USER") ?: "user"
-            password = System.getenv("DATABASE_PASSWORD") ?: "password"
+            username = System.getenv("DATABASE_USER")
+            password = System.getenv("DATABASE_PASSWORD")
             maximumPoolSize = 10
             isAutoCommit = false
             transactionIsolation = "TRANSACTION_REPEATABLE_READ"

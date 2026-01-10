@@ -7,4 +7,3 @@ data class CreateMessageRequest(
     val chatId: Long,
     val content: String
 )
-

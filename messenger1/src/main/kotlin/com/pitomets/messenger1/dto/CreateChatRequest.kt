@@ -6,4 +6,3 @@ import kotlinx.serialization.Serializable
 data class CreateChatRequest(
     val userId: Long // ID пользователя из монолита для создания чата
 )
-

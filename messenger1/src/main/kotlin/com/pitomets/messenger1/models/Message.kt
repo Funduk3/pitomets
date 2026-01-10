@@ -12,4 +12,3 @@ object Messages : LongIdTable("messages") {
     val createdAt = timestamp("created_at").clientDefault { Clock.System.now() }
     val isRead = bool("is_read").default(false)
 }
-
