@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { messengerAPI } from '../api/messenger';
 import { userAPI } from '../api/user';
@@ -19,8 +19,10 @@ export const Chat = () => {
   const [unreadBoundaryId, setUnreadBoundaryId] = useState(null);
   const syncIntervalRef = useRef(null);
   const markReadTimeoutRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const messagesEndRef = useRef(null);
   const didInitialScrollRef = useRef(false);
+  const shouldAutoScrollRef = useRef(true);
 
   const mergeMessagesById = (prev, incoming) => {
     if (!Array.isArray(incoming) || incoming.length === 0) return prev;
@@ -36,6 +38,15 @@ export const Chat = () => {
     if (!isAuthenticated() || !chatId) return;
     loadChat();
     loadMessages();
+  }, [chatId]);
+
+  useEffect(() => {
+    // при переходе в другой чат хотим снова автоскроллиться вниз
+    didInitialScrollRef.current = false;
+    shouldAutoScrollRef.current = true;
+    setUnreadBoundaryId(null);
+    setLoading(true);
+    setError('');
   }, [chatId]);
 
   useEffect(() => {
@@ -93,7 +104,9 @@ export const Chat = () => {
   }, [chatId, wsConnected, isTabVisible]);
 
   useEffect(() => {
-    scrollToBottom();
+    if (shouldAutoScrollRef.current) {
+      scrollToBottom();
+    }
   }, [messages]);
 
   const scrollToBottom = () => {
@@ -102,6 +115,13 @@ export const Chat = () => {
 
   const scrollToBottomInstant = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+  };
+
+  const updateAutoScrollState = () => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    shouldAutoScrollRef.current = distanceToBottom < 200; // px
   };
 
   const loadChat = async () => {
@@ -145,11 +165,7 @@ export const Chat = () => {
       );
       setUnreadBoundaryId(firstUnread?.id != null ? String(firstUnread.id) : null);
 
-      // Скроллим вниз один раз при первом заходе/загрузке
-      if (!didInitialScrollRef.current) {
-        didInitialScrollRef.current = true;
-        setTimeout(() => scrollToBottomInstant(), 0);
-      }
+      // Скролл вниз делаем через useLayoutEffect (без видимого "прыжка"), тут ничего не делаем
 
       await messengerAPI.markMessagesAsRead(parseInt(chatId));
     } catch (err) {
@@ -159,6 +175,18 @@ export const Chat = () => {
       setLoading(false);
     }
   };
+
+  // При первом открытии чата (или смене chatId) показываем НИЗ без видимого скролла.
+  // useLayoutEffect выполняется до paint, поэтому пользователь не увидит "прыжок".
+  useLayoutEffect(() => {
+    if (!messagesContainerRef.current) return;
+    if (loading) return;
+    if (didInitialScrollRef.current) return;
+
+    const el = messagesContainerRef.current;
+    el.scrollTop = el.scrollHeight;
+    didInitialScrollRef.current = true;
+  }, [loading, chatId, messages.length]);
 
   const scheduleMarkRead = () => {
     if (!chatId) return;
@@ -263,21 +291,30 @@ export const Chat = () => {
           flexDirection: 'column',
           gap: '1rem',
         }}
+        ref={messagesContainerRef}
+        onScroll={updateAutoScrollState}
       >
         {messages.map((msg) => {
           const isOwn = msg.senderId === user?.id;
           const statusMark = isOwn ? (msg.isRead ? '✓✓' : '✓') : null;
           const isBoundary = unreadBoundaryId != null && String(msg.id) === String(unreadBoundaryId);
           return (
-            <div key={msg.id}>
+            <div
+              key={msg.id}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: isOwn ? 'flex-end' : 'flex-start',
+              }}
+            >
               {isBoundary && (
                 <div
                   style={{
-                    alignSelf: 'center',
                     textAlign: 'center',
                     margin: '0.5rem 0',
                     color: '#666',
                     fontSize: '0.85rem',
+                    alignSelf: 'center',
                   }}
                 >
                   <span
@@ -296,8 +333,8 @@ export const Chat = () => {
 
               <div
                 style={{
-                  alignSelf: isOwn ? 'flex-end' : 'flex-start',
                   maxWidth: '70%',
+                  width: 'fit-content',
                   padding: '0.75rem',
                   borderRadius: '8px',
                   backgroundColor: isOwn ? '#3498db' : '#ecf0f1',
