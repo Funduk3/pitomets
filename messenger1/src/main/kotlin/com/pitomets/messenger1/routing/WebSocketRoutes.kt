@@ -22,6 +22,13 @@ data class WebSocketMessage(
     val senderId: Long? = null
 )
 
+@Serializable
+data class ReadReceiptEvent(
+    val type: String = "read_receipt",
+    val chatId: Long,
+    val readerId: Long,
+)
+
 class WebSocketManager {
     /**
      * Важно: в dev (и при глюках сети) клиент может открыть 2 WS-сессии на одного юзера.
@@ -63,6 +70,13 @@ class WebSocketManager {
         
         val jsonMessage = Json.encodeToString(message)
         sendToUser(recipientId, jsonMessage)
+    }
+
+    suspend fun sendReadReceipt(chatId: Long, readerId: Long, chatService: ChatService) {
+        val chat = chatService.getChatById(chatId) ?: return
+        val recipientId = if (chat.user1Id == readerId) chat.user2Id else chat.user1Id
+        val payload = Json.encodeToString(ReadReceiptEvent(chatId = chatId, readerId = readerId))
+        sendToUser(recipientId, payload)
     }
 }
 

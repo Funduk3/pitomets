@@ -11,7 +11,8 @@ import io.ktor.server.routing.*
 
 fun Route.messageRoutes(
     messageService: MessageService,
-    chatService: ChatService
+    chatService: ChatService,
+    webSocketManager: WebSocketManager
 ) {
     route("/api/messages") {
         // Создать сообщение
@@ -62,6 +63,8 @@ fun Route.messageRoutes(
             }
 
             messageService.markMessagesAsRead(chatId, userId)
+            // Уведомляем второго участника, что чат прочитан (для ✓✓)
+            webSocketManager.sendReadReceipt(chatId, userId, chatService)
             call.respond(HttpStatusCode.OK, mapOf("status" to "ok"))
         }
     }

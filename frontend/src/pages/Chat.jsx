@@ -142,6 +142,18 @@ export const Chat = () => {
     if (!isAuthenticated() || !chatId) return;
 
     const unsubscribe = subscribe((message) => {
+      // read receipt: помечаем мои сообщения как прочитанные
+      if (message?.type === 'read_receipt') {
+        const currentChatId = parseInt(chatId);
+        if (Number(message.chatId) !== currentChatId) return;
+        // если я не отправитель — мне не надо ничего менять
+        setMessages((prev) =>
+          prev.map((m) => (Number(m.senderId) === Number(user?.id) ? { ...m, isRead: true } : m))
+        );
+        return;
+      }
+
+      // обычное сообщение
       if (!message?.id || !message?.chatId) return;
       const currentChatId = parseInt(chatId);
       if (Number(message.chatId) !== currentChatId) return;
@@ -219,6 +231,7 @@ export const Chat = () => {
       >
         {messages.map((msg) => {
           const isOwn = msg.senderId === user?.id;
+          const statusMark = isOwn ? (msg.isRead ? '✓✓' : '✓') : null;
           return (
             <div
               key={msg.id}
@@ -237,9 +250,13 @@ export const Chat = () => {
                   fontSize: '0.75rem',
                   marginTop: '0.25rem',
                   opacity: 0.7,
+                  display: 'flex',
+                  gap: '0.5rem',
+                  justifyContent: 'flex-end',
                 }}
               >
-                {new Date(msg.createdAt).toLocaleTimeString()}
+                {statusMark && <span>{statusMark}</span>}
+                <span>{new Date(msg.createdAt).toLocaleTimeString()}</span>
               </div>
             </div>
           );

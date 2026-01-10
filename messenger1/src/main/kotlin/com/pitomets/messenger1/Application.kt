@@ -71,7 +71,7 @@ fun Application.module() {
             call.respond(HttpStatusCode.OK, mapOf("status" to "healthy"))
         }
 
-        messageRoutes(messageService, chatService)
+        messageRoutes(messageService, chatService, webSocketManager)
         chatRoutes(chatService, messageService)
         webSocketRoutes(messageService, chatService, webSocketManager)
     }
