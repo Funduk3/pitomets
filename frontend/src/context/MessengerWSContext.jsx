@@ -59,6 +59,13 @@ export const MessengerWSProvider = ({ children }) => {
       try {
         const data = JSON.parse(event.data);
         if (data?.error) return;
+        // Global unread indicator: any incoming message (not from me) marks the chat as unread,
+        // regardless of what page is currently open.
+        if (data?.type !== 'read_receipt' && data?.id != null && data?.chatId != null) {
+          if (Number(data.senderId) !== Number(userId)) {
+            markChatUnread(data.chatId);
+          }
+        }
         emit(data);
       } catch (_) {
         // ignore
