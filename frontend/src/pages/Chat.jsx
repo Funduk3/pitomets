@@ -15,7 +15,18 @@ export const Chat = () => {
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const shouldReconnectRef = useRef(true);
+  const syncIntervalRef = useRef(null);
   const messagesEndRef = useRef(null);
+
+  const mergeMessagesById = (prev, incoming) => {
+    if (!Array.isArray(incoming) || incoming.length === 0) return prev;
+    const byId = new Map(prev.map((m) => [String(m.id), m]));
+    for (const m of incoming) {
+      if (m?.id == null) continue;
+      byId.set(String(m.id), m);
+    }
+    return Array.from(byId.values()).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  };
 
   useEffect(() => {
     if (!isAuthenticated() || !chatId) return;
@@ -30,6 +41,10 @@ export const Chat = () => {
     connectWebSocket();
     return () => {
       shouldReconnectRef.current = false;
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+        syncIntervalRef.current = null;
+      }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
@@ -40,6 +55,30 @@ export const Chat = () => {
       }
     };
   }, [chatId, user?.id]);
+
+  // Надёжность: периодически синхронизируем последние сообщения по HTTP.
+  // Это компенсирует любые краткие разрывы WS/пропуски событий: сообщение может не прийти в моменте,
+  // но гарантированно появится через несколько секунд без F5.
+  useEffect(() => {
+    if (!isAuthenticated() || !chatId) return;
+
+    if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
+    syncIntervalRef.current = setInterval(async () => {
+      try {
+        const data = await messengerAPI.getChatMessages(parseInt(chatId));
+        setMessages((prev) => mergeMessagesById(prev, data));
+      } catch (_) {
+        // ignore
+      }
+    }, 4000);
+
+    return () => {
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+        syncIntervalRef.current = null;
+      }
+    };
+  }, [chatId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -62,7 +101,7 @@ export const Chat = () => {
   const loadMessages = async () => {
     try {
       const data = await messengerAPI.getChatMessages(parseInt(chatId));
-      setMessages(data);
+      setMessages((prev) => mergeMessagesById(prev, data));
       await messengerAPI.markMessagesAsRead(parseInt(chatId));
     } catch (err) {
       console.error('Failed to load messages:', err);
@@ -114,6 +153,8 @@ export const Chat = () => {
 
     ws.onopen = () => {
       setWsConnected(true);
+      // При переподключении могли пропустить события — сразу подтягиваем последние сообщения
+      loadMessages();
       // Отправляем userId для аутентификации
       // В реальности нужно будет проксировать WebSocket через monolit
       console.log('[WS] open', { debugId: ws.__debugId, readyState: ws.readyState });
@@ -122,6 +163,7 @@ export const Chat = () => {
     ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
+        if (message?.error) return;
         console.log('[WS] message', {
           debugId: ws.__debugId,
           id: message?.id,
@@ -143,7 +185,7 @@ export const Chat = () => {
           // Если id нет — это не MessageResponse (ошибка/служебное) — не добавляем в ленту
           if (!incomingId) return prev;
 
-          return [...prev, message];
+          return mergeMessagesById(prev, [message]);
         });
         scrollToBottom();
       } catch (err) {
