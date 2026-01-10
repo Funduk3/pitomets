@@ -1,6 +1,7 @@
 package com.pitomets.messenger1.service
 
 import com.pitomets.messenger1.models.ChatEntity
+import org.jetbrains.exposed.sql.SqlExpressionBuilder
 import com.pitomets.messenger1.models.Chats
 import com.pitomets.messenger1.models.MessageEntity
 import com.pitomets.messenger1.models.Messages
@@ -26,10 +27,12 @@ class MessageService {
 
             // Обновляем updatedAt в чате и инкрементим unreadCount у получателя
             Chats.update({ Chats.id eq chatId }) {
-                it[Chats.updatedAt] = Clock.System.now()
-                when (senderId) {
-                    user1Id -> it[Chats.unreadCountUser2] = Chats.unreadCountUser2 + 1
-                    user2Id -> it[Chats.unreadCountUser1] = Chats.unreadCountUser1 + 1
+                with(SqlExpressionBuilder) {
+                    it[Chats.updatedAt] = Clock.System.now()
+                    when (senderId) {
+                        user1Id -> it[Chats.unreadCountUser2] = Chats.unreadCountUser2 + 1
+                        user2Id -> it[Chats.unreadCountUser1] = Chats.unreadCountUser1 + 1
+                    }
                 }
             }
 
