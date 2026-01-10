@@ -3,21 +3,20 @@ import { useParams } from 'react-router-dom';
 import { messengerAPI } from '../api/messenger';
 import { userAPI } from '../api/user';
 import { useAuth } from '../context/AuthContext';
+import { useMessengerWS } from '../context/MessengerWSContext';
 
 export const Chat = () => {
   const { chatId } = useParams();
   const { isAuthenticated, user } = useAuth();
+  const { connected: wsConnected, subscribe, send } = useMessengerWS();
   const [chat, setChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [wsConnected, setWsConnected] = useState(false);
   const [otherProfile, setOtherProfile] = useState(null);
-  const wsRef = useRef(null);
-  const reconnectTimeoutRef = useRef(null);
-  const shouldReconnectRef = useRef(true);
   const syncIntervalRef = useRef(null);
+  const markReadTimeoutRef = useRef(null);
   const messagesEndRef = useRef(null);
 
   const mergeMessagesById = (prev, incoming) => {
@@ -34,26 +33,18 @@ export const Chat = () => {
     if (!isAuthenticated() || !chatId) return;
     loadChat();
     loadMessages();
-    // WS подключаем отдельным эффектом, когда точно есть user.id
   }, [chatId]);
 
   useEffect(() => {
     if (!isAuthenticated() || !chatId || !user?.id) return;
-    shouldReconnectRef.current = true;
-    connectWebSocket();
     return () => {
-      shouldReconnectRef.current = false;
       if (syncIntervalRef.current) {
         clearInterval(syncIntervalRef.current);
         syncIntervalRef.current = null;
       }
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = null;
-      }
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
+      if (markReadTimeoutRef.current) {
+        clearTimeout(markReadTimeoutRef.current);
+        markReadTimeoutRef.current = null;
       }
     };
   }, [chatId, user?.id]);
@@ -69,6 +60,8 @@ export const Chat = () => {
       try {
         const data = await messengerAPI.getChatMessages(parseInt(chatId));
         setMessages((prev) => mergeMessagesById(prev, data));
+        // Если пользователь находится в чате, считаем всё полученное прочитанным
+        scheduleMarkRead();
       } catch (_) {
         // ignore
       }
@@ -132,111 +125,36 @@ export const Chat = () => {
     }
   };
 
-  const connectWebSocket = () => {
-    if (!user?.id) return;
-
-    const debugId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    console.log('[WS] connectWebSocket()', { chatId, userId: user.id, debugId });
-
-    // Не плодим соединения: если уже OPEN/CONNECTING — выходим.
-    // Важно: если сокет "завис" в CLOSING, лучше принудительно закрыть и создать новый,
-    // иначе можно получить 2 активных сокета и дубль входящих сообщений.
-    if (wsRef.current) {
-      if (
-        wsRef.current.readyState === WebSocket.OPEN ||
-        wsRef.current.readyState === WebSocket.CONNECTING
-      ) {
-        return;
-      }
-
+  const scheduleMarkRead = () => {
+    if (!chatId) return;
+    if (markReadTimeoutRef.current) clearTimeout(markReadTimeoutRef.current);
+    markReadTimeoutRef.current = setTimeout(async () => {
       try {
-        wsRef.current.close();
+        await messengerAPI.markMessagesAsRead(parseInt(chatId));
       } catch (_) {
         // ignore
-      } finally {
-        wsRef.current = null;
       }
-    }
-
-    // Сбрасываем отложенный reconnect, чтобы не получить параллельные коннекты
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-
-    // WebSocket через monolit не будет работать напрямую, нужно будет проксировать
-    // Пока используем прямой WebSocket к messenger1 с userId в query параметрах
-    const wsUrl = `ws://localhost:8081/ws/chat?userId=${user.id}`;
-    const ws = new WebSocket(wsUrl);
-    // метка соединения для дебага
-    ws.__debugId = debugId;
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      setWsConnected(true);
-      // При переподключении могли пропустить события — сразу подтягиваем последние сообщения
-      loadMessages();
-      // Отправляем userId для аутентификации
-      // В реальности нужно будет проксировать WebSocket через monolit
-      console.log('[WS] open', { debugId: ws.__debugId, readyState: ws.readyState });
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data);
-        if (message?.error) return;
-        console.log('[WS] message', {
-          debugId: ws.__debugId,
-          id: message?.id,
-          chatId: message?.chatId,
-          senderId: message?.senderId,
-          raw: event.data,
-        });
-        setMessages((prev) => {
-          // Игнорируем сообщения не из текущего чата (WS шлёт по пользователю, не по чату)
-          const currentChatId = parseInt(chatId);
-          if (message?.chatId != null && Number(message.chatId) !== currentChatId) return prev;
-
-          // Дедуп по id (нормализуем тип, чтобы "1" и 1 считались одинаковыми)
-          const incomingId = message?.id != null ? String(message.id) : null;
-          if (incomingId && prev.some((m) => m?.id != null && String(m.id) === incomingId)) {
-            return prev;
-          }
-
-          // Если id нет — это не MessageResponse (ошибка/служебное) — не добавляем в ленту
-          if (!incomingId) return prev;
-
-          return mergeMessagesById(prev, [message]);
-        });
-        scrollToBottom();
-      } catch (err) {
-        console.error('Failed to parse WebSocket message:', err);
-      }
-    };
-
-    ws.onerror = (error) => {
-      console.error('[WS] error', { debugId: ws.__debugId, error });
-      setWsConnected(false);
-    };
-
-    ws.onclose = () => {
-      console.log('[WS] close', { debugId: ws.__debugId });
-      setWsConnected(false);
-      // Считаем соединение мёртвым, чтобы не копились ссылки на старые WS
-      if (wsRef.current === ws) {
-        wsRef.current = null;
-      }
-      // Попытка переподключения через 3 секунды
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      reconnectTimeoutRef.current = setTimeout(() => {
-        if (shouldReconnectRef.current && isAuthenticated()) {
-          connectWebSocket();
-        }
-      }, 3000);
-    };
+    }, 250);
   };
+
+  // Realtime: слушаем общие WS-сообщения и добавляем в текущий чат
+  useEffect(() => {
+    if (!isAuthenticated() || !chatId) return;
+
+    const unsubscribe = subscribe((message) => {
+      if (!message?.id || !message?.chatId) return;
+      const currentChatId = parseInt(chatId);
+      if (Number(message.chatId) !== currentChatId) return;
+
+      setMessages((prev) => mergeMessagesById(prev, [message]));
+      if (message?.senderId != null && Number(message.senderId) !== Number(user?.id)) {
+        scheduleMarkRead();
+      }
+      scrollToBottom();
+    });
+
+    return unsubscribe;
+  }, [chatId, user?.id, subscribe]);
 
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
@@ -248,8 +166,7 @@ export const Chat = () => {
         content: newMessage.trim(),
       };
 
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify(message));
+      if (send(message)) {
         setNewMessage('');
       } else {
         // Fallback: отправка через HTTP

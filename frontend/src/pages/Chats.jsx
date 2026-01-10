@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { messengerAPI } from '../api/messenger';
 import { userAPI } from '../api/user';
 import { useAuth } from '../context/AuthContext';
+import { useMessengerWS } from '../context/MessengerWSContext';
 
 export const Chats = () => {
   const { isAuthenticated, user } = useAuth();
+  const { subscribe } = useMessengerWS();
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -16,6 +18,35 @@ export const Chats = () => {
       loadChats();
     }
   }, [isAuthenticated]);
+
+  // Realtime: если мы на странице "Мои чаты" и пришло сообщение, обновляем превью/бейджи
+  useEffect(() => {
+    if (!isAuthenticated()) return;
+
+    const unsubscribe = subscribe((msg) => {
+      // msg = MessageResponse из WS
+      if (!msg?.chatId || msg?.id == null) return;
+
+      setChats((prev) => {
+        const idx = prev.findIndex((c) => c.id === msg.chatId);
+        if (idx === -1) return prev;
+        const next = [...prev];
+        const chat = { ...next[idx] };
+        chat.lastMessage = msg;
+        chat.updatedAt = msg.createdAt;
+
+        const me = user?.id;
+        if (me != null && Number(msg.senderId) !== Number(me)) {
+          chat.unreadCount = Number(chat.unreadCount || 0) + 1;
+        }
+
+        next[idx] = chat;
+        return next;
+      });
+    });
+
+    return unsubscribe;
+  }, [user?.id, subscribe]);
 
   const loadChats = async () => {
     try {
