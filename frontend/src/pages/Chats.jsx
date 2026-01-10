@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { messengerAPI } from '../api/messenger';
 import { userAPI } from '../api/user';
@@ -12,6 +12,7 @@ export const Chats = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [profilesByUserId, setProfilesByUserId] = useState({});
+  const pendingChatFetchRef = useRef(new Set());
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -24,8 +25,59 @@ export const Chats = () => {
     if (!isAuthenticated()) return;
 
     const unsubscribe = subscribe((msg) => {
+      // read_receipt не влияет на список чатов
+      if (msg?.type === 'read_receipt') return;
+
       // msg = MessageResponse из WS
       if (!msg?.chatId || msg?.id == null) return;
+
+      // Если чат ещё не в списке — подтянем его через API и добавим
+      const chatId = Number(msg.chatId);
+      if (!Number.isFinite(chatId)) return;
+      if (!pendingChatFetchRef.current.has(chatId)) {
+        pendingChatFetchRef.current.add(chatId);
+        (async () => {
+          try {
+            const chat = await messengerAPI.getChat(chatId);
+            setChats((prev) => {
+              if (prev.some((c) => c.id === chatId)) return prev;
+              // lastMessage может быть null, но у нас есть msg — положим его как превью
+              const nextChat = {
+                ...chat,
+                lastMessage: msg,
+                updatedAt: msg.createdAt,
+                // на всякий случай инкрементнем, если это не моё сообщение
+                unreadCount:
+                  Number(msg.senderId) !== Number(user?.id)
+                    ? Math.max(Number(chat?.unreadCount || 0), 1)
+                    : Number(chat?.unreadCount || 0),
+              };
+              return [nextChat, ...prev];
+            });
+
+            // подтянем профиль собеседника, если нет
+            const myId = user?.id;
+            const otherUserId = chat.user1Id === myId ? chat.user2Id : chat.user1Id;
+            if (otherUserId != null) {
+              setProfilesByUserId((prev) => (prev[otherUserId] != null ? prev : prev));
+              if (profilesByUserId[otherUserId] == null) {
+                try {
+                  const profile = await userAPI.getUserProfile(otherUserId);
+                  setProfilesByUserId((prev) => ({ ...prev, [otherUserId]: profile }));
+                } catch (_) {
+                  setProfilesByUserId((prev) => ({ ...prev, [otherUserId]: null }));
+                }
+              }
+            }
+          } catch (e) {
+            // если не получилось — на всякий случай просто обновим список целиком
+            // (не делаем await, чтобы не блокировать UI)
+            loadChats();
+          } finally {
+            pendingChatFetchRef.current.delete(chatId);
+          }
+        })();
+      }
 
       setChats((prev) => {
         const idx = prev.findIndex((c) => c.id === msg.chatId);
