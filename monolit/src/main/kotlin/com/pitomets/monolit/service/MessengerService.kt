@@ -1,5 +1,6 @@
 package com.pitomets.monolit.service
 
+import com.pitomets.monolit.exceptions.EmptyResponseException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpEntity
@@ -47,7 +48,7 @@ class MessengerService(
             HttpMethod.PUT -> restTemplate.exchange(url, HttpMethod.PUT, entity, Any::class.java).body
             HttpMethod.DELETE -> restTemplate.exchange(url, HttpMethod.DELETE, entity, Any::class.java).body
             else -> throw IllegalArgumentException("Unsupported HTTP method: $method")
-        } ?: throw RuntimeException("Empty response from messenger service")
+        } ?: throw EmptyResponseException("Empty response from messenger service")
     }
 
     private fun buildUrl(path: String, queryParams: Map<String, String>): String {

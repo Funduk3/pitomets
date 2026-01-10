@@ -1,12 +1,10 @@
 package com.pitomets.messenger1.service
 
-import com.pitomets.messenger1.models.ChatEntity
 import org.jetbrains.exposed.sql.SqlExpressionBuilder
 import com.pitomets.messenger1.models.Chats
 import com.pitomets.messenger1.models.MessageEntity
 import com.pitomets.messenger1.models.Messages
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import kotlinx.datetime.Clock
 
