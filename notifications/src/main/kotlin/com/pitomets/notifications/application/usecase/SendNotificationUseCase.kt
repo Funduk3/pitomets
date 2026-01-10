@@ -7,8 +7,10 @@ import com.pitomets.notifications.domain.model.Notification
 import com.pitomets.notifications.domain.port.NotificationOutbox
 import com.pitomets.notifications.domain.port.NotificationRepository
 import com.pitomets.notifications.domain.port.NotificationSender
+import com.pitomets.notifications.exceptions.FailedToSendNotificationException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
 @Service
@@ -20,7 +22,7 @@ class SendNotificationUseCase(
 
     private val logger = LoggerFactory.getLogger(SendNotificationUseCase::class.java)
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun execute(command: SendNotificationCommand) {
         logger.info("Processing notification for eventId: ${command.eventId}")
 
@@ -32,30 +34,37 @@ class SendNotificationUseCase(
         val notification = Notification.create(command)
         logger.debug("Created notification: $notification")
 
-        notificationRepository.save(notification)
-        logger.debug("Saved notification to repository")
+        val savedNotification = notificationRepository.save(notification)
+        logger.debug("Saved notification to repository with id=${savedNotification.id}")
 
         val sender = notificationSenders.find { it.channel() == command.channel }
             ?: throw IllegalArgumentException("No sender found for channel: ${command.channel}")
 
         try {
-            sender.send(notification)
-            logger.info("Notification sent successfully: ${notification.id}")
+            sender.send(savedNotification)
+            logger.info("Notification sent successfully: ${savedNotification.id}")
+
+            // ВАЖНО: Используем markSent() и save() вместо updateStatus()
+            val sentNotification = savedNotification.markSent()
+            notificationRepository.save(sentNotification)
+            logger.debug("Updated notification status to SENT")
 
             val event = NotificationSentEvent(
-                notificationId = notification.id,
+                notificationId = sentNotification.id!!,
                 eventId = command.eventId,
                 userId = command.userId,
                 channel = command.channel
             )
             notificationOutbox.save(event)
             logger.debug("Saved NotificationSentEvent to outbox")
+        } catch (e: FailedToSendNotificationException) {
+            logger.error("Failed to send notification: ${savedNotification.id}", e)
 
-        } catch (e: Exception) {
-            logger.error("Failed to send notification: ${notification.id}", e)
+            val failedNotification = savedNotification.markFailed()
+            notificationRepository.save(failedNotification)
 
             val event = NotificationFailedEvent(
-                notificationId = notification.id,
+                notificationId = failedNotification.id ?: -1,
                 eventId = command.eventId,
                 userId = command.userId,
                 channel = command.channel,
@@ -63,7 +72,7 @@ class SendNotificationUseCase(
             )
             notificationOutbox.save(event)
 
-            throw e
+            logger.warn("Notification marked as FAILED for eventId: ${command.eventId}")
         }
     }
 }

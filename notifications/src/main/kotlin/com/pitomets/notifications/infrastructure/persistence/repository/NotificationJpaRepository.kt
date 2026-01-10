@@ -8,5 +8,5 @@ import org.springframework.stereotype.Repository
 interface NotificationJpaRepository : JpaRepository<NotificationEntity, Long> {
     fun existsByEventId(eventId: Long): Boolean
     fun findByEventId(eventId: Long): NotificationEntity?
-    fun findByUserId(userId: Long): List<NotificationEntity?>
+    fun findByUserId(userId: Long): List<NotificationEntity>
 }

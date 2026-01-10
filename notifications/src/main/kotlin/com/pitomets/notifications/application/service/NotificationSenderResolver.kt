@@ -10,5 +10,5 @@ class NotificationSenderResolver(
 
     fun resolve(channel: Channel): NotificationSender =
         senderMap[channel]
-            ?: throw IllegalStateException("No sender for $channel")
+            ?: error("No sender for $channel")
 }

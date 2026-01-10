@@ -7,4 +7,3 @@ interface NotificationSender {
     fun channel(): Channel
     fun send(notification: Notification)
 }
-

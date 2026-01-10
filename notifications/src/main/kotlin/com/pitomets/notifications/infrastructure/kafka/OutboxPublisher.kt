@@ -1,5 +1,6 @@
 package com.pitomets.notifications.infrastructure.kafka
 
+import com.pitomets.notifications.exceptions.PublishEventException
 import com.pitomets.notifications.infrastructure.outbox.OutboxJpaRepository
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
@@ -32,7 +33,7 @@ class OutboxPublisher(
                 outboxRepository.save(event)
 
                 logger.debug("Published event: ${event.eventType} with id: ${event.id}")
-            } catch (e: Exception) {
+            } catch (e: PublishEventException) {
                 logger.error("Failed to publish event with id: ${event.id}", e)
             }
         }

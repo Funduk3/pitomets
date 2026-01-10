@@ -1,10 +1,9 @@
 package com.pitomets.notifications.domain.model
 
 import com.pitomets.notifications.application.command.SendNotificationCommand
-import kotlin.random.Random
 
 data class Notification(
-    val id: Long,
+    val id: Long?,
     val eventId: Long,
     val userId: Long,
     val channel: Channel,
@@ -13,11 +12,12 @@ data class Notification(
 ) {
 
     fun markSent() = copy(status = Status.SENT)
+    fun markFailed() = copy(status = Status.FAILED)
 
     companion object {
         fun create(cmd: SendNotificationCommand) =
             Notification(
-                id = Random.nextLong(),
+                id = null,
                 eventId = cmd.eventId,
                 userId = cmd.userId,
                 channel = cmd.channel,
@@ -26,4 +26,3 @@ data class Notification(
             )
     }
 }
-

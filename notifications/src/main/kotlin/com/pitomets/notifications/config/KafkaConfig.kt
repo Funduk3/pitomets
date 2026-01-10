@@ -18,6 +18,10 @@ import org.springframework.util.backoff.FixedBackOff
 class KafkaConfig(
     private val properties: KafkaProperties
 ) {
+    companion object {
+        private const val INTERVAL = 1000L
+        private const val MAX_ATTEMPTS = 3L
+    }
 
     @Bean
     fun consumerFactory(): ConsumerFactory<String, Any> =
@@ -36,13 +40,12 @@ class KafkaConfig(
             containerProperties.ackMode = ContainerProperties.AckMode.RECORD
         }
 
-
     @Bean
     fun kafkaErrorHandler(
         template: KafkaTemplate<String, Any>
     ): DefaultErrorHandler =
         DefaultErrorHandler(
             DeadLetterPublishingRecoverer(template),
-            FixedBackOff(1000L, 3) // 3 retry
+            FixedBackOff(INTERVAL, MAX_ATTEMPTS) // 3 retry
         )
 }

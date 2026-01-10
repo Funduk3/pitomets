@@ -5,6 +5,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.pitomets.notifications.domain.model.Channel
 import com.pitomets.notifications.domain.model.Notification
 import com.pitomets.notifications.domain.port.NotificationSender
+import com.pitomets.notifications.exceptions.FailedToSendNotificationException
 import org.slf4j.LoggerFactory
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
@@ -22,27 +23,28 @@ class EmailNotificationSender(
 
     override fun send(notification: Notification) {
         try {
-            // Вариант 1: Используем Kotlin extension из jackson-module-kotlin
-            val payloadMap = objectMapper.readValue<Map<String, Any>>(notification.payload)
-
-            // Вариант 2: Если вариант 1 не работает, используйте явное приведение:
-            // val payloadMap: Map<String, Any> = objectMapper.readValue(notification.payload, Map::class.java) as Map<String, Any>
+            // Парсим payload в Map
+            val payloadMap: Map<String, Any> = objectMapper.readValue(notification.payload)
 
             val message = javaMailSender.createMimeMessage()
             val helper = MimeMessageHelper(message, true, "UTF-8")
 
-            // Предполагаем, что в payload есть email и другие данные
-            val recipientEmail = payloadMap["email"] as? String
-                ?: throw IllegalArgumentException("Email not found in payload")
+            val recipientEmail = (payloadMap["email"] ?: payloadMap["recipient"]) as? String
+                ?: throw IllegalArgumentException("Recipient email not found in payload")
 
             helper.setTo(recipientEmail)
             helper.setSubject(payloadMap["subject"] as? String ?: "Notification")
-            helper.setText(payloadMap["content"] as? String ?: "", true)
+            helper.setText(
+                (payloadMap["content"] ?: payloadMap["body"]) as? String ?: "",
+                true
+            )
 
             javaMailSender.send(message)
             logger.info("Email sent successfully for notification id: ${notification.id}")
-
-        } catch (e: Exception) {
+        } catch (e: IllegalArgumentException) {
+            logger.error("Invalid payload for notification id: ${notification.id}", e)
+            throw e
+        } catch (e: FailedToSendNotificationException) {
             logger.error("Failed to send email for notification id: ${notification.id}", e)
             throw e
         }

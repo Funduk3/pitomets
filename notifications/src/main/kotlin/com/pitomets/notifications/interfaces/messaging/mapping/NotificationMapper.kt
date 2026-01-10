@@ -5,11 +5,15 @@ import com.pitomets.notifications.domain.model.Channel
 import com.pitomets.notifications.interfaces.messaging.event.NotificationRequestedEvent
 
 object NotificationMapper {
-    fun toCommand(event: NotificationRequestedEvent) =
-        SendNotificationCommand(
+    fun toCommand(event: NotificationRequestedEvent): SendNotificationCommand {
+        val channel = Channel.entries.firstOrNull { it.name.equals(event.channel, ignoreCase = true) }
+            ?: throw IllegalArgumentException("Unsupported channel: ${event.channel}")
+
+        return SendNotificationCommand(
             eventId = event.eventId,
             userId = event.userId,
-            channel = Channel.valueOf(event.channel),
+            channel = channel,
             payload = event.payload
         )
+    }
 }

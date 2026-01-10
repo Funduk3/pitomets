@@ -1,132 +1,119 @@
 package com.pitomets.notifications
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.pitomets.notifications.domain.model.Channel
 import com.pitomets.notifications.domain.model.Status
 import com.pitomets.notifications.domain.port.NotificationRepository
+import com.pitomets.notifications.interfaces.messaging.event.NotificationRequestedEvent
+import jakarta.mail.Session
 import jakarta.mail.internet.MimeMessage
 import net.datafaker.Faker
-import org.apache.kafka.clients.producer.ProducerRecord
 import org.awaitility.kotlin.await
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.kafka.core.KafkaTemplate
+import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.mail.javamail.JavaMailSender
-import org.springframework.test.annotation.DirtiesContext
-import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.bean.override.mockito.MockitoBean
+import java.lang.Thread.sleep
+import java.util.Properties
 import java.util.concurrent.TimeUnit
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestPropertySource(locations = ["classpath:application-test.yml"])
-@DirtiesContext
-class FullFlowIntegrationTest : BaseTest() {  // <- Изменили здесь
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = [
+        "spring.kafka.bootstrap-servers=\${spring.embedded.kafka.brokers}",
+        "spring.kafka.consumer.auto-offset-reset=earliest",
+        "spring.kafka.listener.missing-topics-fatal=false",
+        "spring.jpa.hibernate.ddl-auto=create-drop"
+    ]
+)
+@EmbeddedKafka(
+    partitions = 1,
+    topics = ["notification.send", "notification.sent", "notification.failed", "notification.send.DLT"]
+)
+@ActiveProfiles("test")
+class FullFlowIntegrationTest: BaseContainers() {
 
     @Autowired
     private lateinit var notificationRepository: NotificationRepository
 
     @Autowired
-    private lateinit var kafkaTemplate: KafkaTemplate<String, String>
+    private lateinit var kafkaTemplate: KafkaTemplate<String, Any>
 
-    @Autowired
+    @MockitoBean
     private lateinit var mailSender: JavaMailSender
 
-    @Value("\${kafka.topics.notifications}")
-    private lateinit var notificationsTopic: String
+    @Autowired
+    private lateinit var objectMapper: ObjectMapper
 
     private val faker = Faker()
-    private val mapper = jacksonObjectMapper()
+    private val notificationsTopic = "notification.send"
+
+    @BeforeEach
+    fun setUpMailSender() {
+        val session = Session.getInstance(Properties())
+        whenever(mailSender.createMimeMessage()).thenReturn(MimeMessage(session))
+    }
 
     @Test
     fun `should process notification event from kafka and update status correctly`() {
-        // Ваш существующий тест - без изменений
-        val userId = faker.number().randomNumber(6, false).toString().toLong()
+        val userId = faker.number().randomNumber(6, false)
         val userEmail = faker.internet().emailAddress()
-        val eventId = faker.number().randomNumber(8, false).toString().toLong()
+        val eventId = faker.number().randomNumber(8, false)
 
-        val notificationEvent = mapOf(
-            "eventId" to eventId,
-            "userId" to userId,
-            "channel" to Channel.EMAIL.name,
-            "payload" to """
-                {
-                    "subject": "Order Confirmation",
-                    "body": "Your order #${faker.number().digits(6)} has been confirmed",
-                    "recipient": "$userEmail"
-                }
-            """.trimIndent()
+        val payload = mapOf(
+            "subject" to "Order Confirmation",
+            "body" to "Your order #${faker.number().digits(6)} has been confirmed",
+            "recipient" to userEmail
         )
 
-        kafkaTemplate.send(
-            ProducerRecord(notificationsTopic, userId.toString(), mapper.writeValueAsString(notificationEvent))
+        val notificationEvent = NotificationRequestedEvent(
+            eventId = eventId,
+            userId = userId,
+            channel = Channel.EMAIL.name,
+            payload = objectMapper.writeValueAsString(payload),
+            occurredAt = java.time.Instant.now()
         )
-        println("✅ Отправлено тестовое событие в Kafka: $notificationEvent")
 
-        await.atMost(10, TimeUnit.SECONDS).untilAsserted {
-            val notifications = notificationRepository.findByUserId(userId)
-            assert(notifications.isNotEmpty()) {
-                "Уведомление не сохранено в БД для пользователя $userId"
-            }
+        kafkaTemplate.send(notificationsTopic, userId.toString(), notificationEvent)
+        sleep(2000)
+        val notifications = notificationRepository.findByUserId(userId)
+        Assertions.assertTrue(notifications.isNotEmpty())
 
-            val notification = notifications.first()
-            assert(notification?.status == Status.NEW) {
-                "Ожидался статус NEW, получен ${notification?.status}"
-            }
-            assert(notification?.channel == Channel.EMAIL) {
-                "Неверный канал: ${notification?.channel}"
-            }
-            assert(notification?.payload?.contains(userEmail) == true) {
-                "Payload не содержит email получателя"
-            }
-            println("✅ Уведомление сохранено в БД со статусом NEW: $notification")
-        }
+        val notification = notifications.first()
+        check(notification.status == Status.SENT)
+        check(notification.channel == Channel.EMAIL)
+        check(notification.payload.contains(userEmail))
 
-        await.atMost(15, TimeUnit.SECONDS).untilAsserted {
-            verify(mailSender).send(any<MimeMessage>())
-            println("✅ Подтверждена отправка email на $userEmail")
-        }
-
-        await.atMost(10, TimeUnit.SECONDS).untilAsserted {
-            val updatedNotification = notificationRepository.findByEventId(eventId)
-
-            assert(updatedNotification?.status == Status.SENT) {
-                "Статус не обновлен на SENT, текущий статус: ${updatedNotification?.status}"
-            }
-            println("✅ Статус уведомления успешно обновлен на SENT")
-        }
-
-        println("🎉 Тест пройден успешно: обработка Kafka → сохранение → отправка → обновление статуса")
+        verify(mailSender).send(any<MimeMessage>())
     }
 
     @Test
     fun `should handle invalid event and mark as failed`() {
-        // Ваш существующий тест
-        val invalidEvent = """
-            {
-                "userId": "${faker.number().randomNumber(6, false)}",
-                "channel": "INVALID_CHANNEL",
-                "payload": "invalid"
-            }
-        """.trimIndent()
+        val invalidEvent = NotificationRequestedEvent(
+            eventId = faker.number().randomNumber(8, false),
+            userId = faker.number().randomNumber(6, false),
+            channel = "INVALID_CHANNEL",
+            payload = """{ "payload": "invalid" }""",
+            occurredAt = java.time.Instant.now()
+        )
 
         kafkaTemplate.send(notificationsTopic, "invalid_key", invalidEvent)
 
         await.atMost(10, TimeUnit.SECONDS).untilAsserted {
-            val notifications = notificationRepository.findAll()
-                .filter { it?.status == Status.FAILED }
-
-            assert(notifications.isNotEmpty()) {
-                "Не найдено уведомлений со статусом FAILED для невалидного события"
-            }
-            println("✅ Невалидное событие обработано и помечено как FAILED")
+            val failed = notificationRepository.findAll().filter { it.status == Status.FAILED }
+            check(failed.isNotEmpty()) { "Не найдено уведомлений со статусом FAILED для невалидного события" }
         }
 
-        Thread.sleep(2000)
         verify(mailSender, never()).send(any<MimeMessage>())
-        println("✅ Подтверждено, что email не был отправлен для невалидного события")
     }
 }

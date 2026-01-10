@@ -1,10 +1,10 @@
 package com.pitomets.notifications.infrastructure.persistence.adapter
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.pitomets.notifications.domain.port.NotificationOutbox
 import com.pitomets.notifications.infrastructure.outbox.OutboxEventEntity
 import com.pitomets.notifications.infrastructure.outbox.OutboxJpaRepository
 import org.springframework.stereotype.Component
-import tools.jackson.databind.ObjectMapper
 
 @Component
 class NotificationOutboxAdapter(
