@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: messenger1-postgres
+    environment:
+      POSTGRES_DB: messenger1
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d messenger1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: messenger1-app
+    ports:
+      - "8081:8081"
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/messenger1
+      DATABASE_USER: user
+      DATABASE_PASSWORD: password
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+

@@ -4,6 +4,9 @@ services:
     container_name: spring-app
     ports:
       - "8080:8080"
+    extra_hosts:
+      # ensure host.docker.internal resolves inside Linux containers (Docker Desktop)
+      - "host.docker.internal:host-gateway"
     depends_on:
       redis:
         condition: service_started
@@ -26,6 +29,8 @@ services:
       ELASTICSEARCH_PORT: 9200
 
       MINIO_URL: http://minio:9000
+      # messenger1 runs separately; from inside Docker use host.docker.internal to reach host-mapped 8081
+      MESSENGER_URL: http://host.docker.internal:8081
 
   redis:
     image: redis:7-alpine

@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { listingsAPI } from '../api/listings';
 import { photosAPI } from '../api/photos';
 import { favouritesAPI } from '../api/favourites';
+import { messengerAPI } from '../api/messenger';
 import { useAuth } from '../context/AuthContext';
 
 export const ListingDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [listing, setListing] = useState(null);
   const [photos, setPhotos] = useState([]);
@@ -92,6 +94,31 @@ export const ListingDetail = () => {
     }
   };
 
+  const handleMessageSeller = async () => {
+    if (!isAuthenticated()) {
+      alert('Please login to message seller');
+      return;
+    }
+
+    if (!listing || !listing.sellerId) {
+      alert('Seller information not available');
+      return;
+    }
+
+    if (user?.id === listing.sellerId) {
+      alert('You cannot message yourself');
+      return;
+    }
+
+    try {
+      const chat = await messengerAPI.createOrGetChat(listing.sellerId);
+      navigate(`/chats/${chat.id}`);
+    } catch (err) {
+      console.error('Failed to create chat:', err);
+      alert('Failed to start conversation with seller');
+    }
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
   if (!listing) return <div>Listing not found</div>;
@@ -146,6 +173,23 @@ export const ListingDetail = () => {
             >
               Manage Photos
             </Link>
+          )}
+          {isAuthenticated() && user?.id !== listing.sellerId && (
+            <button
+              onClick={handleMessageSeller}
+              style={{
+                marginTop: '1rem',
+                marginRight: '1rem',
+                padding: '0.75rem 1.5rem',
+                backgroundColor: '#27ae60',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Написать продавцу
+            </button>
           )}
           {isAuthenticated() && (
             <button
