@@ -1,0 +1,99 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: notification-service
+
+  # =========================
+  # DATABASE
+  # =========================
+  datasource:
+    url: jdbc:postgresql://localhost:5432/notification_db
+    username: notification
+    password: notification
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # =========================
+  # KAFKA
+  # =========================
+  kafka:
+    bootstrap-servers: localhost:9092
+
+    consumer:
+      group-id: notification-service
+      enable-auto-commit: false
+      auto-offset-reset: earliest
+
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.value.default.type: com.pitomets.notifications.interfaces.messaging.event.NotificationRequestedEvent
+        isolation.level: read_committed
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        linger.ms: 5
+
+    listener:
+      ack-mode: record
+      missing-topics-fatal: false
+
+  # =========================
+  # EMAIL (SMTP)
+  # =========================
+  mail:
+    host: smtp.mailgun.org
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
+# =========================
+# APPLICATION (CUSTOM)
+# =========================
+app:
+  kafka:
+    topics:
+      notification-send: notification.send
+      notification-sent: notification.sent
+      notification-failed: notification.failed
+      notification-dlq: notification.send.DLT
+
+  outbox:
+    publish-rate-ms: 1000
+    batch-size: 100
+
+  notification:
+    retry:
+      max-attempts: 3
+
+# =========================
+# LOGGING
+# =========================
+logging:
+  level:
+    root: INFO
+    org.springframework.kafka: INFO
+    org.apache.kafka: WARN
+    com.example.notification: DEBUG
