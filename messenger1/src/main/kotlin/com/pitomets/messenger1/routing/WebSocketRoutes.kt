@@ -2,6 +2,7 @@ package com.pitomets.messenger1.routing
 
 import com.pitomets.messenger1.dto.MessageResponse
 import com.pitomets.messenger1.models.ReadReceiptEvent
+import com.pitomets.messenger1.models.SyncResponse
 import com.pitomets.messenger1.models.WebSocketMessage
 import com.pitomets.messenger1.service.ChatService
 import com.pitomets.messenger1.service.MessageService
@@ -10,15 +11,8 @@ import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import java.util.concurrent.ConcurrentHashMap
-
-@Serializable
-data class SyncResponse(
-    val type: String,
-    val messages: Map<String, List<MessageResponse>> // Map<chatId, messages>
-)
 
 class WebSocketManager {
 
