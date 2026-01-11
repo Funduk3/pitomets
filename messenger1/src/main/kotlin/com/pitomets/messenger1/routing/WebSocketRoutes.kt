@@ -10,8 +10,15 @@ import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import java.util.concurrent.ConcurrentHashMap
+
+@Serializable
+data class SyncResponse(
+    val type: String,
+    val messages: Map<String, List<MessageResponse>> // Map<chatId, messages>
+)
 
 class WebSocketManager {
 
@@ -121,6 +128,38 @@ fun Route.webSocketRoutes(
 
                                 // Отправляем сообщение получателю
                                 webSocketManager.sendToChat(chatIdLong, userId, messageResponse, chatService)
+                            }
+                            "sync" -> {
+                                val lastMessageIdsMap = wsMessage.lastMessageIds
+                                if (lastMessageIdsMap == null || lastMessageIdsMap.isEmpty()) {
+                                    // Если нет lastMessageIds, отправляем пустой ответ
+                                    send(Frame.Text(Json.encodeToString(SyncResponse(
+                                        type = "sync_response",
+                                        messages = emptyMap()
+                                    ))))
+                                    return@consumeEach
+                                }
+
+                                // Конвертируем Map<String, String> в Map<Long, Long>
+                                val lastMessageIds = lastMessageIdsMap.mapNotNull { (chatIdStr, msgIdStr) ->
+                                    val chatId = chatIdStr.toLongOrNull()
+                                    val msgId = msgIdStr.toLongOrNull()
+                                    if (chatId != null && msgId != null) chatId to msgId else null
+                                }.toMap()
+
+                                // Получаем непрочитанные сообщения
+                                val unreadMessages = messageService.getUnreadMessagesAfter(userId, lastMessageIds)
+
+                                // Конвертируем в формат для ответа (Map<String, List<MessageResponse>>)
+                                val responseMessages = unreadMessages.mapKeys { it.key.toString() }
+                                    .mapValues { it.value.map { msg -> MessageResponse.from(msg) } }
+
+                                val syncResponse = SyncResponse(
+                                    type = "sync_response",
+                                    messages = responseMessages
+                                )
+
+                                send(Frame.Text(Json.encodeToString(syncResponse)))
                             }
                             else -> {
                                 send(Frame.Text("""{"error": "Unknown message type"}"""))

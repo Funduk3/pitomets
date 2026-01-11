@@ -5,6 +5,8 @@ import com.pitomets.messenger1.models.Chats
 import com.pitomets.messenger1.models.MessageEntity
 import com.pitomets.messenger1.models.Messages
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.transactions.transaction
 import kotlinx.datetime.Clock
 
@@ -84,6 +86,56 @@ class MessageService {
                     user2Id -> it[Chats.unreadCountUser2] = 0
                 }
             }
+        }
+    }
+
+    /**
+     * Получить непрочитанные сообщения для пользователя после указанных lastMessageIds.
+     * Оптимизированная версия: один запрос вместо N+1.
+     * @param userId ID пользователя
+     * @param lastMessageIds Map<chatId, lastMessageId> - последние видимые сообщения для каждого чата
+     * @return Map<chatId, List<MessageEntity>> - непрочитанные сообщения по чатам (максимум 100 на чат, 1000 всего)
+     */
+    fun getUnreadMessagesAfter(userId: Long, lastMessageIds: Map<Long, Long>): Map<Long, List<MessageEntity>> {
+        if (lastMessageIds.isEmpty()) return emptyMap()
+        
+        return transaction {
+            // Шаг 1: Получаем все чаты пользователя одним запросом
+            val requestedChatIds = lastMessageIds.keys.toList()
+            val userChats = Chats.select {
+                ((Chats.user1Id eq userId) or (Chats.user2Id eq userId)) and
+                (Chats.id inList requestedChatIds)
+            }.associate { 
+                it[Chats.id].value to Pair(it[Chats.user1Id], it[Chats.user2Id])
+            }
+            
+            if (userChats.isEmpty()) return@transaction emptyMap()
+            
+            val validChatIds = userChats.keys.toList()
+            
+            // Шаг 2: Один запрос для всех непрочитанных сообщений из валидных чатов
+            // Лимит 1000 сообщений для защиты от перегрузки
+            val allUnread = Messages.select {
+                (Messages.chatId inList validChatIds) and
+                (Messages.senderId neq userId) and
+                (Messages.isRead eq false)
+            }
+                .orderBy(Messages.createdAt to SortOrder.ASC)
+                .limit(1000)
+                .map { rowToMessage(it) }
+            
+            // Шаг 3: Фильтруем по lastMessageId и группируем по чатам в памяти
+            val result = mutableMapOf<Long, MutableList<MessageEntity>>()
+            
+            for (msg in allUnread) {
+                val lastMsgId = lastMessageIds[msg.chatId] ?: continue
+                if (msg.id > lastMsgId) {
+                    result.getOrPut(msg.chatId) { mutableListOf() }.add(msg)
+                }
+            }
+            
+            // Ограничиваем количество сообщений на чат (максимум 100 на чат)
+            result.mapValues { it.value.take(100) }
         }
     }
 

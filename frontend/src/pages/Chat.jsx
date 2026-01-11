@@ -8,7 +8,7 @@ import { useMessengerWS } from '../context/MessengerWSContext';
 export const Chat = () => {
   const { chatId } = useParams();
   const { isAuthenticated, user } = useAuth();
-  const { connected: wsConnected, subscribe, send, markChatRead } = useMessengerWS();
+  const { connected: wsConnected, subscribe, send, markChatRead, updateLastSeenMessage } = useMessengerWS();
   const [chat, setChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -88,6 +88,13 @@ export const Chat = () => {
       try {
         const data = await messengerAPI.getChatMessages(parseInt(chatId));
         setMessages((prev) => mergeMessagesById(prev, data));
+        // Регистрируем последнее видимое сообщение
+        if (data && data.length > 0) {
+          const lastMessage = data[data.length - 1];
+          if (lastMessage?.id != null) {
+            updateLastSeenMessage(parseInt(chatId), lastMessage.id);
+          }
+        }
         // Если пользователь находится в чате, считаем всё полученное прочитанным
         scheduleMarkRead();
       } catch (_) {
@@ -165,6 +172,14 @@ export const Chat = () => {
       );
       setUnreadBoundaryId(firstUnread?.id != null ? String(firstUnread.id) : null);
 
+      // Регистрируем последнее видимое сообщение для синхронизации
+      if (data && data.length > 0) {
+        const lastMessage = data[data.length - 1];
+        if (lastMessage?.id != null) {
+          updateLastSeenMessage(parseInt(chatId), lastMessage.id);
+        }
+      }
+
       // Скролл вниз делаем через useLayoutEffect (без видимого "прыжка"), тут ничего не делаем
 
       await messengerAPI.markMessagesAsRead(parseInt(chatId));
@@ -225,6 +240,8 @@ export const Chat = () => {
       if (Number(message.chatId) !== currentChatId) return;
 
       setMessages((prev) => mergeMessagesById(prev, [message]));
+      // Регистрируем последнее видимое сообщение
+      updateLastSeenMessage(currentChatId, message.id);
       if (message?.senderId != null && Number(message.senderId) !== Number(user?.id)) {
         scheduleMarkRead();
       }

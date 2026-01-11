@@ -17,6 +17,10 @@ export const MessengerWSProvider = ({ children }) => {
   const reconnectTimeoutRef = useRef(null);
   const shouldReconnectRef = useRef(true);
   const listenersRef = useRef(new Set());
+  // Храним последние видимые сообщения для каждого чата: Map<chatId, lastMessageId>
+  const lastSeenMessagesRef = useRef(new Map());
+  // Дебаунсинг для синхронизации - защита от частых запросов
+  const syncDebounceRef = useRef(null);
 
   const subscribe = (handler) => {
     listenersRef.current.add(handler);
@@ -53,18 +57,41 @@ export const MessengerWSProvider = ({ children }) => {
 
     ws.onopen = () => {
       setConnected(true);
+      // При восстановлении вебсокета отправляем запрос синхронизации
+      requestSync();
     };
 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         if (data?.error) return;
+        
+        // Обработка ответа синхронизации
+        if (data?.type === 'sync_response' && data?.messages) {
+          // Эмитим все непрочитанные сообщения из ответа синхронизации
+          for (const [chatIdStr, messages] of Object.entries(data.messages)) {
+            if (Array.isArray(messages)) {
+              for (const msg of messages) {
+                if (msg?.id != null && msg?.chatId != null) {
+                  if (Number(msg.senderId) !== Number(userId)) {
+                    markChatUnread(msg.chatId);
+                  }
+                  emit(msg);
+                }
+              }
+            }
+          }
+          return;
+        }
+        
         // Global unread indicator: any incoming message (not from me) marks the chat as unread,
         // regardless of what page is currently open.
         if (data?.type !== 'read_receipt' && data?.id != null && data?.chatId != null) {
           if (Number(data.senderId) !== Number(userId)) {
             markChatUnread(data.chatId);
           }
+          // Обновляем последнее видимое сообщение для этого чата
+          updateLastSeenMessage(data.chatId, data.id);
         }
         emit(data);
       } catch (_) {
@@ -102,6 +129,10 @@ export const MessengerWSProvider = ({ children }) => {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
+      }
+      if (syncDebounceRef.current) {
+        clearTimeout(syncDebounceRef.current);
+        syncDebounceRef.current = null;
       }
       if (wsRef.current) {
         try { wsRef.current.close(); } catch (_) {}
@@ -165,6 +196,10 @@ export const MessengerWSProvider = ({ children }) => {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
       }
+      if (syncDebounceRef.current) {
+        clearTimeout(syncDebounceRef.current);
+        syncDebounceRef.current = null;
+      }
     };
   }, [user?.id]);
 
@@ -177,6 +212,51 @@ export const MessengerWSProvider = ({ children }) => {
     } catch (_) {
       return false;
     }
+  };
+
+  // Обновить последнее видимое сообщение для чата
+  const updateLastSeenMessage = (chatId, messageId) => {
+    const chatIdNum = Number(chatId);
+    const msgIdNum = Number(messageId);
+    if (!Number.isFinite(chatIdNum) || !Number.isFinite(msgIdNum)) return;
+    
+    const current = lastSeenMessagesRef.current.get(chatIdNum);
+    if (current == null || msgIdNum > current) {
+      lastSeenMessagesRef.current.set(chatIdNum, msgIdNum);
+    }
+  };
+
+  // Запросить синхронизацию непрочитанных сообщений с дебаунсингом
+  const requestSync = () => {
+    const lastSeen = lastSeenMessagesRef.current;
+    if (lastSeen.size === 0) return; // Нет данных для синхронизации
+    
+    // Дебаунсинг: отменяем предыдущий запрос, если он был запланирован
+    if (syncDebounceRef.current) {
+      clearTimeout(syncDebounceRef.current);
+    }
+    
+    // Запланировать синхронизацию через 500мс (защита от частых переподключений)
+    syncDebounceRef.current = setTimeout(() => {
+      // Проверяем, что вебсокет все еще открыт
+      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+        syncDebounceRef.current = null;
+        return;
+      }
+      
+      // Конвертируем Map в объект с строковыми ключами (для JSON)
+      const lastMessageIds = {};
+      for (const [chatId, msgId] of lastSeen.entries()) {
+        lastMessageIds[String(chatId)] = String(msgId);
+      }
+      
+      send({
+        type: 'sync',
+        lastMessageIds: lastMessageIds,
+      });
+      
+      syncDebounceRef.current = null;
+    }, 500);
   };
 
   const markChatUnread = (chatId) => {
@@ -220,6 +300,9 @@ export const MessengerWSProvider = ({ children }) => {
     markChatUnread,
     markChatRead,
     setUnreadFromChats,
+    // синхронизация
+    updateLastSeenMessage,
+    requestSync,
   }), [connected, unreadChatIds]);
 
   return <MessengerWSContext.Provider value={value}>{children}</MessengerWSContext.Provider>;
