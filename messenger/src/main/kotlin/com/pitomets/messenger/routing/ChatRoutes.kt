@@ -4,11 +4,14 @@ import com.pitomets.messenger.dto.ChatResponse
 import com.pitomets.messenger.dto.CreateChatRequest
 import com.pitomets.messenger.service.ChatService
 import com.pitomets.messenger.service.MessageService
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.request.header
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.route
 
 fun Route.chatRoutes(chatService: ChatService, messageService: MessageService) {
     route("/api/chats") {

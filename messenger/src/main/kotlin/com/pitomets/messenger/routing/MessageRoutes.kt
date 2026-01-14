@@ -1,13 +1,19 @@
 package com.pitomets.messenger.routing
 
-import com.pitomets.messenger.dto.*
+import com.pitomets.messenger.dto.CreateMessageRequest
+import com.pitomets.messenger.dto.MessageResponse
 import com.pitomets.messenger.service.ChatService
 import com.pitomets.messenger.service.MessageService
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.put
+import io.ktor.server.routing.route
+
+private const val DEFAULT_MESSAGES_LIMIT = 50
 
 fun Route.messageRoutes(
     messageService: MessageService,
@@ -43,7 +49,7 @@ fun Route.messageRoutes(
                 return@get call.respond(HttpStatusCode.Forbidden, "User is not in this chat")
             }
 
-            val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 50
+            val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: DEFAULT_MESSAGES_LIMIT
             val offset = call.request.queryParameters["offset"]?.toLongOrNull() ?: 0
 
             val messages = messageService.getMessagesByChatId(chatId, limit, offset)
