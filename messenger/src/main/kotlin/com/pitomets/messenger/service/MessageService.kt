@@ -4,9 +4,15 @@ import com.pitomets.messenger.models.Chats
 import com.pitomets.messenger.models.MessageEntity
 import com.pitomets.messenger.models.Messages
 import kotlinx.datetime.Clock
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.or
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 
 class MessageService {
     fun createMessage(chatId: Long, senderId: Long, content: String): MessageEntity {
@@ -119,7 +125,7 @@ class MessageService {
                     (Messages.isRead eq false)
             }
                 .orderBy(Messages.createdAt to SortOrder.ASC)
-                .limit(1000)
+                .limit(MAX_UNREAD_MESSAGE_COUNT)
                 .map { rowToMessage(it) }
 
             // Шаг 3: Фильтруем по lastMessageId и группируем по чатам в памяти
@@ -132,7 +138,7 @@ class MessageService {
                 }
             }
             // Ограничиваем количество сообщений на чат (максимум 100 на чат)
-            result.mapValues { it.value.take(100) }
+            result.mapValues { it.value.take(MAX_UNREAD_MESSAGE_COUNT_PER_CHAT) }
         }
     }
 
@@ -145,5 +151,10 @@ class MessageService {
             createdAt = row[Messages.createdAt],
             isRead = row[Messages.isRead]
         )
+    }
+
+    companion object {
+        const val MAX_UNREAD_MESSAGE_COUNT = 1000
+        const val MAX_UNREAD_MESSAGE_COUNT_PER_CHAT = 100
     }
 }

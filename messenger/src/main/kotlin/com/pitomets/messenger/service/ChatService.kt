@@ -3,7 +3,12 @@ package com.pitomets.messenger.service
 import com.pitomets.messenger.models.ChatEntity
 import com.pitomets.messenger.models.Chats
 import kotlinx.datetime.Clock
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.or
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 
 class ChatService {

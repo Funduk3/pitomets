@@ -1,19 +1,26 @@
 package com.pitomets.messenger
 
 import com.pitomets.messenger.db.DatabaseFactory
-import com.pitomets.messenger.routing.*
 import com.pitomets.messenger.routing.WebSocketManager
+import com.pitomets.messenger.routing.chatRoutes
+import com.pitomets.messenger.routing.messageRoutes
+import com.pitomets.messenger.routing.webSocketRoutes
 import com.pitomets.messenger.service.ChatService
 import com.pitomets.messenger.service.MessageService
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
-import io.ktor.server.application.*
-import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.plugins.cors.routing.*
-import io.ktor.server.plugins.statuspages.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.application.Application
+import io.ktor.server.application.call
+import io.ktor.server.application.install
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.cors.routing.CORS
+import io.ktor.server.plugins.statuspages.StatusPages
+import io.ktor.server.response.respond
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
+import io.ktor.server.websocket.WebSockets
 import kotlinx.serialization.json.Json
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)

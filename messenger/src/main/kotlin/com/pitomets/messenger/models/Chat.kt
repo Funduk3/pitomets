@@ -4,7 +4,7 @@ import kotlinx.datetime.Clock
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
 
-object Chats : LongIdTable("chats") {
+object Chat : LongIdTable("chats") {
     val user1Id = long("user1_id") // ID из монолита
     val user2Id = long("user2_id") // ID из монолита
     val createdAt = timestamp("created_at").clientDefault { Clock.System.now() }

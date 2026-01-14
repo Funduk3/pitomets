@@ -1,7 +1,7 @@
 package com.pitomets.messenger.db
 
-import com.pitomets.messenger.models.Chats
-import com.pitomets.messenger.models.Messages
+import com.pitomets.messenger.models.Chat
+import com.pitomets.messenger.models.Message
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.jetbrains.exposed.sql.Database
@@ -15,7 +15,7 @@ object DatabaseFactory {
             driverClassName = "org.postgresql.Driver"
             username = System.getenv("DATABASE_USER")
             password = System.getenv("DATABASE_PASSWORD")
-            maximumPoolSize = 10
+            maximumPoolSize = MAX_POOL_SIZE
             isAutoCommit = false
             transactionIsolation = "TRANSACTION_REPEATABLE_READ"
             validate()
@@ -26,7 +26,8 @@ object DatabaseFactory {
 
         transaction {
             // keep schema in sync (adds missing columns too)
-            SchemaUtils.createMissingTablesAndColumns(Chats, Messages)
+            SchemaUtils.createMissingTablesAndColumns(Chat, Message)
         }
     }
+    const val MAX_POOL_SIZE = 10
 }
