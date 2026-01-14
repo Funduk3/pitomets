@@ -10,8 +10,8 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.channels.consumeEach
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.util.concurrent.ConcurrentHashMap
 
 class WebSocketManager {
@@ -48,7 +48,7 @@ class WebSocketManager {
     suspend fun sendToChat(chatId: Long, senderId: Long, message: MessageResponse, chatService: ChatService) {
         val chat = chatService.getChatById(chatId) ?: return
         val recipientId = if (chat.user1Id == senderId) chat.user2Id else chat.user1Id
-        
+
         val jsonMessage = Json.encodeToString(message)
         sendToUser(recipientId, jsonMessage)
     }
@@ -127,10 +127,16 @@ fun Route.webSocketRoutes(
                                 val lastMessageIdsMap = wsMessage.lastMessageIds
                                 if (lastMessageIdsMap == null || lastMessageIdsMap.isEmpty()) {
                                     // Если нет lastMessageIds, отправляем пустой ответ
-                                    send(Frame.Text(Json.encodeToString(SyncResponse(
-                                        type = "sync_response",
-                                        messages = emptyMap()
-                                    ))))
+                                    send(
+                                        Frame.Text(
+                                            Json.encodeToString(
+                                                SyncResponse(
+                                                    type = "sync_response",
+                                                    messages = emptyMap()
+                                                )
+                                            )
+                                        )
+                                    )
                                     return@consumeEach
                                 }
 
@@ -167,4 +173,3 @@ fun Route.webSocketRoutes(
         }
     }
 }
-

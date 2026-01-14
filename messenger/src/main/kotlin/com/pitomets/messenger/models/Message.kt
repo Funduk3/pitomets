@@ -1,8 +1,8 @@
 package com.pitomets.messenger.models
 
+import kotlinx.datetime.Clock
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
-import kotlinx.datetime.Clock
 
 object Messages : LongIdTable("messages") {
     val chatId = long("chat_id").references(Chats.id)

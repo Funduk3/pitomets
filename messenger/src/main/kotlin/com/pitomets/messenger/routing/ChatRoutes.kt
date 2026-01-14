@@ -67,4 +67,3 @@ fun Route.chatRoutes(chatService: ChatService, messageService: MessageService) {
         }
     }
 }
-

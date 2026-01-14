@@ -2,6 +2,8 @@ plugins {
     kotlin("jvm") version "2.0.21"
     kotlin("plugin.serialization") version "2.0.21"
     id("io.ktor.plugin") version "2.3.12"
+    id("io.gitlab.arturbosch.detekt") version "1.23.8"
+    application // добавляем этот plugin
 }
 
 group = "com.pitomets"
@@ -43,6 +45,8 @@ dependencies {
     testImplementation("io.ktor:ktor-server-tests:2.3.12")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.8")
 }
 
 kotlin {
@@ -52,10 +56,8 @@ kotlin {
     }
 }
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    }
+application {
+    mainClass.set("com.pitomets.messenger.ApplicationKt")
 }
 
 ktor {
@@ -64,7 +66,39 @@ ktor {
     }
 }
 
-application {
-    mainClass.set("com.pitomets.messenger.ApplicationKt")
+detekt {
+    toolVersion = "1.23.8"
+    parallel = true
+    buildUponDefaultConfig = true
+    allRules = false
+    config = files("$projectDir/config/detekt/detekt.yml")
+    baseline = file("$projectDir/config/baseline.xml")
 }
 
+tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+    autoCorrect = true
+
+    reports {
+        html.required.set(true)
+        html.outputLocation.set(file("build/reports/detekt.html"))
+        xml.required.set(true)
+        xml.outputLocation.set(file("build/reports/detekt.xml"))
+        txt.required.set(true)
+        txt.outputLocation.set(file("build/reports/detekt.txt"))
+    }
+}
+
+// Запуск detekt перед сборкой
+tasks.named("compileKotlin") {
+    dependsOn("detekt")
+}
+
+// Альтернативно: запуск detekt перед тестами
+tasks.named("test") {
+    dependsOn("detekt")
+}
+
+// Или запуск перед созданием jar
+tasks.named("jar") {
+    dependsOn("detekt")
+}

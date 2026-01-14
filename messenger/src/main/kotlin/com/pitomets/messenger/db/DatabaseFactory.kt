@@ -1,9 +1,9 @@
 package com.pitomets.messenger.db
 
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
 import com.pitomets.messenger.models.Chats
 import com.pitomets.messenger.models.Messages
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -30,4 +30,3 @@ object DatabaseFactory {
         }
     }
 }
-

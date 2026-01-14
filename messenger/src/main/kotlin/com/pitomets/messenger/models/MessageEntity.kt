@@ -1,8 +1,8 @@
 package com.pitomets.messenger.models
 
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.Contextual
 import kotlinx.datetime.Instant
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.Serializable
 
 @Serializable
 data class MessageEntity(
@@ -13,4 +13,3 @@ data class MessageEntity(
     @Contextual val createdAt: Instant,
     val isRead: Boolean
 )
-

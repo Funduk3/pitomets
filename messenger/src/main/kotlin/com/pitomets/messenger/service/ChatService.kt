@@ -2,9 +2,9 @@ package com.pitomets.messenger.service
 
 import com.pitomets.messenger.models.ChatEntity
 import com.pitomets.messenger.models.Chats
+import kotlinx.datetime.Clock
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import kotlinx.datetime.Clock
 
 class ChatService {
     fun createOrGetChat(user1Id: Long, user2Id: Long): ChatEntity {
@@ -12,7 +12,7 @@ class ChatService {
             // Проверяем, существует ли уже чат между этими пользователями
             val existingChat = Chats.select {
                 ((Chats.user1Id eq user1Id) and (Chats.user2Id eq user2Id)) or
-                ((Chats.user1Id eq user2Id) and (Chats.user2Id eq user1Id))
+                    ((Chats.user1Id eq user2Id) and (Chats.user2Id eq user1Id))
             }.singleOrNull()
 
             if (existingChat != null) {
@@ -67,4 +67,3 @@ class ChatService {
         )
     }
 }
-

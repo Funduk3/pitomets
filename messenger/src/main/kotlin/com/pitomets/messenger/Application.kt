@@ -6,14 +6,14 @@ import com.pitomets.messenger.routing.WebSocketManager
 import com.pitomets.messenger.service.ChatService
 import com.pitomets.messenger.service.MessageService
 import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.statuspages.*
-import io.ktor.server.websocket.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.websocket.*
 import kotlinx.serialization.json.Json
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
@@ -44,11 +44,13 @@ fun Application.module() {
 
     // Настройка JSON сериализации
     install(ContentNegotiation) {
-        json(Json {
-            prettyPrint = true
-            isLenient = true
-            ignoreUnknownKeys = true
-        })
+        json(
+            Json {
+                prettyPrint = true
+                isLenient = true
+                ignoreUnknownKeys = true
+            }
+        )
     }
 
     // Обработка ошибок
@@ -76,4 +78,3 @@ fun Application.module() {
         webSocketRoutes(messageService, chatService, webSocketManager)
     }
 }
-

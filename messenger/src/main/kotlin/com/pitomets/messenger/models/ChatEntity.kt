@@ -1,8 +1,8 @@
 package com.pitomets.messenger.models
 
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.Contextual
 import kotlinx.datetime.Instant
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.Serializable
 
 @Serializable
 data class ChatEntity(
@@ -14,4 +14,3 @@ data class ChatEntity(
     val unreadCountUser1: Int,
     val unreadCountUser2: Int
 )
-

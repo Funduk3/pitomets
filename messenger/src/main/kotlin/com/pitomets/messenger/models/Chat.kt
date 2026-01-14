@@ -1,8 +1,8 @@
 package com.pitomets.messenger.models
 
+import kotlinx.datetime.Clock
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
-import kotlinx.datetime.Clock
 
 object Chats : LongIdTable("chats") {
     val user1Id = long("user1_id") // ID из монолита
@@ -14,4 +14,3 @@ object Chats : LongIdTable("chats") {
     val unreadCountUser1 = integer("unread_count_user1").default(0)
     val unreadCountUser2 = integer("unread_count_user2").default(0)
 }
-
