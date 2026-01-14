@@ -8,16 +8,12 @@ import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import java.util.concurrent.Executors
 
 @Component
 class ListingOutboxProcessor(
     private val outboxRepo: ListingOutboxRepository,
     private val searchService: SearchService
 ) {
-
-    private val executor = Executors.newVirtualThreadPerTaskExecutor()
-
     @Scheduled(fixedDelay = TIME_TO_ADD)
     @Transactional
     fun processOutbox() {
@@ -37,16 +33,14 @@ class ListingOutboxProcessor(
                     )
                     EventType.DELETE -> searchService.deleteListing(event.listingId)
                 }
-                outboxRepo.markProcessed(event.id!!)
-            } catch (ex: Exception) {
-                outboxRepo.incrementRetry(event.id!!)
-                log.warn("Failed to process event ${event.id}: ${ex.message}")
+                outboxRepo.markProcessed(requireNotNull(event.id))
+            } catch (_: Exception) {
+                outboxRepo.incrementRetry(requireNotNull(event.id))
             }
         }
 
         log.info("Processed batch of ${events.size} events")
     }
-
 
     @Scheduled(fixedDelay = TIME_TO_DELETE)
     fun cleanupProcessedOutbox() {
