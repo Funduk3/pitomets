@@ -23,34 +23,30 @@ class ListingOutboxProcessor(
     fun processOutbox() {
         val events = outboxRepo.findBatchForProcessing(BATCH_SIZE)
 
-        val futures = events.map { event ->
-            executor.submit {
-                try {
-                    when (event.eventType) {
-                        EventType.CREATE, EventType.UPDATE -> {
-                            searchService.indexListing(
-                                SearchListingDocument(
-                                    id = event.listingId,
-                                    title = event.title.orEmpty(),
-                                    description = event.description.orEmpty()
-                                )
-                            )
-                        }
-                        EventType.DELETE -> {
-                            searchService.deleteListing(event.listingId)
-                        }
-                    }
-                    outboxRepo.markProcessed(requireNotNull(event.id))
-                } catch (_: Exception) {
-                    outboxRepo.incrementRetry(requireNotNull(event.id))
+        if (events.isEmpty()) return
+
+        events.forEach { event ->
+            try {
+                when (event.eventType) {
+                    EventType.CREATE, EventType.UPDATE -> searchService.indexListing(
+                        SearchListingDocument(
+                            id = event.listingId,
+                            title = event.title.orEmpty(),
+                            description = event.description.orEmpty()
+                        )
+                    )
+                    EventType.DELETE -> searchService.deleteListing(event.listingId)
                 }
+                outboxRepo.markProcessed(event.id!!)
+            } catch (ex: Exception) {
+                outboxRepo.incrementRetry(event.id!!)
+                log.warn("Failed to process event ${event.id}: ${ex.message}")
             }
         }
 
-        futures.forEach { it.get() }
-
-        log.info("Process Outbox successful")
+        log.info("Processed batch of ${events.size} events")
     }
+
 
     @Scheduled(fixedDelay = TIME_TO_DELETE)
     fun cleanupProcessedOutbox() {
