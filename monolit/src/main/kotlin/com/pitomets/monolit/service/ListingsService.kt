@@ -1,5 +1,6 @@
 package com.pitomets.monolit.service
 
+import com.pitomets.monolit.exceptions.ListingNotFoundException
 import com.pitomets.monolit.exceptions.PetNotFoundException
 import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.model.EventType
@@ -14,10 +15,10 @@ import com.pitomets.monolit.repository.ListingOutboxRepository
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.PetsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
-import com.pitomets.monolit.utils.findListingOrThrow
 import jakarta.transaction.Transactional
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import java.nio.file.AccessDeniedException
 
@@ -166,6 +167,10 @@ class ListingsService(
         }
         return listing
     }
+
+    fun ListingsRepo.findListingOrThrow(listingId: Long): Listing =
+        findByIdOrNull(listingId)
+            ?: throw ListingNotFoundException("Listing with id $listingId not found")
 
     // private methods (you can do it public if you need)
 
