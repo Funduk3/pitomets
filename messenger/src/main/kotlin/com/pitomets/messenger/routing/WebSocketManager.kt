@@ -13,6 +13,8 @@ import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.server.websocket.webSocket
 import io.ktor.websocket.CloseReason
 import io.ktor.websocket.Frame
+import io.ktor.websocket.close
+import io.ktor.websocket.readText
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -21,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 class WebSocketManager {
 
-    // сейчас держим максимум 1 коннект, todo убрать это в пользу редиса
+    // сейчас держим максимум 1 коннект
     private val connections = ConcurrentHashMap<Long, WebSocketServerSession>()
 
     suspend fun addConnection(userId: Long, session: WebSocketServerSession) {
@@ -95,7 +97,7 @@ fun Route.webSocketRoutes(
     }
 }
 
-private fun WebSocketServerSession.extractUserIdOrClose(): Long? {
+private suspend fun WebSocketServerSession.extractUserIdOrClose(): Long? {
     val userIdHeader = call.request.header("X-User-Id")
     val userIdQuery = call.request.queryParameters["userId"]
     val userId = userIdHeader?.toLongOrNull() ?: userIdQuery?.toLongOrNull()

@@ -36,7 +36,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
 
     // Logging
-    implementation("ch.qos.logback:logback-classic:1.5.3")
+    implementation("ch.qos.logback:logback-classic:1.5.24")
 
     // HikariCP for connection pooling
     implementation("com.zaxxer:HikariCP:5.1.0")
@@ -71,8 +71,8 @@ detekt {
     parallel = true
     buildUponDefaultConfig = true
     allRules = false
-    config = files("$projectDir/config/detekt/detekt.yml")
-    baseline = file("$projectDir/config/baseline.xml")
+    config = files("config/detekt/detekt.yml")
+    baseline = file("config/baseline.xml")
 }
 
 tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {

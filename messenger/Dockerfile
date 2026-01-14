@@ -5,6 +5,7 @@ WORKDIR /app
 COPY build.gradle.kts settings.gradle.kts gradle.properties ./
 COPY gradle ./gradle
 COPY src ./src
+COPY config/detekt/detekt.yml /app/config/detekt/detekt.yml
 
 RUN gradle build --no-daemon -x test
 
@@ -17,4 +18,3 @@ COPY --from=build /app/build/libs/*.jar app.jar
 EXPOSE 8081
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
-
