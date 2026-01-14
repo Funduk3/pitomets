@@ -2,7 +2,7 @@ package com.pitomets.monolit.service
 
 import com.pitomets.monolit.exceptions.AvatarNotFoundException
 import com.pitomets.monolit.repository.UserRepo
-import com.pitomets.monolit.utils.findUserOrThrow
+import com.pitomets.monolit.repository.findUserOrThrow
 import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile

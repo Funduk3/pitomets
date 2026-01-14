@@ -11,7 +11,7 @@ import com.pitomets.monolit.model.entity.User
 import com.pitomets.monolit.model.entity.UserRole
 import com.pitomets.monolit.repository.SellerProfileRepo
 import com.pitomets.monolit.repository.UserRepo
-import com.pitomets.monolit.utils.findUserOrThrow
+import com.pitomets.monolit.repository.findUserOrThrow
 import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
