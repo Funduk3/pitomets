@@ -4,6 +4,7 @@ import com.pitomets.monolit.model.EventType
 import com.pitomets.monolit.model.dto.SearchListingDocument
 import com.pitomets.monolit.repository.ListingOutboxRepository
 import com.pitomets.monolit.service.SearchService
+import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -18,6 +19,7 @@ class ListingOutboxProcessor(
     private val executor = Executors.newVirtualThreadPerTaskExecutor()
 
     @Scheduled(fixedDelay = TIME_TO_ADD)
+    @Transactional
     fun processOutbox() {
         val events = outboxRepo.findBatchForProcessing(BATCH_SIZE)
 
