@@ -57,13 +57,13 @@ export const Listings = () => {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div>Грузим...</div>;
 
   return (
     <ProtectedRoute>
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <h2>My Listings</h2>
+          <h2>Мои объявления</h2>
           <Link
             to="/listings/create"
             style={{
@@ -74,7 +74,7 @@ export const Listings = () => {
               borderRadius: '4px'
             }}
           >
-            Create New Listing
+            Создать объявление
           </Link>
         </div>
         {error && (
@@ -85,8 +85,8 @@ export const Listings = () => {
         )}
         {listings.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem' }}>
-            <p>You don't have any listings yet.</p>
-            <Link to="/listings/create" style={{ color: '#3498db' }}>Create your first listing</Link>
+            <p>У вас пока нет объявлений.</p>
+            <Link to="/listings/create" style={{ color: '#3498db' }}>Создать первое объявление</Link>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>

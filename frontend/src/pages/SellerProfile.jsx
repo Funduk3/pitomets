@@ -38,7 +38,7 @@ export const SellerProfile = () => {
       } else {
         await sellerAPI.createSellerProfile({ shopName, description });
       }
-      alert(isUpdate ? 'Profile updated successfully!' : 'Profile created successfully!');
+      alert(isUpdate ? 'Профиль успешно обновлён!' : 'Профиль успешно создан!');
       window.location.href = '/profile';
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to save profile');
@@ -50,11 +50,11 @@ export const SellerProfile = () => {
   return (
     <ProtectedRoute>
       <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-        <h2>{isUpdate ? 'Update' : 'Create'} Seller Profile</h2>
+        <h2>{isUpdate ? 'Обновить' : 'Создать'} профиль продавца</h2>
         {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Shop Name:</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Название магазина:</label>
             <input
               type="text"
               value={shopName}
@@ -64,7 +64,7 @@ export const SellerProfile = () => {
             />
           </div>
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Description:</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Описание:</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -86,7 +86,7 @@ export const SellerProfile = () => {
               cursor: loading ? 'not-allowed' : 'pointer'
             }}
           >
-            {loading ? 'Saving...' : isUpdate ? 'Update Profile' : 'Create Profile'}
+            {loading ? 'Сохраняем...' : isUpdate ? 'Обновить профиль' : 'Создать профиль'}
           </button>
         </form>
       </div>

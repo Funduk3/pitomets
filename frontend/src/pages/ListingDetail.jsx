@@ -170,9 +170,9 @@ export const ListingDetail = () => {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div>Грузим...</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
-  if (!listing) return <div>Listing not found</div>;
+  if (!listing) return <div>Объявление не найдено</div>;
 
   return (
     <div>
@@ -224,9 +224,9 @@ export const ListingDetail = () => {
         </div>
       )}
       <p style={{ marginTop: '0.25rem', color: '#555' }}>
-        <strong>Rating:</strong>{' '}
+        <strong>Рейтинг:</strong>{' '}
         {listing.sellerRating != null ? `${listing.sellerRating.toFixed(2)} / 5` : 'No ratings yet'}
-        {listing.sellerReviewsCount != null && ` (${listing.sellerReviewsCount} reviews)`}
+        {listing.sellerReviewsCount != null && ` (${listing.sellerReviewsCount} отзывов)`}
       </p>
       <div style={{ display: 'flex', gap: '2rem', marginTop: '2rem' }}>
         <div style={{ flex: 1 }}>
@@ -248,11 +248,11 @@ export const ListingDetail = () => {
           )}
         </div>
         <div style={{ flex: 1 }}>
-          <p><strong>Description:</strong> {listing.description}</p>
-          <p><strong>Price:</strong> ${listing.price}</p>
-          <p><strong>Species:</strong> {listing.species || 'N/A'}</p>
+          <p><strong>Описание:</strong> {listing.description}</p>
+          <p><strong>Цена:</strong> ${listing.price}</p>
+          <p><strong>Вид:</strong> {listing.species || 'N/A'}</p>
           {listing.breed && <p><strong>Breed:</strong> {listing.breed}</p>}
-          <p><strong>Age:</strong> {listing.ageMonths} months</p>
+          <p><strong>Возраст:</strong> {listing.ageMonths} months</p>
           {listing.mother && <p><strong>Mother ID:</strong> {listing.mother}</p>}
           {listing.father && <p><strong>Father ID:</strong> {listing.father}</p>}
           {isAuthenticated() && user?.id === listing.sellerId && (
@@ -268,7 +268,7 @@ export const ListingDetail = () => {
                 borderRadius: '4px'
               }}
             >
-              Manage Photos
+              Изменить фотографии
             </Link>
           )}
           {isAuthenticated() && user?.id !== listing.sellerId && (
@@ -301,16 +301,16 @@ export const ListingDetail = () => {
                 cursor: 'pointer'
               }}
             >
-              {isFavourite ? 'Remove from Favourites' : 'Add to Favourites'}
+              {isFavourite ? 'Удалить из избранных' : 'Добавить в избранное'}
             </button>
           )}
         </div>
       </div>
 
       <div style={{ marginTop: '3rem' }}>
-        <h3>Reviews</h3>
+        <h3>Отзывы</h3>
         {reviews.length === 0 ? (
-          <p>No reviews yet</p>
+          <p>Пока нет отзывов</p>
         ) : (
           <div>
             {reviews.map((review) => (
@@ -337,7 +337,7 @@ export const ListingDetail = () => {
               borderRadius: '4px'
             }}
           >
-            Write a Review
+            Написать отзыв
           </Link>
         )}
       </div>

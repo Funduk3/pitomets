@@ -316,7 +316,7 @@ export const Chat = () => {
   };
 
   if (!isAuthenticated()) {
-    return <div>Please login to view chat</div>;
+    return <div>Войдите, чтобы увидеть чаты</div>;
   }
 
   if (loading) return <div>Loading...</div>;

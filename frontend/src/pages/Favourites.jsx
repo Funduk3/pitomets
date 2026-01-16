@@ -58,11 +58,11 @@ export const Favourites = () => {
   return (
     <ProtectedRoute>
       <div>
-        <h2>My Favourites</h2>
+        <h2>Мои избранные</h2>
         {favourites.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem' }}>
-            <p>You don't have any favourites yet.</p>
-            <Link to="/search" style={{ color: '#3498db' }}>Search for listings</Link>
+            <p>У вас сейчас нет избранных питомцев.</p>
+            <Link to="/search" style={{ color: '#3498db' }}>Их можно найти в поиске</Link>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', marginTop: '2rem' }}>

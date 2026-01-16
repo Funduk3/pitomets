@@ -26,15 +26,15 @@ export const Layout = ({ children }) => {
       }}>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <Link to="/" style={{ color: 'white', textDecoration: 'none', fontSize: '1.5rem', fontWeight: 'bold' }}>
-            Pitomets
+            Питомец
           </Link>
-          <Link to="/search" style={{ color: 'white', textDecoration: 'none' }}>Search</Link>
+          <Link to="/search" style={{ color: 'white', textDecoration: 'none' }}>Поиск</Link>
           {isAuthenticated() && (
             <>
               {isSeller && (
-                <Link to="/listings" style={{ color: 'white', textDecoration: 'none' }}>My Listings</Link>
+                <Link to="/listings" style={{ color: 'white', textDecoration: 'none' }}>Мои объявления</Link>
               )}
-              <Link to="/favourites" style={{ color: 'white', textDecoration: 'none' }}>Favourites</Link>
+              <Link to="/favourites" style={{ color: 'white', textDecoration: 'none' }}>Избранные</Link>
               <Link to="/chats" style={{ color: hasUnread ? '#e74c3c' : 'white', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                 Мои чаты
                 {hasUnread && (
@@ -50,7 +50,7 @@ export const Layout = ({ children }) => {
                   />
                 )}
               </Link>
-              <Link to="/profile" style={{ color: 'white', textDecoration: 'none' }}>Profile</Link>
+              <Link to="/profile" style={{ color: 'white', textDecoration: 'none' }}>Профиль</Link>
             </>
           )}
         </div>
@@ -67,12 +67,12 @@ export const Layout = ({ children }) => {
                 cursor: 'pointer'
               }}
             >
-              Logout
+              Выйти
             </button>
           ) : (
             <div style={{ display: 'flex', gap: '1rem' }}>
-              <Link to="/login" style={{ color: 'white', textDecoration: 'none' }}>Login</Link>
-              <Link to="/register" style={{ color: 'white', textDecoration: 'none' }}>Register</Link>
+              <Link to="/login" style={{ color: 'white', textDecoration: 'none' }}>Вход</Link>
+              <Link to="/register" style={{ color: 'white', textDecoration: 'none' }}>Регистрация</Link>
             </div>
           )}
         </div>

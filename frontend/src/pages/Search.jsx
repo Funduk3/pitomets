@@ -57,13 +57,13 @@ export const Search = () => {
 
   return (
     <div>
-      <h2>Search Listings</h2>
+      <h2>Поиск по объявлениям</h2>
       <form onSubmit={handleSearch} style={{ marginBottom: '2rem', display: 'flex', gap: '1rem' }}>
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search for pets..."
+          placeholder="Ищем питомца..."
           style={{ flex: 1, padding: '0.75rem', fontSize: '1rem', borderRadius: '4px', border: '1px solid #ddd' }}
         />
         <button
@@ -79,7 +79,7 @@ export const Search = () => {
             cursor: loading ? 'not-allowed' : 'pointer'
           }}
         >
-          {loading ? 'Searching...' : 'Search'}
+          {loading ? 'Ищем...' : 'Найти'}
         </button>
       </form>
 
@@ -97,7 +97,7 @@ export const Search = () => {
       )}
 
       {results.length === 0 && !loading && query && !error && (
-        <p>No results found for "{query}"</p>
+        <p>Ничего не найдено по запросу "{query}"</p>
       )}
 
       {results.length > 0 && (

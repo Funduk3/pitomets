@@ -6,8 +6,8 @@ export const Home = () => {
 
   return (
     <div>
-      <h1>Welcome to Pitomets</h1>
-      <p>Your trusted marketplace for pets</p>
+      <h1>Питомец</h1>
+      <p>Объявления тут!</p>
       {!isAuthenticated() && (
         <div style={{ marginTop: '2rem' }}>
           <Link
@@ -22,7 +22,7 @@ export const Home = () => {
               marginRight: '1rem'
             }}
           >
-            Get Started
+            Начать
           </Link>
           <Link
             to="/search"
@@ -35,7 +35,7 @@ export const Home = () => {
               borderRadius: '4px'
             }}
           >
-            Browse Listings
+            Поиск по объявлениям
           </Link>
         </div>
       )}
