@@ -19,12 +19,16 @@ export const ListingDetail = () => {
   const [isFavourite, setIsFavourite] = useState(false);
   const [sellerProfile, setSellerProfile] = useState(null);
   const [avatarUrl, setAvatarUrl] = useState(null);
+  const [similarListings, setSimilarListings] = useState([]);
+  const [similarPhotos, setSimilarPhotos] = useState({});
+  const [similarLoading, setSimilarLoading] = useState(false);
 
   useEffect(() => {
     loadListing();
     loadPhotos();
     loadReviews();
     loadFavouriteStatus();
+    loadSimilarListings();
   }, [id]);
 
   useEffect(() => {
@@ -167,6 +171,38 @@ export const ListingDetail = () => {
     } catch (err) {
       console.error('Failed to create chat:', err);
       alert('Failed to start conversation with seller');
+    }
+  };
+
+  const loadSimilarListings = async () => {
+    try {
+      setSimilarLoading(true);
+
+      const data = await listingsAPI.getSimilarListings(parseInt(id), 6);
+      setSimilarListings(data);
+
+      const photosPromises = data.map(async (listing) => {
+        try {
+          const photosData = await photosAPI.getListingPhotos(listing.id);
+          return { listingId: listing.id, photos: photosData.photos || [] };
+        } catch (err) {
+          console.error(`Failed to load photos for listing ${listing.id}:`, err);
+          return { listingId: listing.id, photos: [] };
+        }
+      });
+
+      const photosResults = await Promise.all(photosPromises);
+
+      const photosMap = {};
+      photosResults.forEach(({ listingId, photos }) => {
+        photosMap[listingId] = photos;
+      });
+
+      setSimilarPhotos(photosMap);
+    } catch (err) {
+      console.error('Failed to load similar listings:', err);
+    } finally {
+      setSimilarLoading(false);
     }
   };
 
@@ -340,6 +376,84 @@ export const ListingDetail = () => {
             Написать отзыв
           </Link>
         )}
+      </div>
+      <div style={{ marginTop: '3rem' }}>
+        <h3>Похожие объявления</h3>
+
+        {similarLoading && <p>Грузим...</p>}
+
+        {!similarLoading && similarListings.length === 0 && (
+            <p>Похожие объявления не найдены</p>
+        )}
+
+        <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+              gap: '1.5rem',
+              marginTop: '1rem',
+            }}
+        >
+          {similarListings.map((listing) => {
+            const photos = similarPhotos[listing.id] || [];
+            const firstPhoto = photos[0];
+
+            return (
+                <Link
+                    key={listing.id}
+                    to={`/listings/${listing.id}`}
+                    style={{
+                      textDecoration: 'none',
+                      color: 'inherit',
+                      border: '1px solid #ddd',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      backgroundColor: '#fff',
+                    }}
+                >
+                  {firstPhoto ? (
+                      <img
+                          src={firstPhoto.startsWith('http')
+                              ? firstPhoto
+                              : `http://localhost:8080${firstPhoto}`}
+                          alt={listing.title || 'Untitled'}
+                          style={{
+                            width: '100%',
+                            height: '160px',
+                            objectFit: 'cover',
+                            display: 'block',
+                          }}
+                      />
+                  ) : (
+                      <div
+                          style={{
+                            height: '160px',
+                            backgroundColor: '#f0f0f0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#999',
+                          }}
+                      >
+                        Нет фото
+                      </div>
+                  )}
+
+                  <div style={{ padding: '0.75rem' }}>
+                    <h4 style={{ margin: '0 0 0.25rem 0' }}>
+                      {listing.title || 'Untitled'}
+                    </h4>
+                    <p style={{ margin: 0, fontWeight: 'bold' }}>
+                      ${listing.price} {/* TODO: currently we don’t have price */}
+                    </p>
+                    <p style={{ margin: '0.25rem 0', fontSize: '0.85rem', color: '#666' }}>
+                      {listing.description} {listing.breed && `• ${listing.breed}`}
+                    </p>
+                  </div>
+                </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

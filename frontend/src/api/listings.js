@@ -49,5 +49,10 @@ export const listingsAPI = {
     const response = await api.post('/listings/reviews', reviewData);
     return response.data;
   },
+
+  getSimilarListings: (listingId, size = 6) =>
+      api.get(`/search/listings/${listingId}/similar`, {
+        params: { size },
+      }).then(res => res.data),
 };
 
