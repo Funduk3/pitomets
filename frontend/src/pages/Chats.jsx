@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { messengerAPI } from '../api/messenger';
 import { userAPI } from '../api/user';
+import { photosAPI } from '../api/photos';
 import { useAuth } from '../context/AuthContext';
 import { useMessengerWS } from '../context/MessengerWSContext';
 
@@ -12,12 +13,21 @@ export const Chats = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [profilesByUserId, setProfilesByUserId] = useState({});
+  const [avatarsByUserId, setAvatarsByUserId] = useState({});
   const pendingChatFetchRef = useRef(new Set());
 
   useEffect(() => {
     if (isAuthenticated()) {
       loadChats();
     }
+    return () => {
+      // Очищаем blob URLs при размонтировании
+      Object.values(avatarsByUserId).forEach((url) => {
+        if (url && url.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
   }, [isAuthenticated]);
 
   // Realtime: если мы на странице "Мои чаты" и пришло сообщение, обновляем превью/бейджи
@@ -68,6 +78,8 @@ export const Chats = () => {
                 try {
                   const profile = await userAPI.getUserProfile(otherUserId);
                   setProfilesByUserId((prev) => ({ ...prev, [otherUserId]: profile }));
+                  // Загружаем аватарку
+                  loadAvatarForUser(otherUserId);
                 } catch (_) {
                   setProfilesByUserId((prev) => ({ ...prev, [otherUserId]: null }));
                 }
@@ -139,12 +151,40 @@ export const Chats = () => {
           for (const [id, profile] of results) next[id] = profile;
           return next;
         });
+
+        // Загружаем аватарки для всех пользователей
+        missingIds.forEach((id) => {
+          loadAvatarForUser(id);
+        });
       }
     } catch (err) {
       console.error('Failed to load chats:', err);
       setError('Failed to load chats');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAvatarForUser = async (userId) => {
+    if (avatarsByUserId[userId]) return; // Уже загружена
+    
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        const response = await fetch(photosAPI.getAvatarByUserId(userId), {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          setAvatarsByUserId((prev) => ({ ...prev, [userId]: url }));
+        }
+      }
+    } catch (err) {
+      // Игнорируем ошибки загрузки аватарок
+      console.debug('Failed to load avatar for user', userId, err);
     }
   };
 
@@ -207,8 +247,22 @@ export const Chats = () => {
                   backgroundColor: '#f9f9f9'
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                  {avatarsByUserId[otherUserId] && (
+                    <img 
+                      src={avatarsByUserId[otherUserId]} 
+                      alt="User avatar" 
+                      style={{ 
+                        width: '50px', 
+                        height: '50px', 
+                        borderRadius: '50%', 
+                        objectFit: 'cover',
+                        border: '2px solid #ddd',
+                        flexShrink: 0
+                      }} 
+                    />
+                  )}
+                  <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'baseline' }}>
                       <strong>{displayName}</strong>
                       <span style={{ fontSize: '0.85rem', color: '#888' }}>#{otherUserId}</span>
@@ -241,7 +295,7 @@ export const Chats = () => {
                       {isUnread ? ' • новые' : ''}
                     </div>
                   </div>
-                  <span style={{ fontSize: '1.5rem' }}>→</span>
+                  <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>→</span>
                 </div>
               </Link>
             );
