@@ -285,7 +285,7 @@ export const ListingDetail = () => {
         </div>
         <div style={{ flex: 1 }}>
           <p><strong>Описание:</strong> {listing.description}</p>
-          <p><strong>Цена:</strong> ${listing.price}</p>
+          <p><strong>Цена:</strong> {listing.price} ₽</p>
           <p><strong>Вид:</strong> {listing.species || 'N/A'}</p>
           {listing.breed && <p><strong>Breed:</strong> {listing.breed}</p>}
           <p><strong>Возраст:</strong> {listing.ageMonths} months</p>
@@ -351,7 +351,7 @@ export const ListingDetail = () => {
           <div>
             {reviews.map((review) => (
               <div key={review.id} style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '1rem', marginBottom: '1rem' }}>
-                <p><strong>Rating:</strong> {'⭐'.repeat(review.rating)}</p>
+                <p><strong>Оценка:</strong> {'⭐'.repeat(review.rating)}</p>
                 {review.text && <p>{review.text}</p>}
                 <p style={{ fontSize: '0.9rem', color: '#666' }}>
                   {new Date(review.createdAt).toLocaleDateString()}
@@ -444,7 +444,7 @@ export const ListingDetail = () => {
                       {listing.title || 'Untitled'}
                     </h4>
                     <p style={{ margin: 0, fontWeight: 'bold' }}>
-                      ${listing.price} {/* TODO: currently we don’t have price */}
+                      {listing.price} ₽ {/* TODO: currently we don’t have price */}
                     </p>
                     <p style={{ margin: '0.25rem 0', fontSize: '0.85rem', color: '#666' }}>
                       {listing.description} {listing.breed && `• ${listing.breed}`}

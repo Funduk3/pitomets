@@ -126,9 +126,9 @@ export const Listings = () => {
                       {listing.description?.substring(0, 100)}
                       {listing.description && listing.description.length > 100 ? '...' : ''}
                     </p>
-                    <p><strong>Price:</strong> ${listing.price}</p>
-                    <p><strong>Species:</strong> {listing.species}</p>
-                    {listing.breed && <p><strong>Breed:</strong> {listing.breed}</p>}
+                    <p><strong>Цена:</strong> {listing.price} ₽</p>
+                    <p><strong>Вид:</strong> {listing.species}</p>
+                    {listing.breed && <p><strong>Порода:</strong> {listing.breed}</p>}
                     <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                       <Link
                         to={`/listings/${listing.listingsId}`}
@@ -141,7 +141,7 @@ export const Listings = () => {
                           fontSize: '0.9rem'
                         }}
                       >
-                        View
+                        Посмотреть
                       </Link>
                       <Link
                         to={`/listings/${listing.listingsId}/edit`}
@@ -154,7 +154,7 @@ export const Listings = () => {
                           fontSize: '0.9rem'
                         }}
                       >
-                        Edit
+                        Изменить
                       </Link>
                       <button
                         onClick={() => handleDelete(listing.listingsId)}
@@ -168,7 +168,7 @@ export const Listings = () => {
                           fontSize: '0.9rem'
                         }}
                       >
-                        Delete
+                        Удалить
                       </button>
                     </div>
                   </div>
