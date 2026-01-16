@@ -48,11 +48,13 @@ class ProfileService(
 
         return SellerProfileResponse(
             id = requireNotNull(saved.id) { "Seller profile ID cannot be null" },
+            userId = saved.seller?.id,
             shopName = saved.shopName,
             description = saved.description,
             rating = saved.rating,
             isVerified = saved.isVerified,
-            createdAt = saved.createdAt
+            createdAt = saved.createdAt,
+            avatarKey = saved.seller?.avatarKey
         )
     }
 
@@ -102,11 +104,29 @@ class ProfileService(
 
         return SellerProfileResponse(
             id = requireNotNull(updated.id),
+            userId = updated.seller?.id,
             shopName = updated.shopName,
             description = updated.description,
             rating = updated.rating,
             isVerified = updated.isVerified,
-            createdAt = updated.createdAt
+            createdAt = updated.createdAt,
+            avatarKey = updated.seller?.avatarKey
+        )
+    }
+
+    fun getSellerProfileByUserId(sellerId: Long): SellerProfileResponse {
+        val sellerProfile = sellerProfileRepo.findBySellerId(sellerId)
+            ?: throw UserNotFoundException("Seller profile not found for user ID: $sellerId")
+
+        return SellerProfileResponse(
+            id = requireNotNull(sellerProfile.id) { "Seller profile ID cannot be null" },
+            userId = sellerProfile.seller?.id,
+            shopName = sellerProfile.shopName,
+            description = sellerProfile.description,
+            rating = sellerProfile.rating,
+            isVerified = sellerProfile.isVerified,
+            createdAt = sellerProfile.createdAt,
+            avatarKey = sellerProfile.seller?.avatarKey
         )
     }
 }

@@ -4,9 +4,11 @@ import java.time.OffsetDateTime
 
 data class SellerProfileResponse(
     val id: Long,
+    val userId: Long?,
     val shopName: String,
     val description: String?,
     val rating: Double?,
     val isVerified: Boolean,
-    val createdAt: OffsetDateTime
+    val createdAt: OffsetDateTime,
+    val avatarKey: String?
 )

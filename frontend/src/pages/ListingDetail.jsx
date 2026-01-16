@@ -4,6 +4,7 @@ import { listingsAPI } from '../api/listings';
 import { photosAPI } from '../api/photos';
 import { favouritesAPI } from '../api/favourites';
 import { messengerAPI } from '../api/messenger';
+import { sellerAPI } from '../api/seller';
 import { useAuth } from '../context/AuthContext';
 
 export const ListingDetail = () => {
@@ -16,6 +17,8 @@ export const ListingDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isFavourite, setIsFavourite] = useState(false);
+  const [sellerProfile, setSellerProfile] = useState(null);
+  const [avatarUrl, setAvatarUrl] = useState(null);
 
   useEffect(() => {
     loadListing();
@@ -23,6 +26,12 @@ export const ListingDetail = () => {
     loadReviews();
     loadFavouriteStatus();
   }, [id]);
+
+  useEffect(() => {
+    if (listing?.sellerId) {
+      loadSellerProfile();
+    }
+  }, [listing]);
 
   const loadListing = async () => {
     try {
@@ -65,6 +74,30 @@ export const ListingDetail = () => {
     } catch (err) {
       console.error('Failed to load favourites status:', err);
       setIsFavourite(false);
+    }
+  };
+
+  const loadSellerProfile = async () => {
+    if (!listing?.sellerId) return;
+    try {
+      const profile = await sellerAPI.getSellerProfile(listing.sellerId);
+      setSellerProfile(profile);
+      
+      if (profile.userId) {
+        loadAvatar(profile.userId);
+      }
+    } catch (err) {
+      console.error('Failed to load seller profile:', err);
+    }
+  };
+
+  const loadAvatar = async (userId) => {
+    try {
+      const avatarUrl = photosAPI.getAvatarByUserId(userId);
+      setAvatarUrl(avatarUrl);
+    } catch (err) {
+      console.error('Failed to load avatar:', err);
+      setAvatarUrl(null);
     }
   };
 
@@ -126,6 +159,52 @@ export const ListingDetail = () => {
   return (
     <div>
       <h2>{listing.title || 'Untitled'}</h2>
+      {sellerProfile && (
+        <div style={{ 
+          marginTop: '1rem', 
+          marginBottom: '1rem',
+          padding: '1rem',
+          border: '1px solid #ddd',
+          borderRadius: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem',
+          backgroundColor: '#f9f9f9'
+        }}>
+          {avatarUrl && (
+            <img 
+              src={avatarUrl} 
+              alt="Seller avatar" 
+              style={{ 
+                width: '60px', 
+                height: '60px', 
+                borderRadius: '50%', 
+                objectFit: 'cover',
+                border: '2px solid #ddd'
+              }} 
+            />
+          )}
+          <div style={{ flex: 1 }}>
+            <Link
+              to={`/seller/profile/view/${sellerProfile.userId}`}
+              style={{
+                textDecoration: 'none',
+                color: '#3498db',
+                fontSize: '1.1rem',
+                fontWeight: 'bold'
+              }}
+            >
+              {sellerProfile.shopName}
+            </Link>
+            {sellerProfile.rating != null && (
+              <p style={{ margin: '0.25rem 0 0 0', color: '#666', fontSize: '0.9rem' }}>
+                Рейтинг: {sellerProfile.rating.toFixed(2)} / 5
+                {sellerProfile.isVerified && ' ✓ Проверен'}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
       <p style={{ marginTop: '0.25rem', color: '#555' }}>
         <strong>Rating:</strong>{' '}
         {listing.sellerRating != null ? `${listing.sellerRating.toFixed(2)} / 5` : 'No ratings yet'}

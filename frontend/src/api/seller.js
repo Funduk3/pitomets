@@ -17,5 +17,12 @@ export const sellerAPI = {
     });
     return response.data;
   },
+
+  getSellerProfile: async (sellerId) => {
+    const response = await api.get('/seller/profile', {
+      params: { sellerId },
+    });
+    return response.data;
+  },
 };
 

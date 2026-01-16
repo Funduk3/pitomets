@@ -7,6 +7,7 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Profile } from './pages/Profile';
 import { SellerProfile } from './pages/SellerProfile';
+import { SellerProfileView } from './pages/SellerProfileView';
 import { Listings } from './pages/Listings';
 import { ListingForm } from './pages/ListingForm';
 import { ListingDetail } from './pages/ListingDetail';
@@ -29,6 +30,7 @@ function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/seller/profile" element={<SellerProfile />} />
+              <Route path="/seller/profile/view/:sellerId" element={<SellerProfileView />} />
               <Route path="/listings" element={<Listings />} />
               <Route path="/listings/create" element={<ListingForm />} />
               <Route path="/listings/:id" element={<ListingDetail />} />

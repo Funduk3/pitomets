@@ -43,4 +43,10 @@ class SellerProfileController(
         @RequestParam("id") sellerProfileId: Long
     ): List<ReviewResponse> =
         reviewsService.getBySeller(sellerProfileId)
+
+    @GetMapping("/profile")
+    fun getSellerProfile(
+        @RequestParam("sellerId") sellerId: Long
+    ): SellerProfileResponse =
+        profileService.getSellerProfileByUserId(sellerId)
 }
