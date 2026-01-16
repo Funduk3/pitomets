@@ -85,6 +85,7 @@ class ProfileService(
             rating = user.sellerProfile?.rating,
             isVerified = user.sellerProfile?.isVerified,
             createdAt = user.sellerProfile?.createdAt,
+            avatarKey = user.avatarKey,
         )
     }
 

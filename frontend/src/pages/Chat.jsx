@@ -1,7 +1,8 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { messengerAPI } from '../api/messenger';
 import { userAPI } from '../api/user';
+import { photosAPI } from '../api/photos';
 import { useAuth } from '../context/AuthContext';
 import { useMessengerWS } from '../context/MessengerWSContext';
 
@@ -15,6 +16,7 @@ export const Chat = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [otherProfile, setOtherProfile] = useState(null);
+  const [otherAvatarUrl, setOtherAvatarUrl] = useState(null);
   const [isTabVisible, setIsTabVisible] = useState(!document.hidden);
   const [unreadBoundaryId, setUnreadBoundaryId] = useState(null);
   const syncIntervalRef = useRef(null);
@@ -149,7 +151,12 @@ export const Chat = () => {
     (async () => {
       try {
         const profile = await userAPI.getUserProfile(otherUserId);
-        if (!cancelled) setOtherProfile(profile);
+        if (!cancelled) {
+          setOtherProfile(profile);
+          if (profile?.id) {
+            loadOtherAvatar(profile.id);
+          }
+        }
       } catch (e) {
         if (!cancelled) setOtherProfile(null);
       }
@@ -157,8 +164,34 @@ export const Chat = () => {
 
     return () => {
       cancelled = true;
+      if (otherAvatarUrl && otherAvatarUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(otherAvatarUrl);
+      }
     };
   }, [chat?.id, chat?.user1Id, chat?.user2Id, user?.id]);
+
+  const loadOtherAvatar = async (userId) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        const response = await fetch(photosAPI.getAvatarByUserId(userId), {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          setOtherAvatarUrl(url);
+        } else {
+          setOtherAvatarUrl(null);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load avatar:', err);
+      setOtherAvatarUrl(null);
+    }
+  };
 
   const loadMessages = async () => {
     try {
@@ -292,13 +325,41 @@ export const Chat = () => {
 
   const otherUserId = chat.user1Id === user?.id ? chat.user2Id : chat.user1Id;
   const otherName = otherProfile?.shopName || otherProfile?.fullName || `Пользователь #${otherUserId}`;
+  const profileLink = otherProfile?.isSeller 
+    ? `/seller/profile/view/${otherUserId}`
+    : `/user/profile/${otherUserId}`;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }}>
-      <div style={{ padding: '1rem', borderBottom: '1px solid #ddd', backgroundColor: '#f9f9f9' }}>
-        <h3>{otherName}</h3>
-        <div style={{ fontSize: '0.9rem', color: '#666' }}>
-          {wsConnected ? '🟢 Подключено' : '🔴 Отключено'}
+      <div style={{ padding: '1rem', borderBottom: '1px solid #ddd', backgroundColor: '#f9f9f9', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        {otherAvatarUrl && (
+          <img 
+            src={otherAvatarUrl} 
+            alt="User avatar" 
+            style={{ 
+              width: '50px', 
+              height: '50px', 
+              borderRadius: '50%', 
+              objectFit: 'cover',
+              border: '2px solid #ddd'
+            }} 
+          />
+        )}
+        <div style={{ flex: 1 }}>
+          <Link
+            to={profileLink}
+            style={{
+              textDecoration: 'none',
+              color: '#3498db',
+              fontSize: '1.2rem',
+              fontWeight: 'bold'
+            }}
+          >
+            {otherName}
+          </Link>
+          <div style={{ fontSize: '0.9rem', color: '#666' }}>
+            {wsConnected ? '🟢 Подключено' : '🔴 Отключено'}
+          </div>
         </div>
       </div>
 

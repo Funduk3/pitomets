@@ -31,6 +31,11 @@ export const ListingDetail = () => {
     if (listing?.sellerId) {
       loadSellerProfile();
     }
+    return () => {
+      if (avatarUrl && avatarUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarUrl);
+      }
+    };
   }, [listing]);
 
   const loadListing = async () => {
@@ -93,8 +98,21 @@ export const ListingDetail = () => {
 
   const loadAvatar = async (userId) => {
     try {
-      const avatarUrl = photosAPI.getAvatarByUserId(userId);
-      setAvatarUrl(avatarUrl);
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        const response = await fetch(photosAPI.getAvatarByUserId(userId), {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          setAvatarUrl(url);
+        } else {
+          setAvatarUrl(null);
+        }
+      }
     } catch (err) {
       console.error('Failed to load avatar:', err);
       setAvatarUrl(null);
