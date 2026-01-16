@@ -9,11 +9,13 @@ export const Search = () => {
   const [listingsPhotos, setListingsPhotos] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
 
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
 
+    setHasSearched(true);
     setLoading(true);
     setError('');
 
@@ -60,11 +62,16 @@ export const Search = () => {
       <h2>Поиск по объявлениям</h2>
       <form onSubmit={handleSearch} style={{ marginBottom: '2rem', display: 'flex', gap: '1rem' }}>
         <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Ищем питомца..."
-          style={{ flex: 1, padding: '0.75rem', fontSize: '1rem', borderRadius: '4px', border: '1px solid #ddd' }}
+            type="text"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setResults([]);      // очищаем результаты при вводе нового запроса
+              setError('');        // убираем ошибку
+              setHasSearched(false); // сбрасываем состояние поиска
+            }}
+            placeholder="Ищем питомца..."
+            style={{ flex: 1, padding: '0.75rem', fontSize: '1rem', borderRadius: '4px', border: '1px solid #ddd' }}
         />
         <button
           type="submit"
@@ -96,8 +103,8 @@ export const Search = () => {
         </div>
       )}
 
-      {results.length === 0 && !loading && query && !error && (
-        <p>Ничего не найдено по запросу "{query}"</p>
+      {hasSearched && results.length === 0 && !loading && !error && (
+          <p>Ничего не найдено по запросу "{query}"</p>
       )}
 
       {results.length > 0 && (

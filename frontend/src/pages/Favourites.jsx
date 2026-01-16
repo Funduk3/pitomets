@@ -52,7 +52,7 @@ export const Favourites = () => {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div>Грузим...</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
 
   return (

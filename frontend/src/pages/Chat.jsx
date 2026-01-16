@@ -319,7 +319,7 @@ export const Chat = () => {
     return <div>Войдите, чтобы увидеть чаты</div>;
   }
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div>Грузим...</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
   if (!chat) return <div>Chat not found</div>;
 

@@ -211,10 +211,10 @@ export const Chats = () => {
   }, [chats]);
 
   if (!isAuthenticated()) {
-    return <div>Please login to view your chats</div>;
+    return <div>Войдите, чтобы увидеть чаты</div>;
   }
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div>Грузим...</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
 
   return (

@@ -83,7 +83,7 @@ export const Profile = () => {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div>Грузим...</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
   if (!profile) return <div>No profile found</div>;
 
