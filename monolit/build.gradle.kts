@@ -54,21 +54,21 @@ dependencies {
 
     // testcontainers
     testImplementation("org.testcontainers:junit-jupiter:1.21.3")
-    testImplementation("org.testcontainers:elasticsearch:1.20.0")
+    testImplementation("org.testcontainers:testcontainers-elasticsearch:2.0.1")
     testImplementation("org.testcontainers:testcontainers")
     testImplementation("org.testcontainers:postgresql")
-    testImplementation("org.testcontainers:minio:1.19.3")  // Добавьте эту строку
+    testImplementation("org.testcontainers:minio:1.19.3")
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
     testImplementation("net.datafaker:datafaker:1.4.0")
     testImplementation("io.rest-assured:rest-assured:5.5.6")
     testImplementation("io.rest-assured:kotlin-extensions:5.5.6")
+
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0")
 
     // detekt
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.8")
 
-    implementation("co.elastic.clients:elasticsearch-java:8.19.0")
-    implementation("org.elasticsearch.client:elasticsearch-rest-client:8.19.0")
+    implementation("co.elastic.clients:elasticsearch-java:9.2.4")
 
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("io.micrometer:micrometer-registry-prometheus")
