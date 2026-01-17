@@ -1,14 +1,16 @@
 package com.pitomets.monolit.config.kafka
 
+import com.fasterxml.jackson.databind.deser.std.StringDeserializer
 import org.apache.kafka.clients.consumer.ConsumerConfig
-import org.apache.kafka.common.serialization.StringDeserializer
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
 import org.springframework.kafka.core.ConsumerFactory
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory
+import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.listener.ContainerProperties
+import org.springframework.kafka.listener.DeadLetterPublishingRecoverer
 import org.springframework.kafka.listener.DefaultErrorHandler
 import org.springframework.util.backoff.FixedBackOff
 
@@ -34,12 +36,14 @@ class KafkaConsumerConfig(
 
     @Bean
     fun notificationStatusListenerFactory(
-        notificationStatusConsumerFactory: ConsumerFactory<String, String>
+        notificationStatusConsumerFactory: ConsumerFactory<String, String>,
+        kafkaTemplate: KafkaTemplate<String, Any>
     ): ConcurrentKafkaListenerContainerFactory<String, String> {
         return ConcurrentKafkaListenerContainerFactory<String, String>().apply {
             setConsumerFactory(notificationStatusConsumerFactory)
             setCommonErrorHandler(
                 DefaultErrorHandler(
+                    DeadLetterPublishingRecoverer(kafkaTemplate),
                     FixedBackOff(INTERVAL, MAX_ATTEMPTS)
                 )
             )
