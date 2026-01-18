@@ -27,5 +27,9 @@ data class ListingsResponse(
 
     val father: Long?,
 
-    val title: String
+    val title: String,
+
+    val city: CityDto,
+
+    val metro: MetroDto?
 )
