@@ -54,13 +54,13 @@ export const ListingPhotos = () => {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div>Грузим...</div>;
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h2>Listing Photos</h2>
-        <Link to={`/listings/${id}`} style={{ color: '#3498db' }}>Back to Listing</Link>
+        <h2>Фотографии объявление</h2>
+        <Link to={`/listings/${id}`} style={{ color: '#3498db' }}>Вернуться к объявлению</Link>
       </div>
 
       {isAuthenticated() && (
@@ -72,12 +72,12 @@ export const ListingPhotos = () => {
             disabled={uploading}
             style={{ marginBottom: '1rem' }}
           />
-          {uploading && <p>Uploading...</p>}
+          {uploading && <p>Грузим...</p>}
         </div>
       )}
 
       {photos.length === 0 ? (
-        <p>No photos uploaded yet</p>
+        <p>Ни одна фотография пока не загружена</p>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
           {photos.map((photoUrl, index) => {

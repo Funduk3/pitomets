@@ -15,4 +15,7 @@ data class UserWithProfilesResponse(
     val rating: Double?,
     val isVerified: Boolean?,
     val createdAt: OffsetDateTime?,
+
+    // avatar
+    val avatarKey: String?,
 )

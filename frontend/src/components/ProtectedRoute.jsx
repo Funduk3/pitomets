@@ -5,7 +5,7 @@ export const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <div>Грузим...</div>;
   }
 
   if (!isAuthenticated()) {

@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -39,6 +40,17 @@ class UserPhotoController(
         @AuthenticationPrincipal user: UserPrincipal
     ): ResponseEntity<InputStreamResource> {
         val inputStream = userPhotoService.downloadAvatar(user.id)
+
+        return ResponseEntity.ok()
+            .contentType(MediaType.IMAGE_JPEG)
+            .body(InputStreamResource(inputStream))
+    }
+
+    @GetMapping("/avatar/{userId}")
+    fun getAvatarByUserId(
+        @PathVariable userId: Long
+    ): ResponseEntity<InputStreamResource> {
+        val inputStream = userPhotoService.downloadAvatar(userId)
 
         return ResponseEntity.ok()
             .contentType(MediaType.IMAGE_JPEG)
