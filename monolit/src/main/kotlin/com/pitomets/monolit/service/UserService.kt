@@ -23,8 +23,6 @@ import org.springframework.security.core.Authentication
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.nio.charset.StandardCharsets
-import java.util.UUID
 
 @Service
 class UserService(
@@ -55,12 +53,14 @@ class UserService(
 
         val eventId = System.currentTimeMillis()
 
-        notificationPublisher.publish(NotificationRequestedEvent(
-            eventId = eventId,
-            userId = requireNotNull(savedUser.id) { "User with this user doesn't have a id" },
-            channel = Channel.EMAIL,
-            payload = savedUser.email,
-        ))
+        notificationPublisher.publish(
+            NotificationRequestedEvent(
+                eventId = eventId,
+                userId = requireNotNull(savedUser.id) { "User with this user doesn't have a id" },
+                channel = Channel.EMAIL,
+                payload = savedUser.email,
+            )
+        )
 
         return UserResponse(
             id = requireNotNull(savedUser.id) { "User ID cannot be null" },
