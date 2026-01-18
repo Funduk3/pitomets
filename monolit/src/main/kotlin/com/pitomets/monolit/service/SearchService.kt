@@ -1,8 +1,10 @@
 package com.pitomets.monolit.service
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient
+import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType
 import co.elastic.clients.elasticsearch.core.IndexResponse
-import com.pitomets.monolit.model.dto.SearchListingDocument
+import com.pitomets.monolit.model.dto.elastic.AutocompleteDoc
+import com.pitomets.monolit.model.dto.elastic.SearchListingDocument
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
 import org.springframework.stereotype.Service
 
@@ -25,6 +27,9 @@ class SearchService(
                         q.multiMatch { mm ->
                             mm.query(query)
                                 .fields(listOf("title^3", "description"))
+                                .fuzziness("AUTO")
+                                .prefixLength(MIN_CHAR_COUNT)
+                                .maxExpansions(MAX_EXPANSIONS_COUNT)
                         }
                     }
             },
@@ -80,7 +85,43 @@ class SearchService(
             .map { SearchListingsResponse(it.id, it.title, it.description) }
     }
 
+    fun autocomplete(query: String, size: Int): List<AutocompleteDoc> {
+        if (query.length < MIN_CHAR_NUMBER ||
+            query.split(" ").size > MAX_WORD_COUNT ||
+            query.isBlank()
+        ) {
+            return emptyList()
+        }
+
+        val response = client.search(
+            { s ->
+                s.index(INDEX)
+                    .size(size)
+                    .source { src -> src.filter { f -> f.includes("title") } }
+                    .query { q ->
+                        q.multiMatch { mm ->
+                            mm.query(query)
+                                .type(TextQueryType.BoolPrefix)
+                                .fields(
+                                    "title",
+                                    "title._2gram",
+                                    "title._3gram"
+                                )
+                        }
+                    }
+            },
+            AutocompleteDoc::class.java
+        )
+
+        return response.hits().hits()
+            .mapNotNull { it.source() }
+    }
+
     companion object {
         private const val INDEX = "listings"
+        private const val MIN_CHAR_NUMBER = 3
+        private const val MAX_WORD_COUNT = 5
+        private const val MIN_CHAR_COUNT = 1
+        private const val MAX_EXPANSIONS_COUNT = 25
     }
 }

@@ -228,7 +228,8 @@ abstract class BaseContainers {
                 ageMonths = faker.number().numberBetween(1, 24),
                 price = BigDecimal.valueOf(faker.number().numberBetween(1, 100).toLong()),
                 breed = null,
-                title = faker.book().title()
+                title = faker.book().title(),
+                cityId = 4L
             )
             RestAssured.given()
                 .contentType(ContentType.JSON)

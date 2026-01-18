@@ -46,5 +46,13 @@ class Listing(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_profile_id")
-    var sellerProfile: SellerProfile
+    var sellerProfile: SellerProfile,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "city_id", nullable = false)
+    var city: CityEntity,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "metro_station_id")
+    var metroStation: MetroStationEntity? = null,
 )
