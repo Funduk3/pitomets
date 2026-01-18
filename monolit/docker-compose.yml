@@ -117,7 +117,76 @@ services:
       - minio-data:/data
     restart: unless-stopped
 
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: notification-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - notification-network
+    healthcheck:
+      test: [ "CMD-SHELL", "echo stat | nc localhost 2181" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: notification-kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+    ports:
+      - "9092:9092"
+    networks:
+      - notification-network
+    healthcheck:
+      test: [ "CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: notification-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: [ "/bin/bash", "-c" ]
+    command: |
+      "
+      # Ждем пока Kafka станет доступной
+      sleep 10
+
+      # Создаем топики если они не существуют
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic notification.send --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic notification.sent --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic notification.failed --partitions 3 --replication-factor 1
+
+      echo 'Topics created successfully'
+      "
+    networks:
+      - notification-network
+
 volumes:
   postgres_data:
   es_data:
   minio-data:
+
+networks:
+  notification-network:
+    driver: bridge

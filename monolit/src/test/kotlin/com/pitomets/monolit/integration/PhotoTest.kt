@@ -1,5 +1,6 @@
 package com.pitomets.monolit.integration
 
+import com.pitomets.monolit.testContainers.BaseContainers
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
 import org.hamcrest.CoreMatchers.equalTo

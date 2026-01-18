@@ -27,7 +27,7 @@ class OutboxPublisher(
 
         events.forEach { event ->
             try {
-                kafkaTemplate.send("notification-events", event.eventData)
+                kafkaTemplate.send("notification-sent", event.eventData)
 
                 event.published = true
                 outboxRepository.save(event)

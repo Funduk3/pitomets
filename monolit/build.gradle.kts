@@ -31,7 +31,6 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.boot:spring-boot-starter-kafka")
 
     implementation("org.springframework.kafka:spring-kafka")
 
@@ -60,13 +59,16 @@ dependencies {
     testImplementation("org.testcontainers:elasticsearch:1.20.0")
     testImplementation("org.testcontainers:testcontainers")
     testImplementation("org.testcontainers:postgresql")
-    testImplementation("org.testcontainers:minio:1.19.3")  // Добавьте эту строку
+    testImplementation("org.testcontainers:minio:1.19.3")
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
     testImplementation("net.datafaker:datafaker:1.4.0")
     testImplementation("io.rest-assured:rest-assured:5.5.6")
     testImplementation("io.rest-assured:kotlin-extensions:5.5.6")
     testImplementation("org.springframework.kafka:spring-kafka-test")
+    testImplementation("org.testcontainers:kafka:1.19.3")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0")
+
+    testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
 
     // detekt
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.8")

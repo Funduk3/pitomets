@@ -10,7 +10,10 @@ class NotificationConsumer {
     private val logger = LoggerFactory.getLogger(NotificationConsumer::class.java)
 
     @KafkaListener(
-        topics = ["notification-events"],
+        topics = [
+            "\${notification.kafka.topics.notification-sent}",
+            "\${notification.kafka.topics.notification-failed}"
+        ],
         groupId = "user-service-notification-status",
         containerFactory = "notificationStatusListenerFactory"
     )
@@ -22,8 +25,7 @@ class NotificationConsumer {
             // например, обновление статуса в базе данных
 
             // cюда добавить NotificationFailedEvent
-
-        } catch (e: Exception) {
+        } catch (e: IllegalStateException) {
             logger.error("Error processing notification status", e)
             throw e
         }

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service
 class NotificationPublisher(
     private val kafkaTemplate: KafkaTemplate<String, NotificationRequestedEvent>,
 
-    @Value("\${kafka.topic.notifications}")
+    @Value("\${notification.kafka.topics.notification-send}")
     private val topic: String
 ) {
     private val log = LoggerFactory.getLogger(NotificationPublisher::class.java)

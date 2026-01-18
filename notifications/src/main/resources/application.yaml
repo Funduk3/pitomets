@@ -78,7 +78,6 @@ app:
       notification-send: notification.send
       notification-sent: notification.sent
       notification-failed: notification.failed
-      notification-dlq: notification.send.DLT
 
   outbox:
     publish-rate-ms: 1000
