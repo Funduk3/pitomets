@@ -38,6 +38,12 @@ class ListingController(
     ): List<ListingsResponse> =
         listingsService.getUserListings(userPrincipal.id)
 
+    @GetMapping("/seller")
+    fun getSellerListings(
+        @RequestParam("sellerId") sellerId: Long
+    ): List<ListingsResponse> =
+        listingsService.getUserListings(sellerId)
+
     @PostMapping("/")
     fun createListings(
         @AuthenticationPrincipal userPrincipal: UserPrincipal,

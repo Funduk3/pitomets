@@ -80,7 +80,7 @@ abstract class BaseContainers {
 
         @JvmStatic
         val elasticsearch = ElasticsearchContainer(
-            "docker.elastic.co/elasticsearch/elasticsearch:8.15.0"
+            "docker.elastic.co/elasticsearch/elasticsearch:9.2.4"
         ).apply {
             withEnv("discovery.type", "single-node")
             withEnv("xpack.security.enabled", "false")

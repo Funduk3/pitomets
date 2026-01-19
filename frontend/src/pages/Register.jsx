@@ -29,11 +29,11 @@ export const Register = () => {
 
   return (
     <div style={{ maxWidth: '400px', margin: '2rem auto', padding: '2rem', border: '1px solid #ddd', borderRadius: '8px' }}>
-      <h2>Register</h2>
+      <h2>Регистрация</h2>
       {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Full Name:</label>
+          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Ваше имя:</label>
           <input
             type="text"
             value={fullName}
@@ -43,7 +43,7 @@ export const Register = () => {
           />
         </div>
         <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email:</label>
+          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Почта:</label>
           <input
             type="email"
             value={email}
@@ -53,7 +53,7 @@ export const Register = () => {
           />
         </div>
         <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Password:</label>
+          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Пароль:</label>
           <input
             type="password"
             value={password}
@@ -76,11 +76,11 @@ export const Register = () => {
             cursor: loading ? 'not-allowed' : 'pointer'
           }}
         >
-          {loading ? 'Registering...' : 'Register'}
+          {loading ? 'Регистрируем...' : 'Регистрация'}
         </button>
       </form>
       <p style={{ marginTop: '1rem', textAlign: 'center' }}>
-        Already have an account? <Link to="/login">Login here</Link>
+        Уже есть аккаунт? <Link to="/login">Войти тут</Link>
       </p>
     </div>
   );

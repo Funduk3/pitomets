@@ -130,7 +130,7 @@ export const ListingForm = () => {
   return (
     <ProtectedRoute>
       <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-        <h2>{isEdit ? 'Edit' : 'Create'} Listing</h2>
+        <h2>{isEdit ? 'Изменить' : 'Создать'} Listing</h2>
         {error && (
           <div style={{ 
             color: 'red', 
@@ -152,7 +152,7 @@ export const ListingForm = () => {
         )}
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Title:</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Заголовок:</label>
             <input
               type="text"
               value={formData.title}
@@ -169,7 +169,7 @@ export const ListingForm = () => {
             />
           </div>
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Description:</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Описание:</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -179,7 +179,7 @@ export const ListingForm = () => {
             />
           </div>
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Species:</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Вид:</label>
             <input
               type="text"
               value={formData.species}
@@ -189,7 +189,7 @@ export const ListingForm = () => {
             />
           </div>
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Breed (optional):</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Порода (опционально):</label>
             <input
               type="text"
               value={formData.breed}
@@ -198,7 +198,7 @@ export const ListingForm = () => {
             />
           </div>
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Age (months):</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Возраст (в месяцах):</label>
             <input
               type="number"
               value={formData.ageMonths}
@@ -209,7 +209,7 @@ export const ListingForm = () => {
             />
           </div>
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Price:</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Цена:</label>
             <input
               type="number"
               step="0.01"
@@ -252,7 +252,7 @@ export const ListingForm = () => {
               cursor: (loading || (!isEdit && !profile?.shopName)) ? 'not-allowed' : 'pointer'
             }}
           >
-            {loading ? 'Saving...' : isEdit ? 'Update Listing' : 'Create Listing'}
+            {loading ? 'Сохраняем...' : isEdit ? 'Обновить объявление' : 'Создать объявление'}
           </button>
         </form>
       </div>

@@ -13,6 +13,13 @@ export const listingsAPI = {
     return response.data;
   },
 
+  getSellerListings: async (sellerId) => {
+    const response = await api.get('/listings/seller', {
+      params: { sellerId },
+    });
+    return response.data;
+  },
+
   createListing: async (listingData) => {
     const response = await api.post('/listings/', listingData);
     return response.data;
@@ -42,5 +49,10 @@ export const listingsAPI = {
     const response = await api.post('/listings/reviews', reviewData);
     return response.data;
   },
+
+  getSimilarListings: (listingId, size = 6) =>
+      api.get(`/search/listings/${listingId}/similar`, {
+        params: { size },
+      }).then(res => res.data),
 };
 

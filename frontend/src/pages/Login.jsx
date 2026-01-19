@@ -29,11 +29,11 @@ export const Login = () => {
 
   return (
     <div style={{ maxWidth: '400px', margin: '2rem auto', padding: '2rem', border: '1px solid #ddd', borderRadius: '8px' }}>
-      <h2>Login</h2>
+      <h2>Вход</h2>
       {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email:</label>
+          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Почта:</label>
           <input
             type="email"
             value={email}
@@ -43,7 +43,7 @@ export const Login = () => {
           />
         </div>
         <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Password:</label>
+          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Пароль:</label>
           <input
             type="password"
             value={password}
@@ -66,11 +66,11 @@ export const Login = () => {
             cursor: loading ? 'not-allowed' : 'pointer'
           }}
         >
-          {loading ? 'Logging in...' : 'Login'}
+          {loading ? 'Входим...' : 'Войти'}
         </button>
       </form>
       <p style={{ marginTop: '1rem', textAlign: 'center' }}>
-        Don't have an account? <Link to="/register">Register here</Link>
+        Ещё нет аккаунта? <Link to="/register">Регистрация здесь</Link>
       </p>
     </div>
   );

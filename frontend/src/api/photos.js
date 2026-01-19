@@ -42,6 +42,10 @@ export const photosAPI = {
     return `${api.defaults.baseURL}/users/photos/avatar`;
   },
 
+  getAvatarByUserId: (userId) => {
+    return `${api.defaults.baseURL}/users/photos/avatar/${userId}`;
+  },
+
   deleteAvatar: async () => {
     const response = await api.delete('/users/photos/avatar');
     return response.data;
