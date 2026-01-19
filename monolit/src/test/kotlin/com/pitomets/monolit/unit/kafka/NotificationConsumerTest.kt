@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.pitomets.monolit.model.kafka.NotificationFailedEvent
 import com.pitomets.monolit.model.kafka.NotificationSentEvent
 import com.pitomets.monolit.model.kafka.event.Channel
-import com.pitomets.monolit.testContainers.BaseKafkaContainer
+import com.pitomets.monolit.testContainers.BaseContainers
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringSerializer
 import org.awaitility.Awaitility.await
@@ -16,13 +16,15 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.kafka.core.DefaultKafkaProducerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.test.context.ActiveProfiles
+import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.concurrent.TimeUnit
 
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ActiveProfiles("test")
-class NotificationConsumerTest : BaseKafkaContainer() {
+@Testcontainers
+class NotificationConsumerTest : BaseContainers() {
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper
