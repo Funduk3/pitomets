@@ -8,19 +8,16 @@ import com.pitomets.monolit.model.dto.request.RegisterRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
 import com.pitomets.monolit.model.dto.response.TokenResponse
+import com.pitomets.monolit.testContainers.BaseContainers
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
 import org.hamcrest.Matchers
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
-import org.testcontainers.junit.jupiter.Testcontainers
 
-@Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")
 class AuthFlowIntegrationTest : BaseContainers() {
 

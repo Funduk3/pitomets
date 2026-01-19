@@ -4,6 +4,7 @@ import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
+import com.pitomets.monolit.testContainers.BaseContainers
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
 import org.hamcrest.Matchers

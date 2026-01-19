@@ -1,4 +1,4 @@
-package com.pitomets.monolit.integration
+package com.pitomets.monolit.testContainers
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
@@ -23,10 +23,15 @@ import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.GenericContainer
+import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.containers.wait.strategy.HttpWaitStrategy
 import org.testcontainers.elasticsearch.ElasticsearchContainer
+import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
+import org.testcontainers.utility.DockerImageName
 import java.math.BigDecimal
+import java.time.Duration
 import java.util.Base64
 
 @Suppress("UtilityClassWithPublicConstructor")
@@ -96,10 +101,10 @@ abstract class BaseContainers {
                 withEnv("MINIO_ROOT_PASSWORD", "minioadmin")
                 withCommand("server", "/data", "--console-address", ":9001")
                 waitingFor(
-                    org.testcontainers.containers.wait.strategy.HttpWaitStrategy()
+                    HttpWaitStrategy()
                         .forPath("/minio/health/live")
                         .forPort(9000)
-                        .withStartupTimeout(java.time.Duration.ofSeconds(60))
+                        .withStartupTimeout(Duration.ofSeconds(60))
                 )
             }
 
@@ -139,6 +144,10 @@ abstract class BaseContainers {
             }
         }
 
+        @Container
+        @JvmStatic
+        val kafka = KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"))
+
         @JvmStatic
         @DynamicPropertySource
         fun props(registry: DynamicPropertyRegistry) {
@@ -170,6 +179,8 @@ abstract class BaseContainers {
             val JWT_TEST_SECRET = Base64.getEncoder()
                 .encodeToString("super-test-secret-key-which-is-long".toByteArray())
             registry.add("jwt.secret") { JWT_TEST_SECRET }
+
+            registry.add("spring.kafka.bootstrap-servers") { BaseContainers.Companion.kafka.bootstrapServers }
         }
     }
 
