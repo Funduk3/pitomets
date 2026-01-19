@@ -27,6 +27,32 @@ spring:
   elasticsearch:
     uris: ${ELASTICSEARCH_URI:http://elasticsearch:9200}
 
+  kafka:
+    bootstrap-servers: localhost:9092
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        linger.ms: 10
+        batch.size: 16384
+        max.in.flight.requests.per.connection: 5
+        enable.idempotence: true
+
+    consumer:
+      group-id: user-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        isolation.level: read_committed
+
+    listener:
+      ack-mode: manual_immediate
+
 logging:
   level:
     com.pitomets.monolit: INFO
@@ -57,3 +83,11 @@ messenger:
   # When monolit runs in Docker and messenger1 is published on host port 8081,
   # use host.docker.internal. Override via env MESSENGER_URL if needed.
   url: ${MESSENGER_URL:http://host.docker.internal:8081}
+
+# топик кафки
+notification:
+  kafka:
+    topics:
+      notification-send: notification.send
+      notification-sent: notification.sent
+      notification-failed: notification.failed
