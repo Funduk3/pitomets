@@ -289,7 +289,6 @@ class ListingsService(
             id = savedListing.city.id,
             title = savedListing.city.title
         ),
-
         metro = savedListing.metroStation?.let { station ->
             MetroDto(
                 id = station.id,

@@ -23,6 +23,7 @@ export const ListingDetail = () => {
   const [similarPhotos, setSimilarPhotos] = useState({});
   const [similarLoading, setSimilarLoading] = useState(false);
   const [cityTitle, setCityTitle] = useState('');
+  const [metroStation, setMetroStation] = useState(null);
 
   useEffect(() => {
     loadListing();
@@ -43,22 +44,24 @@ export const ListingDetail = () => {
     };
   }, [listing]);
 
-  const loadListing = async () => {
-    try {
-      const data = await listingsAPI.getListing(parseInt(id));
-      setListing(data);
+    const loadListing = async () => {
+        try {
+            const data = await listingsAPI.getListing(parseInt(id));
+            console.log('Listing data:', data);
+            setListing(data);
+            setCityTitle(data.city?.title || '');
+            if (data.metro) {
+                console.log('Metro found:', data.metro);
+                setMetroStation(data.metro);
+            }
+        } catch (err) {
+            setError('Failed to load listing');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-      setCityTitle(data.city.title);
-
-    } catch (err) {
-      setError('Failed to load listing');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  const loadPhotos = async () => {
+    const loadPhotos = async () => {
     try {
       const data = await photosAPI.getListingPhotos(parseInt(id));
       setPhotos(data.photos || []);
@@ -96,7 +99,7 @@ export const ListingDetail = () => {
     try {
       const profile = await sellerAPI.getSellerProfile(listing.sellerId);
       setSellerProfile(profile);
-      
+
       if (profile.userId) {
         loadAvatar(profile.userId);
       }
@@ -219,8 +222,8 @@ export const ListingDetail = () => {
     <div>
       <h2>{listing.title || 'Untitled'}</h2>
       {sellerProfile && (
-        <div style={{ 
-          marginTop: '1rem', 
+        <div style={{
+          marginTop: '1rem',
           marginBottom: '1rem',
           padding: '1rem',
           border: '1px solid #ddd',
@@ -231,16 +234,16 @@ export const ListingDetail = () => {
           backgroundColor: '#f9f9f9'
         }}>
           {avatarUrl && (
-            <img 
-              src={avatarUrl} 
-              alt="Seller avatar" 
-              style={{ 
-                width: '60px', 
-                height: '60px', 
-                borderRadius: '50%', 
+            <img
+              src={avatarUrl}
+              alt="Seller avatar"
+              style={{
+                width: '60px',
+                height: '60px',
+                borderRadius: '50%',
                 objectFit: 'cover',
                 border: '2px solid #ddd'
-              }} 
+              }}
             />
           )}
           <div style={{ flex: 1 }}>
@@ -290,7 +293,22 @@ export const ListingDetail = () => {
         </div>
         <div style={{ flex: 1 }}>
           <p><strong>Описание:</strong> {listing.description}</p>
-          <p><strong>Город:</strong> {cityTitle || 'N/A'}</p>
+          <p style={{ marginTop: '0.25rem', color: '#000' }}>
+            <strong>Город:</strong> {cityTitle || 'Не указан'}
+            {metroStation && (
+                <span style={{ marginLeft: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+        • {metroStation.title}
+                  <span
+                      style={{
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '50%',
+                        backgroundColor: metroStation.line?.color || '#000'
+                      }}
+                  />
+      </span>
+            )}
+          </p>
           <p><strong>Цена:</strong> {listing.price} ₽</p>
           <p><strong>Вид:</strong> {listing.species || 'N/A'}</p>
           {listing.breed && <p><strong>Breed:</strong> {listing.breed}</p>}

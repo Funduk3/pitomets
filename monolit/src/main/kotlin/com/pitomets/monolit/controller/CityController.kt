@@ -1,5 +1,6 @@
 package com.pitomets.monolit.controller
 
+import com.pitomets.monolit.components.DbInitRunner.Companion.COLOR_MAPPINGS
 import com.pitomets.monolit.model.dto.response.CityDto
 import com.pitomets.monolit.repository.CitiesRepository
 import org.springframework.web.bind.annotation.GetMapping
@@ -22,7 +23,13 @@ class CityController(
         }
         return cityRepository
             .findTop15ByTitleStartingWithIgnoreCaseOrderByTitle(query)
-            .map { CityDto(it.id, it.title) }
+            .map {
+                CityDto(
+                    it.id,
+                    it.title,
+                    COLOR_MAPPINGS.containsKey(it.id.toInt())
+                )
+            }
     }
 
     @GetMapping("/{id}")
@@ -30,6 +37,12 @@ class CityController(
         @PathVariable id: Long
     ): CityDto =
         cityRepository.findById(id)
-            .map { CityDto(it.id, it.title) }
+            .map {
+                CityDto(
+                    it.id,
+                    it.title,
+                    COLOR_MAPPINGS.containsKey(it.id.toInt())
+                )
+            }
             .orElseThrow()
 }

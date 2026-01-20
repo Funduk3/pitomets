@@ -84,6 +84,10 @@ class DbInitRunner(
         }
     }
 
+    fun cityHasMetro(cityId: Int): Boolean {
+        return COLOR_MAPPINGS.containsKey(cityId)
+    }
+
     companion object {
         private val METRO_LINES = mapOf(
             "moscow" to 4L,
@@ -95,7 +99,7 @@ class DbInitRunner(
             "samara" to 5L,
         )
 
-        private val COLOR_MAPPINGS = mapOf(
+        val COLOR_MAPPINGS = mapOf<Int, Map<String, String>>(
             4 to mapOf( // Москва
                 "red" to "#E42313", // Сокольническая
                 "brown" to "#915133", // Кольцевая

@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { listingsAPI } from '../api/listings';
 import { userAPI } from '../api/user';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { citiesAPI } from '../api/cities';
+import { metroAPI } from '../api/metro';
 
 export const ListingForm = () => {
   const { id } = useParams();
@@ -28,6 +29,13 @@ export const ListingForm = () => {
   const [cities, setCities] = useState([]);
   const [cityId, setCityId] = useState(null);
   const [cityLoading, setCityLoading] = useState(false);
+  const [cityHasMetro, setCityHasMetro] = useState(false);
+  const [metroQuery, setMetroQuery] = useState('');
+  const [metroStations, setMetroStations] = useState([]);
+  const [metroId, setMetroId] = useState(null);
+  const [metroLoading, setMetroLoading] = useState(false);
+  const cityRef = useRef(null);
+  const metroRef = useRef(null);
 
   useEffect(() => {
     if (!isEdit) {
@@ -59,6 +67,43 @@ export const ListingForm = () => {
 
     return () => clearTimeout(timeout);
   }, [cityQuery]);
+
+  useEffect(() => {
+    if (metroQuery.length < 2 || !cityId) {
+      setMetroStations([]);
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      try {
+        setMetroLoading(true);
+        const data = await metroAPI.search(metroQuery, cityId);
+        setMetroStations(data);
+      } catch (e) {
+        console.error('Ошибка запроса метро:', e);
+      } finally {
+        setMetroLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [metroQuery, cityId]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (cityRef.current && !cityRef.current.contains(event.target)) {
+        setCities([]);
+      }
+      if (metroRef.current && !metroRef.current.contains(event.target)) {
+        setMetroStations([]);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
 
   const checkSellerProfile = async () => {
@@ -92,7 +137,16 @@ export const ListingForm = () => {
       if (listing.cityId && listing.cityTitle) {
         setCityId(listing.cityId);
         setCityQuery(listing.cityTitle);
+        // если бек возвращает hasMetro в объекте listing — использовать его
+        if (typeof listing.cityHasMetro !== 'undefined') {
+          setCityHasMetro(listing.cityHasMetro);
+        }
       }
+      if (listing.metroStationId && listing.metroStationTitle) {
+        setMetroId(listing.metroStationId);
+        setMetroQuery(listing.metroStationTitle);
+      }
+
 
     } catch (err) {
       setError('Failed to load listing');
@@ -125,10 +179,11 @@ export const ListingForm = () => {
         species: formData.species,
         breed: formData.breed || null,
         ageMonths: parseInt(formData.ageMonths),
-        price: priceValue.toString(), // Send as string for BigDecimal
+        price: priceValue.toString(),
         mother: formData.mother ? parseInt(formData.mother) : null,
         father: formData.father ? parseInt(formData.father) : null,
-        cityId
+        cityId,
+        metroId: metroId ? parseInt(metroId) : null
       };
 
       if (!cityId) {
@@ -280,13 +335,13 @@ export const ListingForm = () => {
               style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
             />
           </div>
-          <div style={{ marginBottom: '1rem', position: 'relative' }}>
+          <div style={{ marginBottom: '1rem', position: 'relative' }} ref={cityRef}>
             <label>Город</label>
             <input
                 value={cityQuery}
                 onChange={(e) => {
                   setCityQuery(e.target.value);
-                  setCityId(null); // сброс при ручном вводе
+                  setCityId(null);
                   setError('');
                 }}
                 placeholder="Начните вводить город"
@@ -314,7 +369,11 @@ export const ListingForm = () => {
                             e.preventDefault();
                             setCityQuery(city.title);
                             setCityId(city.id);
+                            setCityHasMetro(!!city.hasMetro);
                             setCities([]);
+                            setMetroId(null);
+                            setMetroQuery('');
+                            setMetroStations([]);
                           }}
                       >
                         {city.title}
@@ -323,6 +382,51 @@ export const ListingForm = () => {
                 </div>
             )}
           </div>
+
+          {cityHasMetro && (
+              <div style={{ marginBottom: '1rem', position: 'relative' }} ref={metroRef}>
+                <label>Станция метро (опционально)</label>
+                <input
+                    value={metroQuery}
+                    onChange={(e) => {
+                      setMetroQuery(e.target.value);
+                      setMetroId(null);
+                    }}
+                    placeholder="Начните вводить станцию метро"
+                    style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
+                />
+
+                {metroLoading && <div>Загрузка...</div>}
+
+                {metroStations.length > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      background: 'white',
+                      border: '1px solid #ddd',
+                      width: '100%',
+                      zIndex: 10,
+                      maxHeight: '200px',
+                      overflowY: 'auto'
+                    }}>
+                      {metroStations.map((s) => (
+                          <div
+                              key={s.id}
+                              style={{ padding: '0.5rem', cursor: 'pointer' }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setMetroQuery(s.title);
+                                setMetroId(s.id);
+                                setMetroStations([]);
+                              }}
+                          >
+                            <div style={{ fontWeight: '600' }}>{s.title}</div>
+                            <div style={{ fontSize: '12px' }}>{s.line?.title}</div>
+                          </div>
+                      ))}
+                    </div>
+                )}
+              </div>
+          )}
           <button
             type="submit"
             disabled={loading || (!isEdit && !profile?.shopName)}
