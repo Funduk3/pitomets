@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { listingsAPI } from '../api/listings';
 import { userAPI } from '../api/user';
 import { ProtectedRoute } from '../components/ProtectedRoute';
+import { citiesAPI } from '../api/cities';
 
 export const ListingForm = () => {
   const { id } = useParams();
@@ -23,6 +24,10 @@ export const ListingForm = () => {
   const [error, setError] = useState('');
   const [profile, setProfile] = useState(null);
   const [checkingProfile, setCheckingProfile] = useState(true);
+  const [cityQuery, setCityQuery] = useState('');
+  const [cities, setCities] = useState([]);
+  const [cityId, setCityId] = useState(null);
+  const [cityLoading, setCityLoading] = useState(false);
 
   useEffect(() => {
     if (!isEdit) {
@@ -31,6 +36,30 @@ export const ListingForm = () => {
       loadListing();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (cityQuery.length < 2) {
+      setCities([]);
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      try {
+        setCityLoading(true);
+        console.log('Запрос городов для:', cityQuery);
+        const data = await citiesAPI.search(cityQuery);
+        console.log('Результат:', data);
+        setCities(data);
+      } catch (e) {
+        console.error('Ошибка запроса городов:', e);
+      } finally {
+        setCityLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [cityQuery]);
+
 
   const checkSellerProfile = async () => {
     try {
@@ -59,6 +88,12 @@ export const ListingForm = () => {
         mother: listing.mother?.toString() || '',
         father: listing.father?.toString() || '',
       });
+
+      if (listing.cityId && listing.cityTitle) {
+        setCityId(listing.cityId);
+        setCityQuery(listing.cityTitle);
+      }
+
     } catch (err) {
       setError('Failed to load listing');
     }
@@ -93,7 +128,14 @@ export const ListingForm = () => {
         price: priceValue.toString(), // Send as string for BigDecimal
         mother: formData.mother ? parseInt(formData.mother) : null,
         father: formData.father ? parseInt(formData.father) : null,
+        cityId
       };
+
+      if (!cityId) {
+        setError('Пожалуйста, выберите город из списка.');
+        setLoading(false);
+        return;
+      }
 
       if (isEdit) {
         await listingsAPI.updateListing(parseInt(id), data);
@@ -237,6 +279,49 @@ export const ListingForm = () => {
               onChange={(e) => setFormData({ ...formData, father: e.target.value })}
               style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
             />
+          </div>
+          <div style={{ marginBottom: '1rem', position: 'relative' }}>
+            <label>Город</label>
+            <input
+                value={cityQuery}
+                onChange={(e) => {
+                  setCityQuery(e.target.value);
+                  setCityId(null); // сброс при ручном вводе
+                  setError('');
+                }}
+                placeholder="Начните вводить город"
+                required
+                style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
+            />
+
+            {cityLoading && <div>Загрузка...</div>}
+
+            {cities.length > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  background: 'white',
+                  border: '1px solid #ddd',
+                  width: '100%',
+                  zIndex: 10,
+                  maxHeight: '200px',
+                  overflowY: 'auto'
+                }}>
+                  {cities.map((city) => (
+                      <div
+                          key={city.id}
+                          style={{ padding: '0.5rem', cursor: 'pointer' }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCityQuery(city.title);
+                            setCityId(city.id);
+                            setCities([]);
+                          }}
+                      >
+                        {city.title}
+                      </div>
+                  ))}
+                </div>
+            )}
           </div>
           <button
             type="submit"

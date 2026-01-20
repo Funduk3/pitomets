@@ -22,6 +22,7 @@ export const ListingDetail = () => {
   const [similarListings, setSimilarListings] = useState([]);
   const [similarPhotos, setSimilarPhotos] = useState({});
   const [similarLoading, setSimilarLoading] = useState(false);
+  const [cityTitle, setCityTitle] = useState('');
 
   useEffect(() => {
     loadListing();
@@ -46,12 +47,16 @@ export const ListingDetail = () => {
     try {
       const data = await listingsAPI.getListing(parseInt(id));
       setListing(data);
+
+      setCityTitle(data.city.title);
+
     } catch (err) {
       setError('Failed to load listing');
     } finally {
       setLoading(false);
     }
   };
+
 
   const loadPhotos = async () => {
     try {
@@ -285,6 +290,7 @@ export const ListingDetail = () => {
         </div>
         <div style={{ flex: 1 }}>
           <p><strong>Описание:</strong> {listing.description}</p>
+          <p><strong>Город:</strong> {cityTitle || 'N/A'}</p>
           <p><strong>Цена:</strong> {listing.price} ₽</p>
           <p><strong>Вид:</strong> {listing.species || 'N/A'}</p>
           {listing.breed && <p><strong>Breed:</strong> {listing.breed}</p>}

@@ -3,10 +3,16 @@ package com.pitomets.monolit.model.entity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
+import jakarta.persistence.Index
 import jakarta.persistence.Table
 
 @Entity
-@Table(name = "cities")
+@Table(
+    name = "cities",
+    indexes = [
+        Index(name = "idx_cities_title", columnList = "title")
+    ]
+)
 class CityEntity(
 
     @Id
