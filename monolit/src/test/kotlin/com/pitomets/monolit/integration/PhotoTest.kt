@@ -181,7 +181,7 @@ class PhotoTest : BaseContainers() {
     @Test
     fun `upload listing photo test`() {
         val sellerToken = createBaseSeller()
-
+        // use dto
         val listingId = RestAssured
             .given()
             .auth().oauth2(sellerToken.accessToken)
