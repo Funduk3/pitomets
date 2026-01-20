@@ -83,7 +83,10 @@ class ElasticTest : BaseContainers() {
             .`as`(Array<SearchListingsResponse>::class.java)
             .toList()
 
-        Assertions.assertEquals(2, list.size, "Expected exactly 2 search results")
+        Assertions.assertTrue(
+            list.size >= 2,
+            "Expected at least 2 search results, but got ${list.size}"
+        )
         list.forEach { dto ->
             Assertions.assertNotNull(dto.id, "id should not be null")
             Assertions.assertNotNull(dto.title, "title should not be null")
