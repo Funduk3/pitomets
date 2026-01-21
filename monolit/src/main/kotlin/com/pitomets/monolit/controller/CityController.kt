@@ -22,7 +22,7 @@ class CityController(
             return emptyList()
         }
         return cityRepository
-            .findTop15ByTitleStartingWithIgnoreCaseOrderByTitle(query)
+            .findTop5ByTitleStartingWithIgnoreCaseOrderByTitle(query)
             .map {
                 CityDto(
                     it.id,

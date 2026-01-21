@@ -411,7 +411,13 @@ export const ListingForm = () => {
                       {metroStations.map((s) => (
                           <div
                               key={s.id}
-                              style={{ padding: '0.5rem', cursor: 'pointer' }}
+                              style={{
+                                padding: '0.5rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                              }}
                               onClick={(e) => {
                                 e.preventDefault();
                                 setMetroQuery(s.title);
@@ -419,8 +425,24 @@ export const ListingForm = () => {
                                 setMetroStations([]);
                               }}
                           >
-                            <div style={{ fontWeight: '600' }}>{s.title}</div>
-                            <div style={{ fontSize: '12px' }}>{s.line?.title}</div>
+                            {s.line?.color && (
+                                <span
+                                    style={{
+                                      width: '10px',
+                                      height: '10px',
+                                      borderRadius: '50%',
+                                      backgroundColor: s.line.color,
+                                      flexShrink: 0
+                                    }}
+                                />
+                            )}
+
+                            <div>
+                              <div style={{ fontWeight: '600' }}>{s.title}</div>
+                              <div style={{ fontSize: '12px', color: '#666' }}>
+                                {s.line?.title}
+                              </div>
+                            </div>
                           </div>
                       ))}
                     </div>

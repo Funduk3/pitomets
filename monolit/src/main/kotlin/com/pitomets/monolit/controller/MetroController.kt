@@ -2,7 +2,6 @@ package com.pitomets.monolit.controller
 
 import com.pitomets.monolit.model.dto.response.MetroDto
 import com.pitomets.monolit.model.dto.response.MetroLineDto
-import com.pitomets.monolit.repository.MetroRepository
 import com.pitomets.monolit.repository.MetroStationRepo
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -15,7 +14,6 @@ import kotlin.collections.map
 @RequestMapping("/api/metro")
 class MetroController(
     private val metroStationRepo: MetroStationRepo,
-    private val metroLineRepo: MetroRepository,
 ) {
     @GetMapping
     fun search(
@@ -26,7 +24,10 @@ class MetroController(
             return emptyList()
         }
         return metroStationRepo
-            .findTop15ByTitleStartingWithIgnoreCaseOrderByTitle(query)
+            .findTop5ByTitleStartingWithIgnoreCaseAndLineCityIdOrderByTitle(
+                query,
+                cityId
+            )
             .map {
                 MetroDto(
                     it.id,
@@ -38,7 +39,6 @@ class MetroController(
                     )
                 )
             }
-            .filter { metroLineRepo.findById(it.line.id).get().cityId == cityId }
     }
 
     @GetMapping("/{id}")
