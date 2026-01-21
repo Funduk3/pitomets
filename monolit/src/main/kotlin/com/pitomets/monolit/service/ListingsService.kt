@@ -6,13 +6,18 @@ import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.model.EventType
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
+import com.pitomets.monolit.model.dto.response.CityDto
 import com.pitomets.monolit.model.dto.response.ListingsResponse
+import com.pitomets.monolit.model.dto.response.MetroDto
+import com.pitomets.monolit.model.dto.response.MetroLineDto
 import com.pitomets.monolit.model.entity.Listing
 import com.pitomets.monolit.model.entity.ListingOutbox
 import com.pitomets.monolit.model.entity.Pet
 import com.pitomets.monolit.model.entity.SellerProfile
+import com.pitomets.monolit.repository.CitiesRepository
 import com.pitomets.monolit.repository.ListingOutboxRepository
 import com.pitomets.monolit.repository.ListingsRepo
+import com.pitomets.monolit.repository.MetroStationRepo
 import com.pitomets.monolit.repository.PetsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
 import jakarta.transaction.Transactional
@@ -29,6 +34,8 @@ class ListingsService(
     private val listingsRepo: ListingsRepo,
     private val sellerProfileRepo: SellerProfileRepo,
     private val outboxRepo: ListingOutboxRepository,
+    private val cityRepo: CitiesRepository,
+    private val metroRepo: MetroStationRepo,
 ) {
     // Controller functions
 
@@ -40,7 +47,14 @@ class ListingsService(
         val seller = findSellerProfile(userId, sellerProfileRepo, log)
         val (father, mother) = findParentPets(request, petsRepo, log)
 
-        val listing = createListingEntity(request, seller, father, mother)
+        val listing = createListingEntity(
+            request,
+            seller,
+            father,
+            mother,
+            request.cityId,
+            request.metroId
+        )
         val saved = listingsRepo.save(listing)
 
         outboxRepo.save(
@@ -79,6 +93,7 @@ class ListingsService(
     }
 
     @Transactional
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     fun updateListing(
         listingId: Long,
         sellerId: Long,
@@ -102,6 +117,14 @@ class ListingsService(
         request.father?.let {
             listing.father = petsRepo.findById(it)
                 .orElseThrow { PetNotFoundException("Father with id $it") }
+        }
+
+        request.city?.let {
+            listing.city = cityRepo.findById(it).orElseThrow()
+        }
+
+        request.metroStation?.let {
+            listing.metroStation = metroRepo.findById(it).orElseThrow()
         }
 
         val saved = listingsRepo.save(listing)
@@ -132,7 +155,22 @@ class ListingsService(
             sellerRating = saved.sellerProfile.rating,
             sellerReviewsCount = saved.sellerProfile.countReviews,
             mother = saved.mother?.id,
-            father = saved.father?.id
+            father = saved.father?.id,
+            city = CityDto(
+                id = saved.city.id,
+                title = saved.city.title
+            ),
+            metro = saved.metroStation?.let { station ->
+                MetroDto(
+                    id = station.id,
+                    title = station.title,
+                    line = MetroLineDto(
+                        id = station.line.id,
+                        title = station.line.title,
+                        color = station.line.color
+                    )
+                )
+            }
         )
     }
 
@@ -208,7 +246,9 @@ class ListingsService(
         request: ListingsRequest,
         seller: SellerProfile,
         father: Pet?,
-        mother: Pet?
+        mother: Pet?,
+        cityId: Long,
+        metroId: Long?,
     ) = Listing(
         description = request.description,
         species = request.species,
@@ -218,7 +258,13 @@ class ListingsService(
         mother = mother,
         price = request.price,
         sellerProfile = seller,
-        title = request.title
+        title = request.title,
+        city = cityRepo.findById(cityId)
+            .orElseThrow(),
+        metroStation = metroId?.let {
+            metroRepo.findById(it)
+                .orElseThrow()
+        }
     )
 
     private fun buildListingsResponse(
@@ -238,7 +284,22 @@ class ListingsService(
         listingsId = requireNotNull(savedListing.id),
         price = savedListing.price,
         isArchived = savedListing.isArchived,
-        title = savedListing.title
+        title = savedListing.title,
+        city = CityDto(
+            id = savedListing.city.id,
+            title = savedListing.city.title
+        ),
+        metro = savedListing.metroStation?.let { station ->
+            MetroDto(
+                id = station.id,
+                title = station.title,
+                line = MetroLineDto(
+                    id = station.line.id,
+                    title = station.line.title,
+                    color = station.line.color
+                )
+            )
+        }
     )
 
     private val log = LoggerFactory.getLogger(ListingsService::class.java)

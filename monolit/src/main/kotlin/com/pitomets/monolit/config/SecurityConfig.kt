@@ -80,6 +80,8 @@ class SecurityConfig(
                     "/search/listings/**",
                     "/actuator/prometheus", // todo put in admin
                     "/seller/reviews/**",
+                    "/api/cities/**",
+                    "/api/metro/**",
                 ).permitAll()
                 it.requestMatchers(HttpMethod.POST, "/listings/reviews/**").authenticated()
                 it.requestMatchers(HttpMethod.GET, "/listings/**").permitAll()

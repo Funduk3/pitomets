@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { listingsAPI } from '../api/listings';
 import { userAPI } from '../api/user';
 import { ProtectedRoute } from '../components/ProtectedRoute';
+import { citiesAPI } from '../api/cities';
+import { metroAPI } from '../api/metro';
 
 export const ListingForm = () => {
   const { id } = useParams();
@@ -23,6 +25,17 @@ export const ListingForm = () => {
   const [error, setError] = useState('');
   const [profile, setProfile] = useState(null);
   const [checkingProfile, setCheckingProfile] = useState(true);
+  const [cityQuery, setCityQuery] = useState('');
+  const [cities, setCities] = useState([]);
+  const [cityId, setCityId] = useState(null);
+  const [cityLoading, setCityLoading] = useState(false);
+  const [cityHasMetro, setCityHasMetro] = useState(false);
+  const [metroQuery, setMetroQuery] = useState('');
+  const [metroStations, setMetroStations] = useState([]);
+  const [metroId, setMetroId] = useState(null);
+  const [metroLoading, setMetroLoading] = useState(false);
+  const cityRef = useRef(null);
+  const metroRef = useRef(null);
 
   useEffect(() => {
     if (!isEdit) {
@@ -31,6 +44,67 @@ export const ListingForm = () => {
       loadListing();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (cityQuery.length < 2) {
+      setCities([]);
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      try {
+        setCityLoading(true);
+        console.log('Запрос городов для:', cityQuery);
+        const data = await citiesAPI.search(cityQuery);
+        console.log('Результат:', data);
+        setCities(data);
+      } catch (e) {
+        console.error('Ошибка запроса городов:', e);
+      } finally {
+        setCityLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [cityQuery]);
+
+  useEffect(() => {
+    if (metroQuery.length < 2 || !cityId) {
+      setMetroStations([]);
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      try {
+        setMetroLoading(true);
+        const data = await metroAPI.search(metroQuery, cityId);
+        setMetroStations(data);
+      } catch (e) {
+        console.error('Ошибка запроса метро:', e);
+      } finally {
+        setMetroLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [metroQuery, cityId]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (cityRef.current && !cityRef.current.contains(event.target)) {
+        setCities([]);
+      }
+      if (metroRef.current && !metroRef.current.contains(event.target)) {
+        setMetroStations([]);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
 
   const checkSellerProfile = async () => {
     try {
@@ -59,6 +133,21 @@ export const ListingForm = () => {
         mother: listing.mother?.toString() || '',
         father: listing.father?.toString() || '',
       });
+
+      if (listing.cityId && listing.cityTitle) {
+        setCityId(listing.cityId);
+        setCityQuery(listing.cityTitle);
+        // если бек возвращает hasMetro в объекте listing — использовать его
+        if (typeof listing.cityHasMetro !== 'undefined') {
+          setCityHasMetro(listing.cityHasMetro);
+        }
+      }
+      if (listing.metroStationId && listing.metroStationTitle) {
+        setMetroId(listing.metroStationId);
+        setMetroQuery(listing.metroStationTitle);
+      }
+
+
     } catch (err) {
       setError('Failed to load listing');
     }
@@ -90,10 +179,18 @@ export const ListingForm = () => {
         species: formData.species,
         breed: formData.breed || null,
         ageMonths: parseInt(formData.ageMonths),
-        price: priceValue.toString(), // Send as string for BigDecimal
+        price: priceValue.toString(),
         mother: formData.mother ? parseInt(formData.mother) : null,
         father: formData.father ? parseInt(formData.father) : null,
+        cityId,
+        metroId: metroId ? parseInt(metroId) : null
       };
+
+      if (!cityId) {
+        setError('Пожалуйста, выберите город из списка.');
+        setLoading(false);
+        return;
+      }
 
       if (isEdit) {
         await listingsAPI.updateListing(parseInt(id), data);
@@ -238,6 +335,120 @@ export const ListingForm = () => {
               style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
             />
           </div>
+          <div style={{ marginBottom: '1rem', position: 'relative' }} ref={cityRef}>
+            <label>Город</label>
+            <input
+                value={cityQuery}
+                onChange={(e) => {
+                  setCityQuery(e.target.value);
+                  setCityId(null);
+                  setError('');
+                }}
+                placeholder="Начните вводить город"
+                required
+                style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
+            />
+
+            {cityLoading && <div>Загрузка...</div>}
+
+            {cities.length > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  background: 'white',
+                  border: '1px solid #ddd',
+                  width: '100%',
+                  zIndex: 10,
+                  maxHeight: '200px',
+                  overflowY: 'auto'
+                }}>
+                  {cities.map((city) => (
+                      <div
+                          key={city.id}
+                          style={{ padding: '0.5rem', cursor: 'pointer' }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCityQuery(city.title);
+                            setCityId(city.id);
+                            setCityHasMetro(!!city.hasMetro);
+                            setCities([]);
+                            setMetroId(null);
+                            setMetroQuery('');
+                            setMetroStations([]);
+                          }}
+                      >
+                        {city.title}
+                      </div>
+                  ))}
+                </div>
+            )}
+          </div>
+
+          {cityHasMetro && (
+              <div style={{ marginBottom: '1rem', position: 'relative' }} ref={metroRef}>
+                <label>Станция метро (опционально)</label>
+                <input
+                    value={metroQuery}
+                    onChange={(e) => {
+                      setMetroQuery(e.target.value);
+                      setMetroId(null);
+                    }}
+                    placeholder="Начните вводить станцию метро"
+                    style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
+                />
+
+                {metroLoading && <div>Загрузка...</div>}
+
+                {metroStations.length > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      background: 'white',
+                      border: '1px solid #ddd',
+                      width: '100%',
+                      zIndex: 10,
+                      maxHeight: '200px',
+                      overflowY: 'auto'
+                    }}>
+                      {metroStations.map((s) => (
+                          <div
+                              key={s.id}
+                              style={{
+                                padding: '0.5rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                              }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setMetroQuery(s.title);
+                                setMetroId(s.id);
+                                setMetroStations([]);
+                              }}
+                          >
+                            {s.line?.color && (
+                                <span
+                                    style={{
+                                      width: '10px',
+                                      height: '10px',
+                                      borderRadius: '50%',
+                                      backgroundColor: s.line.color,
+                                      flexShrink: 0
+                                    }}
+                                />
+                            )}
+
+                            <div>
+                              <div style={{ fontWeight: '600' }}>{s.title}</div>
+                              <div style={{ fontSize: '12px', color: '#666' }}>
+                                {s.line?.title}
+                              </div>
+                            </div>
+                          </div>
+                      ))}
+                    </div>
+                )}
+              </div>
+          )}
           <button
             type="submit"
             disabled={loading || (!isEdit && !profile?.shopName)}

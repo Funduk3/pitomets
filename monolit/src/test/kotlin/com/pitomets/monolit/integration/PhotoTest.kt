@@ -194,7 +194,8 @@ class PhotoTest : BaseContainers() {
                     "species": "DOG",
                     "breed": "Labrador",
                     "ageMonths": 12,
-                    "price": 1000
+                    "price": 1000,
+                    "cityId": 4
                 }
                 """.trimIndent()
             )
@@ -237,7 +238,8 @@ class PhotoTest : BaseContainers() {
                     "species": "DOG",
                     "breed": "Labrador",
                     "ageMonths": 12,
-                    "price": 1000
+                    "price": 1000,
+                    "cityId": 4
                 }
                 """.trimIndent()
             )
@@ -290,7 +292,8 @@ class PhotoTest : BaseContainers() {
                     "species": "DOG",
                     "breed": "Labrador",
                     "ageMonths": 12,
-                    "price": 1000
+                    "price": 1000,
+                    "cityId": 4
                 }
                 """.trimIndent()
             )
@@ -346,7 +349,8 @@ class PhotoTest : BaseContainers() {
                     "species": "DOG",
                     "breed": "Labrador",
                     "ageMonths": 12,
-                    "price": 1000
+                    "price": 1000,
+                    "cityId": 4
                 }
                 """.trimIndent()
             )
@@ -406,7 +410,8 @@ class PhotoTest : BaseContainers() {
                     "species": "DOG",
                     "breed": "Labrador",
                     "ageMonths": 12,
-                    "price": 1000
+                    "price": 1000,
+                    "cityId": 4
                 }
                 """.trimIndent()
             )
@@ -449,7 +454,8 @@ class PhotoTest : BaseContainers() {
                     "species": "DOG",
                     "breed": "Labrador",
                     "ageMonths": 12,
-                    "price": 1000
+                    "price": 1000,
+                    "cityId": 4
                 }
                 """.trimIndent()
             )
@@ -501,7 +507,8 @@ class PhotoTest : BaseContainers() {
                     "species": "DOG",
                     "breed": "Labrador",
                     "ageMonths": 12,
-                    "price": 1000
+                    "price": 1000,
+                    "cityId": 4
                 }
                 """.trimIndent()
             )

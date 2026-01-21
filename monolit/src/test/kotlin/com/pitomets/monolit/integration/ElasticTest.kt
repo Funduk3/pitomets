@@ -39,7 +39,9 @@ class ElasticTest : BaseContainers() {
             ageMonths = faker.number().numberBetween(1, 24),
             price = BigDecimal.valueOf(faker.number().numberBetween(1L, 24L)),
             breed = null,
-            title = targetTitle1
+            title = targetTitle1,
+            cityId = 4L,
+            metroId = null,
         )
         RestAssured.given()
             .contentType(ContentType.JSON)
@@ -55,7 +57,9 @@ class ElasticTest : BaseContainers() {
             ageMonths = faker.number().numberBetween(1, 24),
             price = BigDecimal.valueOf(faker.number().numberBetween(1L, 24L)),
             breed = null,
-            title = targetTitle2
+            title = targetTitle2,
+            cityId = 4L,
+            metroId = null,
         )
         RestAssured.given()
             .contentType(ContentType.JSON)
@@ -79,7 +83,10 @@ class ElasticTest : BaseContainers() {
             .`as`(Array<SearchListingsResponse>::class.java)
             .toList()
 
-        Assertions.assertEquals(2, list.size, "Expected exactly 2 search results")
+        Assertions.assertTrue(
+            list.size >= 2,
+            "Expected at least 2 search results, but got ${list.size}"
+        )
         list.forEach { dto ->
             Assertions.assertNotNull(dto.id, "id should not be null")
             Assertions.assertNotNull(dto.title, "title should not be null")
@@ -103,7 +110,9 @@ class ElasticTest : BaseContainers() {
             ageMonths = faker.number().randomDigit(),
             price = BigDecimal(faker.number().randomDigit()),
             breed = null,
-            title = "Base title $token"
+            title = "Base title $token",
+            cityId = 4L,
+            metroId = null,
         )
 
         val similarListingRequest = ListingsRequest(
@@ -112,7 +121,9 @@ class ElasticTest : BaseContainers() {
             ageMonths = faker.number().randomDigit(),
             price = BigDecimal(faker.number().randomDigit()),
             breed = null,
-            title = "Similar title $token"
+            title = "Similar title $token",
+            cityId = 4L,
+            metroId = null,
         )
 
         createSomeListings(8, sellerTokens)

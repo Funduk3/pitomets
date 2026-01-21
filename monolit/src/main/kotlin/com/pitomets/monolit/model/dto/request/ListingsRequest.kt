@@ -18,4 +18,8 @@ data class ListingsRequest(
     val father: Long? = null,
 
     val price: BigDecimal,
+
+    val cityId: Long,
+
+    val metroId: Long? = null,
 )

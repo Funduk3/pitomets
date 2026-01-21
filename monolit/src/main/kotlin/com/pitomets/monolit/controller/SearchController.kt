@@ -1,5 +1,6 @@
 package com.pitomets.monolit.controller
 
+import com.pitomets.monolit.model.dto.elastic.AutocompleteDoc
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
 import com.pitomets.monolit.service.SearchService
 import org.springframework.web.bind.annotation.GetMapping
@@ -31,4 +32,16 @@ class SearchController(
         @RequestParam("size", required = false, defaultValue = "10") size: Int = 10
     ): List<SearchListingsResponse> =
         searchService.moreLikeThis(listingId, size)
+
+    @GetMapping("/listings/autocomplete")
+    fun autocomplete(
+        @RequestParam query: String,
+        @RequestParam(defaultValue = "5") size: Int
+    ): List<AutocompleteDoc> =
+        searchService.autocomplete(query, size)
+
+    // delete it, only for dev
+    @GetMapping("/deleteALL")
+    fun deleteListings() =
+        searchService.deleteIndex()
 }

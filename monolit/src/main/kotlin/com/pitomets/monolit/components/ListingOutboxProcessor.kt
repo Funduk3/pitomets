@@ -1,7 +1,7 @@
 package com.pitomets.monolit.components
 
 import com.pitomets.monolit.model.EventType
-import com.pitomets.monolit.model.dto.SearchListingDocument
+import com.pitomets.monolit.model.dto.elastic.SearchListingDocument
 import com.pitomets.monolit.repository.ListingOutboxRepository
 import com.pitomets.monolit.service.SearchService
 import jakarta.transaction.Transactional
