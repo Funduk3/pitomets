@@ -17,6 +17,8 @@ class SearchService(
         query: String,
         page: Int = 0,
         size: Int = 10,
+        cityId: Long? = null,
+        metroId: Long? = null
     ): List<SearchListingsResponse> {
         val from = page * size
         val response = client.search(
@@ -25,12 +27,34 @@ class SearchService(
                     .from(from)
                     .size(size)
                     .query { q ->
-                        q.multiMatch { mm ->
-                            mm.query(query)
-                                .fields(listOf("title^3", "description"))
-                                .fuzziness("AUTO")
-                                .prefixLength(MIN_CHAR_COUNT)
-                                .maxExpansions(MAX_EXPANSIONS_COUNT)
+                        q.bool { b ->
+
+                            b.must {
+                                it.multiMatch { m ->
+                                    m.query(query)
+                                        .fields("title^3", "description")
+                                        .fuzziness("AUTO")
+                                        .prefixLength(MIN_CHAR_COUNT)
+                                        .maxExpansions(MAX_EXPANSIONS_COUNT)
+                                }
+                            }
+
+                            cityId?.let { city ->
+                                b.filter {
+                                    it.term { t ->
+                                        t.field("city").value(city)
+                                    }
+                                }
+                            }
+                            metroId?.let { metro ->
+                                b.filter {
+                                    it.term { t ->
+                                        t.field("metro").value(metro)
+                                    }
+                                }
+                            }
+
+                            b
                         }
                     }
             },
@@ -41,9 +65,9 @@ class SearchService(
             .mapNotNull { it.source() }
             .map { doc ->
                 SearchListingsResponse(
-                    id = doc.id,
-                    title = doc.title,
-                    description = doc.description
+                    doc.id,
+                    doc.title,
+                    doc.description
                 )
             }
     }

@@ -7,5 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 data class SearchListingDocument(
     @JsonProperty("id") val id: Long,
     @JsonProperty("title") val title: String,
-    @JsonProperty("description") val description: String
+    @JsonProperty("description") val description: String,
+    @JsonProperty("city") val city: Long? = null,
+    @JsonProperty("metro") val metro: Long? = null
 )

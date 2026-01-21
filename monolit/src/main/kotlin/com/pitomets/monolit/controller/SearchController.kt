@@ -19,11 +19,15 @@ class SearchController(
         @RequestParam("query") query: String,
         @RequestParam("page", required = false, defaultValue = "0") page: Int = 0,
         @RequestParam("size", required = false, defaultValue = "10") size: Int = 10,
+        @RequestParam("metro", required = false) metro: Long?,
+        @RequestParam("city", required = false) city: Long?,
     ): List<SearchListingsResponse> =
         searchService.search(
             query,
             page,
-            size
+            size,
+            city,
+            metro,
         )
 
     @GetMapping("/listings/{id}/similar")

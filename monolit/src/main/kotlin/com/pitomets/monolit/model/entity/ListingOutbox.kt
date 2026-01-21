@@ -31,6 +31,12 @@ class ListingOutbox(
     @Column(name = "description")
     val description: String?,
 
+    @Column(name = "city")
+    val city: Long,
+
+    @Column(name = "metro")
+    val metro: Long?,
+
     @Column(name = "retry_count", nullable = false)
     var retryCount: Int = 0,
 

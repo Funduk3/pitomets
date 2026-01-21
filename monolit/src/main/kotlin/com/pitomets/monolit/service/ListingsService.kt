@@ -62,7 +62,9 @@ class ListingsService(
                 listingId = requireNotNull(saved.id),
                 eventType = EventType.CREATE,
                 title = saved.title,
-                description = saved.description
+                description = saved.description,
+                city = saved.city.id,
+                metro = saved.metroStation?.id
             )
         )
 
@@ -137,7 +139,9 @@ class ListingsService(
                     listingId = listingId,
                     eventType = EventType.UPDATE,
                     title = saved.title,
-                    description = saved.description
+                    description = saved.description,
+                    city = saved.city.id,
+                    metro = saved.metroStation?.id
                 )
             )
         }
@@ -188,7 +192,9 @@ class ListingsService(
                 listingId = listingId,
                 eventType = EventType.DELETE,
                 title = null,
-                description = null
+                description = null,
+                city = -1,
+                metro = null,
             )
         )
     }
