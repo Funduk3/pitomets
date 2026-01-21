@@ -39,4 +39,9 @@ class SearchController(
         @RequestParam(defaultValue = "5") size: Int
     ): List<AutocompleteDoc> =
         searchService.autocomplete(query, size)
+
+    // delete it, only for dev
+    @GetMapping("/deleteALL")
+    fun deleteListings() =
+        searchService.deleteIndex()
 }

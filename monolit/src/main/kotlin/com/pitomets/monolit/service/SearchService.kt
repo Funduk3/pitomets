@@ -6,6 +6,7 @@ import co.elastic.clients.elasticsearch.core.IndexResponse
 import com.pitomets.monolit.model.dto.elastic.AutocompleteDoc
 import com.pitomets.monolit.model.dto.elastic.SearchListingDocument
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
@@ -117,11 +118,20 @@ class SearchService(
             .mapNotNull { it.source() }
     }
 
+    // only for dev
+    fun deleteIndex() {
+        client.indices().delete { d ->
+            d.index(INDEX)
+        }
+        log.info("DROP INDEX!!!")
+    }
+
     companion object {
         private const val INDEX = "listings"
         private const val MIN_CHAR_NUMBER = 3
         private const val MAX_WORD_COUNT = 5
         private const val MIN_CHAR_COUNT = 1
         private const val MAX_EXPANSIONS_COUNT = 25
+        private val log = LoggerFactory.getLogger(SearchService::class.java)
     }
 }
