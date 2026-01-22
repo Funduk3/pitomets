@@ -24,6 +24,8 @@ export const Search = () => {
     const [metroId, setMetroId] = useState(null);
     const [metroLoading, setMetroLoading] = useState(false);
     const metroRef = useRef(null);
+    const [priceFromInput, setPriceFromInput] = useState('');
+    const [priceToInput, setPriceToInput] = useState('');
 
     useEffect(() => {
         if (!query.trim()) {
@@ -104,15 +106,36 @@ export const Search = () => {
         if (hasSearched) {
             handleSearch();
         }
-    }, [selectedCity, metroId]);
-
-
+    }, [selectedCity, metroId, priceFromInput, priceToInput]);
 
     const handleSearch = async (e) => {
-        // если e есть и имеет preventDefault, вызови его
         if (e?.preventDefault) e.preventDefault();
 
         if (!query.trim()) return;
+
+        // форматируем цену: заменяем запятую на точку
+        const normalize = (s) => {
+            if (s == null || s === '') return null;
+            return s.replace(',', '.');
+        };
+        const priceFromNormalized = normalize(priceFromInput);
+        const priceToNormalized = normalize(priceToInput);
+
+        // базовая валидация: если введено — должно быть число
+        const parseIf = (s) => (s == null ? null : (isNaN(Number(s)) ? NaN : s));
+        const pfParsed = parseIf(priceFromNormalized);
+        const ptParsed = parseIf(priceToNormalized);
+
+        if ((pfParsed !== null && isNaN(Number(pfParsed))) || (ptParsed !== null && isNaN(Number(ptParsed)))) {
+            setError('Цена должна быть числом (используйте точку как разделитель).');
+            return;
+        }
+
+        // если обе заданы, проверим порядок
+        if (pfParsed !== null && ptParsed !== null && Number(pfParsed) > Number(ptParsed)) {
+            setError('priceFrom не может быть больше priceTo.');
+            return;
+        }
 
         setHasSearched(true);
         setLoading(true);
@@ -127,12 +150,15 @@ export const Search = () => {
                 10,
                 {
                     city: selectedCity?.id ?? null,
-                    metro: metroParam
+                    metro: metroParam,
+                    priceFrom: pfParsed !== null ? String(pfParsed) : null,
+                    priceTo: ptParsed !== null ? String(ptParsed) : null
                 }
             );
 
             if (Array.isArray(data)) {
                 setResults(data);
+                // загрузка фото — без изменений
                 const photosPromises = data.map(async (listing) => {
                     try {
                         const photosData = await photosAPI.getListingPhotos(listing.id);
@@ -295,6 +321,25 @@ export const Search = () => {
                         )}
                     </div>
                 )}
+                {/* Price filters */}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 220 }}>
+                    <input
+                        type="number"
+                        step="0.01"
+                        placeholder="Цена от"
+                        value={priceFromInput}
+                        onChange={(e) => setPriceFromInput(e.target.value)}
+                        style={{ padding: '0.5rem', width: '110px' }}
+                    />
+                    <input
+                        type="number"
+                        step="0.01"
+                        placeholder="до"
+                        value={priceToInput}
+                        onChange={(e) => setPriceToInput(e.target.value)}
+                        style={{ padding: '0.5rem', width: '110px' }}
+                    />
+                </div>
 
                 <div style={{position: "relative", flex: 1}}>
                     <input

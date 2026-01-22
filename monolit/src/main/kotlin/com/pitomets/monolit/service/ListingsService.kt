@@ -64,7 +64,8 @@ class ListingsService(
                 title = saved.title,
                 description = saved.description,
                 city = saved.city.id,
-                metro = saved.metroStation?.id
+                metro = saved.metroStation?.id,
+                price = saved.price,
             )
         )
 
@@ -141,7 +142,8 @@ class ListingsService(
                     title = saved.title,
                     description = saved.description,
                     city = saved.city.id,
-                    metro = saved.metroStation?.id
+                    metro = saved.metroStation?.id,
+                    price = saved.price,
                 )
             )
         }
@@ -193,8 +195,9 @@ class ListingsService(
                 eventType = EventType.DELETE,
                 title = null,
                 description = null,
-                city = -1,
+                city = 0,
                 metro = null,
+                price = 0.toBigDecimal(),
             )
         )
     }

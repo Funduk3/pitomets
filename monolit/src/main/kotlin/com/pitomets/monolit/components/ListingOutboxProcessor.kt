@@ -31,6 +31,7 @@ class ListingOutboxProcessor(
                             description = event.description.orEmpty(),
                             city = event.city,
                             metro = event.metro,
+                            price = event.price,
                         )
                     )
                     EventType.DELETE -> searchService.deleteListing(event.listingId)

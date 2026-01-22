@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.math.BigDecimal
 
 @RestController
 @RequestMapping("/search")
@@ -21,6 +22,8 @@ class SearchController(
         @RequestParam("size", required = false, defaultValue = "10") size: Int = 10,
         @RequestParam("metro", required = false) metro: Long?,
         @RequestParam("city", required = false) city: Long?,
+        @RequestParam("priceFrom", required = false) priceFrom: BigDecimal?,
+        @RequestParam("priceTo", required = false) priceTo: BigDecimal?,
     ): List<SearchListingsResponse> =
         searchService.search(
             query,
@@ -28,6 +31,8 @@ class SearchController(
             size,
             city,
             metro,
+            priceFrom,
+            priceTo,
         )
 
     @GetMapping("/listings/{id}/similar")

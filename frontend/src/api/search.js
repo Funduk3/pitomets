@@ -5,7 +5,7 @@ export const searchAPI = {
         query,
         page = 0,
         size = 10,
-        { city = null, metro = null } = {}
+        { city = null, metro = null, priceFrom = null, priceTo = null } = {}
     ) => {
         try {
             const params = {
@@ -16,6 +16,8 @@ export const searchAPI = {
 
             if (city !== null) params.city = city;
             if (metro !== null) params.metro = metro;
+            if (priceFrom !== null) params.priceFrom = priceFrom;
+            if (priceTo !== null) params.priceTo = priceTo;
 
             const response = await api.get('/search/listings', { params });
 

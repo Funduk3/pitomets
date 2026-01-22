@@ -8,17 +8,21 @@ import com.pitomets.monolit.model.dto.elastic.SearchListingDocument
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.math.BigDecimal
 
 @Service
 class SearchService(
     private val client: ElasticsearchClient
 ) {
+    @Suppress("ExplicitItLambdaParameter", "LongMethod")
     fun search(
         query: String,
         page: Int = 0,
         size: Int = 10,
         cityId: Long? = null,
-        metroId: Long? = null
+        metroId: Long? = null,
+        priceFrom: BigDecimal? = null,
+        priceTo: BigDecimal? = null
     ): List<SearchListingsResponse> {
         val from = page * size
         val response = client.search(
@@ -28,7 +32,7 @@ class SearchService(
                     .size(size)
                     .query { q ->
                         q.bool { b ->
-
+                            // search
                             b.must {
                                 it.multiMatch { m ->
                                     m.query(query)
@@ -38,7 +42,7 @@ class SearchService(
                                         .maxExpansions(MAX_EXPANSIONS_COUNT)
                                 }
                             }
-
+                            // filters
                             cityId?.let { city ->
                                 b.filter {
                                     it.term { t ->
@@ -53,7 +57,20 @@ class SearchService(
                                     }
                                 }
                             }
-
+                            if (priceFrom != null || priceTo != null) {
+                                b.filter { f ->
+                                    f.range { rq ->
+                                        rq.number { n ->
+                                            n.field("price")
+                                            priceFrom?.let { n.gte(it.toDouble()) }
+                                            priceTo?.let { n.lte(it.toDouble()) }
+                                            n
+                                        }
+                                        rq
+                                    }
+                                }
+                            }
+                            // end of filters
                             b
                         }
                     }
@@ -148,6 +165,7 @@ class SearchService(
             d.index(INDEX)
         }
         log.info("DROP INDEX!!!")
+        log.debug("DROP INDEX!!!")
     }
 
     companion object {
