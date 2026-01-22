@@ -1,12 +1,26 @@
 import api from './axios';
 
 export const searchAPI = {
-    searchListings: async (query, page = 0, size = 10) => {
+    searchListings: async (
+        query,
+        page = 0,
+        size = 10,
+        { city = null, metro = null, priceFrom = null, priceTo = null } = {}
+    ) => {
         try {
-            const response = await api.get('/search/listings', {
-                params: {query, page, size},
-            });
-            // Log response for debugging
+            const params = {
+                query,
+                page,
+                size,
+            };
+
+            if (city !== null) params.city = city;
+            if (metro !== null) params.metro = metro;
+            if (priceFrom !== null) params.priceFrom = priceFrom;
+            if (priceTo !== null) params.priceTo = priceTo;
+
+            const response = await api.get('/search/listings', { params });
+
             console.log('Search API response:', response.data);
             return response.data || [];
         } catch (error) {
@@ -20,10 +34,11 @@ export const searchAPI = {
             throw error;
         }
     },
+
     autocomplete: async (query, size = 5) => {
         try {
             const response = await api.get('/search/listings/autocomplete', {
-                params: {query, size},
+                params: { query, size },
             });
             console.log('Autocomplete response:', response.data);
             return response.data || [];
@@ -33,4 +48,3 @@ export const searchAPI = {
         }
     },
 };
-

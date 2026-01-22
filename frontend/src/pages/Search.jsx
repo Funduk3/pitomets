@@ -2,6 +2,9 @@ import {useState, useEffect} from 'react';
 import {searchAPI} from '../api/search';
 import {photosAPI} from '../api/photos';
 import {Link} from 'react-router-dom';
+import { citiesAPI } from '../api/cities';
+import { metroAPI } from '../api/metro';
+import { useRef } from 'react';
 
 export const Search = () => {
     const [query, setQuery] = useState('');
@@ -12,6 +15,17 @@ export const Search = () => {
     const [hasSearched, setHasSearched] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [cityQuery, setCityQuery] = useState('');
+    const [citySuggestions, setCitySuggestions] = useState([]);
+    const [selectedCity, setSelectedCity] = useState(null);
+    const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+    const [metroQuery, setMetroQuery] = useState('');
+    const [metroStations, setMetroStations] = useState([]);
+    const [metroId, setMetroId] = useState(null);
+    const [metroLoading, setMetroLoading] = useState(false);
+    const metroRef = useRef(null);
+    const [priceFromInput, setPriceFromInput] = useState('');
+    const [priceToInput, setPriceToInput] = useState('');
 
     useEffect(() => {
         if (!query.trim()) {
@@ -30,21 +44,121 @@ export const Search = () => {
         return () => clearTimeout(timeout);
     }, [query]);
 
+    useEffect(() => {
+        if (hasSearched) {
+            handleSearch(new Event('submit'));
+        }
+    }, [selectedCity]);
+
+    useEffect(() => {
+        if (
+            metroQuery.length < 2 ||
+            !selectedCity?.id ||
+            !selectedCity?.hasMetro
+        ) {
+            setMetroStations([]);
+            return;
+        }
+
+        const timeout = setTimeout(async () => {
+            try {
+                setMetroLoading(true);
+                const data = await metroAPI.search(
+                    metroQuery,
+                    selectedCity.id
+                );
+                setMetroStations(Array.isArray(data) ? data : []);
+            } catch (e) {
+                console.error('Metro autocomplete error', e);
+                setMetroStations([]);
+            } finally {
+                setMetroLoading(false);
+            }
+        }, 300);
+
+        return () => clearTimeout(timeout);
+    }, [metroQuery, selectedCity]);
+
+
+    useEffect(() => {
+        if (cityQuery.length < 2) {
+            setCitySuggestions([]);
+            setShowCitySuggestions(false);
+            return;
+        }
+
+        const timeout = setTimeout(async () => {
+            try {
+                const data = await citiesAPI.search(cityQuery);
+                if (Array.isArray(data)) {
+                    setCitySuggestions(data);
+                    setShowCitySuggestions(true);
+                }
+            } catch (e) {
+                console.error('City autocomplete error', e);
+            }
+        }, 300);
+
+        return () => clearTimeout(timeout);
+    }, [cityQuery]);
+
+    useEffect(() => {
+        if (hasSearched) {
+            handleSearch();
+        }
+    }, [selectedCity, metroId, priceFromInput, priceToInput]);
+
     const handleSearch = async (e) => {
-        e.preventDefault();
+        if (e?.preventDefault) e.preventDefault();
+
         if (!query.trim()) return;
+
+        // форматируем цену: заменяем запятую на точку
+        const normalize = (s) => {
+            if (s == null || s === '') return null;
+            return s.replace(',', '.');
+        };
+        const priceFromNormalized = normalize(priceFromInput);
+        const priceToNormalized = normalize(priceToInput);
+
+        // базовая валидация: если введено — должно быть число
+        const parseIf = (s) => (s == null ? null : (isNaN(Number(s)) ? NaN : s));
+        const pfParsed = parseIf(priceFromNormalized);
+        const ptParsed = parseIf(priceToNormalized);
+
+        if ((pfParsed !== null && isNaN(Number(pfParsed))) || (ptParsed !== null && isNaN(Number(ptParsed)))) {
+            setError('Цена должна быть числом (используйте точку как разделитель).');
+            return;
+        }
+
+        // если обе заданы, проверим порядок
+        if (pfParsed !== null && ptParsed !== null && Number(pfParsed) > Number(ptParsed)) {
+            setError('priceFrom не может быть больше priceTo.');
+            return;
+        }
 
         setHasSearched(true);
         setLoading(true);
         setError('');
 
         try {
-            const data = await searchAPI.searchListings(query);
-            // Ensure data is an array
+            const metroParam = (selectedCity?.hasMetro && metroId != null) ? metroId : null;
+
+            const data = await searchAPI.searchListings(
+                query,
+                0,
+                10,
+                {
+                    city: selectedCity?.id ?? null,
+                    metro: metroParam,
+                    priceFrom: pfParsed !== null ? String(pfParsed) : null,
+                    priceTo: ptParsed !== null ? String(ptParsed) : null
+                }
+            );
+
             if (Array.isArray(data)) {
                 setResults(data);
-
-                // Загружаем фотографии для каждого результата
+                // загрузка фото — без изменений
                 const photosPromises = data.map(async (listing) => {
                     try {
                         const photosData = await photosAPI.getListingPhotos(listing.id);
@@ -80,6 +194,153 @@ export const Search = () => {
         <div>
             <h2>Поиск по объявлениям</h2>
             <form onSubmit={handleSearch} style={{marginBottom: '2rem', display: 'flex', gap: '1rem'}}>
+                <div style={{ position: 'relative', width: '220px' }}>
+                    <input
+                        type="text"
+                        placeholder="Город"
+                        value={cityQuery}
+                        onChange={(e) => {
+                            setCityQuery(e.target.value);
+                            setSelectedCity(null);
+                        }}
+                        onFocus={() => citySuggestions.length && setShowCitySuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowCitySuggestions(false), 150)}
+                        style={{ padding: '0.75rem', width: '100%' }}
+                    />
+
+                    {showCitySuggestions && citySuggestions.length > 0 && (
+                        <div style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            right: 0,
+                            background: 'white',
+                            border: '1px solid #ddd',
+                            zIndex: 10
+                        }}>
+                            {citySuggestions.map(city => (
+                                <div
+                                    key={city.id}
+                                    onMouseDown={() => {
+                                        setSelectedCity(city);
+                                        setCityQuery(city.title);
+                                        setMetroQuery('');
+                                        setMetroId(null);
+                                        setMetroStations([]);
+                                        setShowCitySuggestions(false);
+                                    }}
+
+                                    style={{
+                                        padding: '0.5rem',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    {city.title}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                </div>
+                {selectedCity && (
+                    <div style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#555' }}>
+                        Фильтр: {selectedCity.title}
+                        <span
+                            onClick={() => {
+                                setSelectedCity(null);
+                                setCityQuery('');
+                                setMetroQuery('');
+                            }}
+                            style={{ marginLeft: '8px', cursor: 'pointer' }}
+                        >
+            ✕
+        </span>
+                    </div>
+                )}
+                {selectedCity?.hasMetro && (
+                    <div style={{ position: 'relative', width: '220px' }} ref={metroRef}>
+                        <input
+                            type="text"
+                            placeholder="Метро"
+                            value={metroQuery}
+                            onChange={(e) => {
+                                setMetroQuery(e.target.value);
+                                setMetroId(null);
+                            }}
+                            style={{ padding: '0.75rem', width: '100%' }}
+                        />
+
+                        {metroLoading && <div>Загрузка...</div>}
+
+                        {metroStations.length > 0 && (
+                            <div style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: 0,
+                                right: 0,
+                                background: 'white',
+                                border: '1px solid #ddd',
+                                zIndex: 10,
+                                maxHeight: '200px',
+                                overflowY: 'auto'
+                            }}>
+                                {metroStations.map(s => (
+                                    <div
+                                        key={s.id}
+                                        onMouseDown={() => {
+                                            setMetroQuery(s.title);
+                                            setMetroId(s.id);
+                                            setMetroStations([]);
+                                        }}
+                                        style={{
+                                            padding: '0.5rem',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            gap: '8px'
+                                        }}
+                                    >
+                                        {s.line?.color && (
+                                            <span
+                                                style={{
+                                                    width: 10,
+                                                    height: 10,
+                                                    borderRadius: '50%',
+                                                    backgroundColor: s.line.color
+                                                }}
+                                            />
+                                        )}
+                                        <div>
+                                            <div>{s.title}</div>
+                                            <div style={{ fontSize: 12, color: '#666' }}>
+                                                {s.line?.title}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+                {/* Price filters */}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 220 }}>
+                    <input
+                        type="number"
+                        step="0.01"
+                        placeholder="Цена от"
+                        value={priceFromInput}
+                        onChange={(e) => setPriceFromInput(e.target.value)}
+                        style={{ padding: '0.5rem', width: '110px' }}
+                    />
+                    <input
+                        type="number"
+                        step="0.01"
+                        placeholder="до"
+                        value={priceToInput}
+                        onChange={(e) => setPriceToInput(e.target.value)}
+                        style={{ padding: '0.5rem', width: '110px' }}
+                    />
+                </div>
+
                 <div style={{position: "relative", flex: 1}}>
                     <input
                         type="text"

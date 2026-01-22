@@ -78,6 +78,7 @@ class SecurityConfig(
                     "/login",
                     "/refresh",
                     "/search/listings/**",
+                    "/search/deleteALL", // todo delete
                     "/actuator/prometheus", // todo put in admin
                     "/seller/reviews/**",
                     "/api/cities/**",

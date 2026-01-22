@@ -28,7 +28,10 @@ class ListingOutboxProcessor(
                         SearchListingDocument(
                             id = event.listingId,
                             title = event.title.orEmpty(),
-                            description = event.description.orEmpty()
+                            description = event.description.orEmpty(),
+                            city = event.city,
+                            metro = event.metro,
+                            price = event.price,
                         )
                     )
                     EventType.DELETE -> searchService.deleteListing(event.listingId)
