@@ -3,7 +3,7 @@ package com.pitomets.monolit.integration
 import com.pitomets.monolit.kafka.notifications.producer.NotificationPublisher
 import com.pitomets.monolit.model.kafka.NotificationRequestedEvent
 import com.pitomets.monolit.model.kafka.event.Channel
-import com.pitomets.monolit.testContainers.BaseKafkaContainer
+import com.pitomets.monolit.testContainers.BaseContainers
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization.StringDeserializer
@@ -21,6 +21,7 @@ import org.springframework.kafka.listener.MessageListener
 import org.springframework.kafka.support.serializer.JsonDeserializer
 import org.springframework.kafka.test.utils.ContainerTestUtils
 import org.springframework.test.context.ActiveProfiles
+import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -32,7 +33,8 @@ import java.util.concurrent.TimeUnit
     ]
 )
 @ActiveProfiles("test")
-class KafkaIntegrationTest : BaseKafkaContainer() {
+@Testcontainers
+class KafkaIntegrationTest : BaseContainers() {
 
     @Autowired
     private lateinit var notificationPublisher: NotificationPublisher
@@ -162,7 +164,7 @@ class KafkaIntegrationTest : BaseKafkaContainer() {
         val uniqueGroupId = "test-group-${System.currentTimeMillis()}-${System.nanoTime()}"
 
         val consumerProps = mapOf(
-            ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to BaseKafkaContainer.kafka.bootstrapServers,
+            ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to BaseContainers.kafka.bootstrapServers,
             ConsumerConfig.GROUP_ID_CONFIG to uniqueGroupId,
             ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "latest", // Читаем только новые сообщения
             ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,

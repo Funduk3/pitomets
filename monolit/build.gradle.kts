@@ -31,10 +31,9 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-web")
-
     implementation("org.springframework.kafka:spring-kafka")
 
-	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.2")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("io.jsonwebtoken:jjwt-api:0.12.6")
@@ -56,7 +55,7 @@ dependencies {
 
     // testcontainers
     testImplementation("org.testcontainers:junit-jupiter:1.21.3")
-    testImplementation("org.testcontainers:elasticsearch:1.20.0")
+    testImplementation("org.testcontainers:testcontainers-elasticsearch:2.0.1")
     testImplementation("org.testcontainers:testcontainers")
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.testcontainers:minio:1.19.3")
@@ -64,6 +63,7 @@ dependencies {
     testImplementation("net.datafaker:datafaker:1.4.0")
     testImplementation("io.rest-assured:rest-assured:5.5.6")
     testImplementation("io.rest-assured:kotlin-extensions:5.5.6")
+
     testImplementation("org.springframework.kafka:spring-kafka-test")
     testImplementation("org.testcontainers:kafka:1.19.3")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0")
@@ -73,8 +73,7 @@ dependencies {
     // detekt
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.8")
 
-    implementation("co.elastic.clients:elasticsearch-java:8.19.0")
-    implementation("org.elasticsearch.client:elasticsearch-rest-client:8.19.0")
+    implementation("co.elastic.clients:elasticsearch-java:9.2.4")
 
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("io.micrometer:micrometer-registry-prometheus")

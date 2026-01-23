@@ -23,10 +23,13 @@ import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.GenericContainer
+import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy
 import org.testcontainers.elasticsearch.ElasticsearchContainer
+import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
+import org.testcontainers.utility.DockerImageName
 import java.math.BigDecimal
 import java.time.Duration
 import java.util.Base64
@@ -80,7 +83,7 @@ abstract class BaseContainers {
 
         @JvmStatic
         val elasticsearch = ElasticsearchContainer(
-            "docker.elastic.co/elasticsearch/elasticsearch:8.15.0"
+            "docker.elastic.co/elasticsearch/elasticsearch:9.2.4"
         ).apply {
             withEnv("discovery.type", "single-node")
             withEnv("xpack.security.enabled", "false")
@@ -141,6 +144,10 @@ abstract class BaseContainers {
             }
         }
 
+        @Container
+        @JvmStatic
+        val kafka = KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"))
+
         @JvmStatic
         @DynamicPropertySource
         fun props(registry: DynamicPropertyRegistry) {
@@ -172,6 +179,8 @@ abstract class BaseContainers {
             val JWT_TEST_SECRET = Base64.getEncoder()
                 .encodeToString("super-test-secret-key-which-is-long".toByteArray())
             registry.add("jwt.secret") { JWT_TEST_SECRET }
+
+            registry.add("spring.kafka.bootstrap-servers") { BaseContainers.Companion.kafka.bootstrapServers }
         }
     }
 
@@ -230,7 +239,8 @@ abstract class BaseContainers {
                 ageMonths = faker.number().numberBetween(1, 24),
                 price = BigDecimal.valueOf(faker.number().numberBetween(1, 100).toLong()),
                 breed = null,
-                title = faker.book().title()
+                title = faker.book().title(),
+                cityId = 4L
             )
             RestAssured.given()
                 .contentType(ContentType.JSON)

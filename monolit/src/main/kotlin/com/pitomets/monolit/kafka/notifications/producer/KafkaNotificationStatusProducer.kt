@@ -6,7 +6,7 @@ import org.springframework.kafka.core.KafkaTemplate
 class KafkaNotificationStatusProducer(
     private val kafkaTemplate: KafkaTemplate<String, Any>
 ) {
-    fun sent(event: NotificationSentEvent) {
+    fun send(event: NotificationSentEvent) {
         kafkaTemplate.send("notification.sent", event)
     }
 }

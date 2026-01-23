@@ -1,24 +1,50 @@
 import api from './axios';
 
 export const searchAPI = {
-  searchListings: async (query, page = 0, size = 10) => {
-    try {
-    const response = await api.get('/search/listings', {
-      params: { query, page, size },
-    });
-      // Log response for debugging
-      console.log('Search API response:', response.data);
-      return response.data || [];
-    } catch (error) {
-      console.error('Search API error:', error);
-      console.error('Error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
-      throw error;
-    }
-  },
-};
+    searchListings: async (
+        query,
+        page = 0,
+        size = 10,
+        { city = null, metro = null, priceFrom = null, priceTo = null } = {}
+    ) => {
+        try {
+            const params = {
+                query,
+                page,
+                size,
+            };
 
+            if (city !== null) params.city = city;
+            if (metro !== null) params.metro = metro;
+            if (priceFrom !== null) params.priceFrom = priceFrom;
+            if (priceTo !== null) params.priceTo = priceTo;
+
+            const response = await api.get('/search/listings', { params });
+
+            console.log('Search API response:', response.data);
+            return response.data || [];
+        } catch (error) {
+            console.error('Search API error:', error);
+            console.error('Error details:', {
+                status: error.response?.status,
+                statusText: error.response?.statusText,
+                data: error.response?.data,
+                message: error.message
+            });
+            throw error;
+        }
+    },
+
+    autocomplete: async (query, size = 5) => {
+        try {
+            const response = await api.get('/search/listings/autocomplete', {
+                params: { query, size },
+            });
+            console.log('Autocomplete response:', response.data);
+            return response.data || [];
+        } catch (error) {
+            console.error('Autocomplete API error:', error);
+            return [];
+        }
+    },
+};

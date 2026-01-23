@@ -20,4 +20,8 @@ data class UpdateListingRequest(
     val isArchived: Boolean?,
 
     val title: String?,
+
+    val city: Long?,
+
+    val metroStation: Long?,
 )

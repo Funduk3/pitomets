@@ -14,14 +14,10 @@ import io.restassured.http.ContentType
 import org.hamcrest.Matchers
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
-import org.testcontainers.junit.jupiter.Testcontainers
 
-@Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")
 class AuthFlowIntegrationTest : BaseContainers() {
 
@@ -218,6 +214,8 @@ class AuthFlowIntegrationTest : BaseContainers() {
             null,
             null,
             null,
+            null,
+            4L,
             null
         )
         RestAssured.given()

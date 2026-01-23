@@ -109,6 +109,8 @@ class SellerProfileTest : BaseContainers() {
             price = BigDecimal(faker.number().randomDigit()),
             breed = null,
             title = faker.name().fullName(),
+            cityId = 4L,
+            metroId = null,
         )
         RestAssured.given()
             .contentType(ContentType.JSON)
@@ -157,7 +159,9 @@ class SellerProfileTest : BaseContainers() {
             null,
             null,
             null,
-            null
+            null,
+            4L,
+            null,
         )
         // Исправить объявление без прав
         RestAssured.given()

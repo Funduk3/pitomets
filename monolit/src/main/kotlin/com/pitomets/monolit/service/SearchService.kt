@@ -1,19 +1,28 @@
 package com.pitomets.monolit.service
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient
+import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType
 import co.elastic.clients.elasticsearch.core.IndexResponse
-import com.pitomets.monolit.model.dto.SearchListingDocument
+import com.pitomets.monolit.model.dto.elastic.AutocompleteDoc
+import com.pitomets.monolit.model.dto.elastic.SearchListingDocument
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.math.BigDecimal
 
 @Service
 class SearchService(
     private val client: ElasticsearchClient
 ) {
+    @Suppress("ExplicitItLambdaParameter", "LongMethod")
     fun search(
         query: String,
         page: Int = 0,
         size: Int = 10,
+        cityId: Long? = null,
+        metroId: Long? = null,
+        priceFrom: BigDecimal? = null,
+        priceTo: BigDecimal? = null
     ): List<SearchListingsResponse> {
         val from = page * size
         val response = client.search(
@@ -22,9 +31,47 @@ class SearchService(
                     .from(from)
                     .size(size)
                     .query { q ->
-                        q.multiMatch { mm ->
-                            mm.query(query)
-                                .fields(listOf("title^3", "description"))
+                        q.bool { b ->
+                            // search
+                            b.must {
+                                it.multiMatch { m ->
+                                    m.query(query)
+                                        .fields("title^3", "description")
+                                        .fuzziness("AUTO")
+                                        .prefixLength(MIN_CHAR_COUNT)
+                                        .maxExpansions(MAX_EXPANSIONS_COUNT)
+                                }
+                            }
+                            // filters
+                            cityId?.let { city ->
+                                b.filter {
+                                    it.term { t ->
+                                        t.field("city").value(city)
+                                    }
+                                }
+                            }
+                            metroId?.let { metro ->
+                                b.filter {
+                                    it.term { t ->
+                                        t.field("metro").value(metro)
+                                    }
+                                }
+                            }
+                            if (priceFrom != null || priceTo != null) {
+                                b.filter { f ->
+                                    f.range { rq ->
+                                        rq.number { n ->
+                                            n.field("price")
+                                            priceFrom?.let { n.gte(it.toDouble()) }
+                                            priceTo?.let { n.lte(it.toDouble()) }
+                                            n
+                                        }
+                                        rq
+                                    }
+                                }
+                            }
+                            // end of filters
+                            b
                         }
                     }
             },
@@ -35,9 +82,9 @@ class SearchService(
             .mapNotNull { it.source() }
             .map { doc ->
                 SearchListingsResponse(
-                    id = doc.id,
-                    title = doc.title,
-                    description = doc.description
+                    doc.id,
+                    doc.title,
+                    doc.description
                 )
             }
     }
@@ -80,7 +127,53 @@ class SearchService(
             .map { SearchListingsResponse(it.id, it.title, it.description) }
     }
 
+    fun autocomplete(query: String, size: Int): List<AutocompleteDoc> {
+        if (query.length < MIN_CHAR_NUMBER ||
+            query.split(" ").size > MAX_WORD_COUNT ||
+            query.isBlank()
+        ) {
+            return emptyList()
+        }
+
+        val response = client.search(
+            { s ->
+                s.index(INDEX)
+                    .size(size)
+                    .source { src -> src.filter { f -> f.includes("title") } }
+                    .query { q ->
+                        q.multiMatch { mm ->
+                            mm.query(query)
+                                .type(TextQueryType.BoolPrefix)
+                                .fields(
+                                    "title",
+                                    "title._2gram",
+                                    "title._3gram"
+                                )
+                        }
+                    }
+            },
+            AutocompleteDoc::class.java
+        )
+
+        return response.hits().hits()
+            .mapNotNull { it.source() }
+    }
+
+    // only for dev
+    fun deleteIndex() {
+        client.indices().delete { d ->
+            d.index(INDEX)
+        }
+        log.info("DROP INDEX!!!")
+        log.debug("DROP INDEX!!!")
+    }
+
     companion object {
         private const val INDEX = "listings"
+        private const val MIN_CHAR_NUMBER = 3
+        private const val MAX_WORD_COUNT = 5
+        private const val MIN_CHAR_COUNT = 1
+        private const val MAX_EXPANSIONS_COUNT = 25
+        private val log = LoggerFactory.getLogger(SearchService::class.java)
     }
 }

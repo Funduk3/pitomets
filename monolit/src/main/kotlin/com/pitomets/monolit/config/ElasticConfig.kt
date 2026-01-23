@@ -1,10 +1,7 @@
 package com.pitomets.monolit.config
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient
-import co.elastic.clients.json.jackson.JacksonJsonpMapper
-import co.elastic.clients.transport.rest_client.RestClientTransport
-import org.apache.http.HttpHost
-import org.elasticsearch.client.RestClient
+import jakarta.annotation.PostConstruct
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
@@ -12,21 +9,32 @@ import org.springframework.core.env.Environment
 @Configuration
 class ElasticConfig {
     @Bean
-    @Suppress("SpreadOperator")
     fun elasticClient(env: Environment): ElasticsearchClient {
-        val urisProp = env.getProperty("spring.elasticsearch.uris")
-            ?: env.getProperty("ELASTICSEARCH_URI")
-            ?: ""
-        val hosts: List<HttpHost> = if (urisProp.isNotBlank()) {
-            urisProp.split(",").map { HttpHost.create(it.trim()) }
-        } else {
-            val host = env.getProperty("ELASTICSEARCH_HOST", "localhost")
-            val port = env.getProperty("ELASTICSEARCH_PORT", "9200").toInt()
-            listOf(HttpHost(host, port, "http"))
+        val serverUrl = env.getProperty("spring.elasticsearch.uris")
+        return ElasticsearchClient.of { b ->
+            b.host(serverUrl)
         }
+    }
 
-        val restClient = RestClient.builder(*hosts.toTypedArray()).build()
-        val transport = RestClientTransport(restClient, JacksonJsonpMapper())
-        return ElasticsearchClient(transport)
+    @Bean
+    fun indexInitializer(client: ElasticsearchClient) = object {
+        @PostConstruct
+        fun init() {
+            val exists = client.indices().exists { it.index("listings") }.value()
+
+            if (!exists) {
+                client.indices().create { c ->
+                    c.index("listings")
+                        .mappings { m ->
+                            m.properties("title") { p ->
+                                p.text { t -> t.analyzer("russian") }
+                            }
+                            m.properties("description") { p ->
+                                p.text { t -> t.analyzer("russian") }
+                            }
+                        }
+                }
+            }
+        }
     }
 }

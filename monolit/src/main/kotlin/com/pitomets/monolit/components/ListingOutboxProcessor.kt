@@ -1,7 +1,7 @@
 package com.pitomets.monolit.components
 
 import com.pitomets.monolit.model.EventType
-import com.pitomets.monolit.model.dto.SearchListingDocument
+import com.pitomets.monolit.model.dto.elastic.SearchListingDocument
 import com.pitomets.monolit.repository.ListingOutboxRepository
 import com.pitomets.monolit.service.SearchService
 import jakarta.transaction.Transactional
@@ -28,7 +28,10 @@ class ListingOutboxProcessor(
                         SearchListingDocument(
                             id = event.listingId,
                             title = event.title.orEmpty(),
-                            description = event.description.orEmpty()
+                            description = event.description.orEmpty(),
+                            city = event.city,
+                            metro = event.metro,
+                            price = event.price,
                         )
                     )
                     EventType.DELETE -> searchService.deleteListing(event.listingId)
