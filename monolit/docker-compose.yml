@@ -16,6 +16,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+      kafka:
+        condition: service_healthy
     environment:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
@@ -31,6 +33,8 @@ services:
       MINIO_URL: http://minio:9000
       # messenger1 runs separately; from inside Docker use host.docker.internal to reach host-mapped 8081
       MESSENGER_URL: http://host.docker.internal:8081
+
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092  # ✅ Внутренний адрес в Docker-сети
 
   redis:
     image: redis:7-alpine
@@ -125,8 +129,6 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
-    networks:
-      - notification-network
     healthcheck:
       test: [ "CMD-SHELL", "echo stat | nc localhost 2181" ]
       interval: 10s
@@ -142,21 +144,24 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_DELETE_TOPIC_ENABLE: "true"
       KAFKA_LOG_RETENTION_HOURS: 168
+
+      # КРИТИЧЕСКИ ВАЖНОЕ ИСПРАВЛЕНИЕ:
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://host.docker.internal:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+
+      # Нужно явно указать, какие listener'ы слушать
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_INTERNAL://0.0.0.0:29092
     ports:
-      - "9092:9092"
-    networks:
-      - notification-network
+      - "9092:9092"  # Для подключений с хоста
     healthcheck:
-      test: [ "CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list" ]
+      test: [ "CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:29092" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -179,14 +184,8 @@ services:
 
       echo 'Topics created successfully'
       "
-    networks:
-      - notification-network
 
 volumes:
   postgres_data:
   es_data:
   minio-data:
-
-networks:
-  notification-network:
-    driver: bridge
