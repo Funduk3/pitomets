@@ -63,7 +63,7 @@ class UserService(
         )
         /*
             чтобы было видно в логах, дев версия
-        */
+         */
         log.info("KAFKA MESSAGE SENT")
         log.info("KAFKA MESSAGE SENT")
         log.info("KAFKA MESSAGE SENT")
