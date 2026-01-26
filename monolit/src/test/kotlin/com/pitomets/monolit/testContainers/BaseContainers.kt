@@ -68,6 +68,7 @@ abstract class BaseContainers {
             findAndRegisterModules()
         }
 
+        @Container // ДОБАВЛЕНО: @Container аннотация
         @JvmStatic
         val postgres = PostgreSQLContainer<Nothing>("postgres:15-alpine")
             .apply {
@@ -76,11 +77,13 @@ abstract class BaseContainers {
                 withPassword("test")
             }
 
+        @Container // ДОБАВЛЕНО: @Container аннотация
         @JvmStatic
         val redis = GenericContainer<Nothing>("redis:7-alpine").apply {
             withExposedPorts(6379)
         }
 
+        @Container // ДОБАВЛЕНО: @Container аннотация
         @JvmStatic
         val elasticsearch = ElasticsearchContainer(
             "docker.elastic.co/elasticsearch/elasticsearch:9.2.4"
@@ -93,6 +96,7 @@ abstract class BaseContainers {
             withExposedPorts(9200)
         }
 
+        @Container // ДОБАВЛЕНО: @Container аннотация
         @JvmStatic
         val minio = GenericContainer<Nothing>("minio/minio:latest")
             .apply {
@@ -108,14 +112,22 @@ abstract class BaseContainers {
                 )
             }
 
-        init {
-            postgres.start()
-            redis.start()
-            elasticsearch.start()
-            minio.start()
+        @Container // ДОБАВЛЕНО: @Container аннотация
+        @JvmStatic
+        val kafka = KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"))
 
-            // Создаем bucket сразу после старта MinIO
-            createMinioBucket()
+        init {
+            // УДАЛЕНО: ручной старт контейнеров - теперь они стартуют автоматически через @Container
+            // postgres.start()
+            // redis.start()
+            // elasticsearch.start()
+            // minio.start()
+
+            // Создаем bucket после старта MinIO
+            // Но так как контейнеры стартуют через @Container, нужно проверить, запущен ли MinIO
+            if (minio.isRunning) {
+                createMinioBucket()
+            }
         }
 
         private fun createMinioBucket() {
@@ -143,10 +155,6 @@ abstract class BaseContainers {
                 println("MinIO bucket '$bucketName' already exists")
             }
         }
-
-        @Container
-        @JvmStatic
-        val kafka = KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"))
 
         @JvmStatic
         @DynamicPropertySource
@@ -180,7 +188,8 @@ abstract class BaseContainers {
                 .encodeToString("super-test-secret-key-which-is-long".toByteArray())
             registry.add("jwt.secret") { JWT_TEST_SECRET }
 
-            registry.add("spring.kafka.bootstrap-servers") { BaseContainers.Companion.kafka.bootstrapServers }
+            // Kafka - ИСПРАВЛЕНО: теперь kafka будет запущен благодаря @Container
+            registry.add("spring.kafka.bootstrap-servers") { kafka.bootstrapServers }
         }
     }
 

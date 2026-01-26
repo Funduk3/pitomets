@@ -6,6 +6,4 @@ data class UpdateSellerReviewRequest(
     var text: String? = null,
 
     var authorId: Long,
-
-    var listingId: Long,
 )

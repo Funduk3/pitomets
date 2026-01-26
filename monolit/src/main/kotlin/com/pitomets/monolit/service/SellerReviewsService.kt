@@ -87,8 +87,7 @@ class SellerReviewsService(
         reviewsRepo.deleteById(reviewId)
     }
 
-    fun updateSellerReview(sellerProfileId: Long, authorId: Long, request: UpdateSellerReviewRequest):
-            ReviewResponse {
+    fun updateSellerReview(sellerProfileId: Long, authorId: Long, request: UpdateSellerReviewRequest): ReviewResponse {
         if (authorId != request.authorId) {
             throw BadReviewException("User cannot change other's review")
         }
