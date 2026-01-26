@@ -1,11 +1,9 @@
 package com.pitomets.monolit.controller
 
-import co.elastic.clients.elasticsearch.core.UpdateRequest
 import com.pitomets.monolit.model.UserPrincipal
 import com.pitomets.monolit.model.dto.request.CreateReviewRequest
 import com.pitomets.monolit.model.dto.request.UpdateSellerReviewRequest
 import com.pitomets.monolit.model.dto.response.ReviewResponse
-import com.pitomets.monolit.service.ListingReviewsService
 import com.pitomets.monolit.service.SellerReviewsService
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.stereotype.Controller

@@ -6,11 +6,9 @@ import com.pitomets.monolit.model.dto.request.UpdateSellerReviewRequest
 import com.pitomets.monolit.model.dto.response.ReviewResponse
 import com.pitomets.monolit.model.entity.Review
 import com.pitomets.monolit.model.entity.SellerProfile
-import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.ReviewsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
 import com.pitomets.monolit.repository.UserRepo
-import com.pitomets.monolit.repository.findListingOrThrow
 import com.pitomets.monolit.repository.findUserOrThrow
 import org.springframework.stereotype.Service
 import java.time.OffsetDateTime
@@ -23,7 +21,8 @@ class SellerReviewsService(
 ) {
     fun getReviewsBySeller(sellerProfileId: Long): List<ReviewResponse> =
         reviewsRepo.findBySellerProfileId(sellerProfileId).map {
-            r -> ReviewResponse(
+                r ->
+            ReviewResponse(
                 id = requireNotNull(r.id),
                 rating = r.rating,
                 text = r.text,
@@ -34,8 +33,7 @@ class SellerReviewsService(
             )
         }
 
-    fun createSellerReview(sellerProfileId: Long, authorId: Long, request: CreateReviewRequest):
-            ReviewResponse {
+    fun createSellerReview(sellerProfileId: Long, authorId: Long, request: CreateReviewRequest): ReviewResponse {
         val author = userRepo.findUserOrThrow(authorId)
         val sellerProfile = sellerProfileRepo.findBySellerIdOrThrow(sellerProfileId)
         if (sellerProfileId == authorId) {
@@ -89,8 +87,7 @@ class SellerReviewsService(
         reviewsRepo.deleteById(reviewId)
     }
 
-    fun updateSellerReview(sellerProfileId: Long, authorId: Long, request: UpdateSellerReviewRequest):
-            ReviewResponse {
+    fun updateSellerReview(sellerProfileId: Long, authorId: Long, request: UpdateSellerReviewRequest): ReviewResponse {
         if (authorId != request.authorId) {
             throw BadReviewException("User cannot change other's review")
         }

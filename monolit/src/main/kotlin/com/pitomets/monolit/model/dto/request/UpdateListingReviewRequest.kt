@@ -8,4 +8,4 @@ data class UpdateListingReviewRequest(
     var authorId: Long,
 
     var listingId: Long,
-    )
+)
