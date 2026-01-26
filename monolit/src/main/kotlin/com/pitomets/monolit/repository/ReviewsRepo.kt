@@ -8,4 +8,7 @@ import org.springframework.stereotype.Repository
 interface ReviewsRepo : JpaRepository<Review, Long> {
     fun findBySellerProfileId(sellerProfileId: Long): List<Review>
     fun findByListingId(listingId: Long): List<Review>
+    fun findByListingIdAndAuthorId(listingId: Long, authorId: Long): Review?
+    fun findBySellerProfileIdAndReviewId(sellerProfileId: Long, reviewId: Long): Review?
+    fun findBySellerProfileIdAndAuthorId(sellerId: Long, authorId: Long): Review?
 }

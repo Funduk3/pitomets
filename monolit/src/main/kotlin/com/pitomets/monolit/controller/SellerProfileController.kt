@@ -5,7 +5,7 @@ import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
 import com.pitomets.monolit.model.dto.response.ReviewResponse
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
 import com.pitomets.monolit.service.ProfileService
-import com.pitomets.monolit.service.ReviewsService
+import com.pitomets.monolit.service.ListingReviewsService
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/seller")
 class SellerProfileController(
     private val profileService: ProfileService,
-    private val reviewsService: ReviewsService,
+    private val listingReviewsService: ListingReviewsService,
 ) {
     @PostMapping("/profile")
     @ResponseStatus(HttpStatus.CREATED)
@@ -42,7 +42,7 @@ class SellerProfileController(
     fun getSellerReviews(
         @RequestParam("id") sellerProfileId: Long
     ): List<ReviewResponse> =
-        reviewsService.getBySeller(sellerProfileId)
+        listingReviewsService.getReviewBySeller(sellerProfileId)
 
     @GetMapping("/profile")
     fun getSellerProfile(
