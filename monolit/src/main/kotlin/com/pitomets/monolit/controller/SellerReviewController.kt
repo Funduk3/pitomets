@@ -13,8 +13,11 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-@Controller("/seller/{id}/reviews")
+@RestController
+@RequestMapping("/seller/{sellerProfileId}/reviews")
 class SellerReviewController(
     private val sellerReviewsService: SellerReviewsService
 ) {
@@ -32,7 +35,6 @@ class SellerReviewController(
     ): ReviewResponse =
         sellerReviewsService.createSellerReview(sellerProfileId, userPrincipal.id, request)
 
-    // seller/{sellerId}/reviews/{reviewId}
     @DeleteMapping("/{reviewId}")
     fun deleteSellerReview(
         @PathVariable sellerProfileId: Long,
