@@ -5,11 +5,14 @@ import com.pitomets.monolit.exceptions.UserAlreadyExistsException
 import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.exceptions.authExceptions.AuthenticationException
 import com.pitomets.monolit.exceptions.authExceptions.InvalidTokenException
+import com.pitomets.monolit.kafka.notifications.producer.NotificationPublisher
 import com.pitomets.monolit.model.dto.response.TokenResponse
 import com.pitomets.monolit.model.dto.response.UserResponse
 import com.pitomets.monolit.model.entity.BuyerProfile
 import com.pitomets.monolit.model.entity.User
 import com.pitomets.monolit.model.entity.UserRole
+import com.pitomets.monolit.model.kafka.NotificationRequestedEvent
+import com.pitomets.monolit.model.kafka.event.Channel
 import com.pitomets.monolit.repository.BuyerProfileRepo
 import com.pitomets.monolit.repository.UserRepo
 import org.slf4j.LoggerFactory
@@ -24,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class UserService(
     private val jwtService: JWTService,
-//    private val notificationPublisher: NotificationPublisher,
+    private val notificationPublisher: NotificationPublisher,
     private val authManager: AuthenticationManager,
     private val repo: UserRepo,
     private val buyerProfileRepo: BuyerProfileRepo,
@@ -48,16 +51,24 @@ class UserService(
 
         log.info("User registered with email: {} and buyer profile created", savedUser.email)
 
-//        val eventId = System.currentTimeMillis()
+        val eventId = System.currentTimeMillis()
 
-//        notificationPublisher.publish(
-//            NotificationRequestedEvent(
-//                eventId = eventId,
-//                userId = requireNotNull(savedUser.id) { "User with this user doesn't have a id" },
-//                channel = Channel.EMAIL,
-//                payload = savedUser.email,
-//            )
-//        )
+        notificationPublisher.publish(
+            NotificationRequestedEvent(
+                eventId = eventId,
+                userId = requireNotNull(savedUser.id) { "User with this user doesn't have a id" },
+                channel = Channel.EMAIL,
+                payload = savedUser.email,
+            )
+        )
+        /*
+            чтобы было видно в логах, дев версия
+         */
+        log.info("KAFKA MESSAGE SENT")
+        log.info("KAFKA MESSAGE SENT")
+        log.info("KAFKA MESSAGE SENT")
+        log.info("KAFKA MESSAGE SENT")
+        log.info("KAFKA MESSAGE SENT")
 
         return UserResponse(
             id = requireNotNull(savedUser.id) { "User ID cannot be null" },
