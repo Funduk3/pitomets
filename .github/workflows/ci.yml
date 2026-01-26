@@ -44,12 +44,12 @@ jobs:
 
       - name: Build (without tests)
         working-directory: monolit
-        run: ./gradlew clean assemble --no-daemon --parallel
+        run: ./gradlew clean assemble --parallel
 
       - name: Run tests
         id: tests
         working-directory: monolit
-        run: ./gradlew test --no-daemon --parallel
+        run: ./gradlew test --parallel
 
 
       - name: Upload test results (JUnit XML)
