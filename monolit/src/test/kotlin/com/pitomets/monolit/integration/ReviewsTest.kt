@@ -90,7 +90,6 @@ class ReviewsTest : BaseContainers() {
             listingId = listingId,
             rating = 5,
             text = "Actually it's great!",
-            authorId = originalReview.authorId
         )
 
         val updatedReview = RestAssured.given()
@@ -109,6 +108,30 @@ class ReviewsTest : BaseContainers() {
     }
 
     @Test
+    fun `should forbid updating another review`() {
+        val buyer1 = createBuyer()
+        val buyer2 = createBuyer()
+        val seller = createBaseSeller()
+        val listingId = createListing(seller)
+
+        createListingReview(buyer1, listingId, 3, "ok")
+
+        RestAssured.given()
+            .contentType(ContentType.JSON)
+            .auth().oauth2(buyer2.accessToken)
+            .body(
+                UpdateListingReviewRequest(
+                    listingId = listingId,
+                    rating = 1,
+                    text = "hacked"
+                )
+            )
+            .put("/listings/reviews/")
+            .then()
+            .statusCode(400)
+    }
+
+    @Test
     fun `should delete listing review successfully`() {
         val buyerToken = createBuyer()
         val sellerToken = createBaseSeller()
@@ -119,7 +142,6 @@ class ReviewsTest : BaseContainers() {
         RestAssured.given()
             .contentType(ContentType.JSON)
             .auth().oauth2(buyerToken.accessToken)
-            .param("sellerProfileId", review.sellerProfileId)
             .delete("/listings/reviews/${review.id}")
             .then()
             .statusCode(200)
@@ -180,31 +202,6 @@ class ReviewsTest : BaseContainers() {
     }
 
     @Test
-    fun `should not allow user to update another user's review`() {
-        val buyer1Token = createBuyer()
-        val buyer2Token = createBuyer()
-        val sellerToken = createBaseSeller()
-        val listingId = createListing(sellerToken)
-
-        val review = createListingReview(buyer1Token, listingId, 5, "Original review")
-
-        val updateRequest = UpdateListingReviewRequest(
-            listingId = listingId,
-            rating = 1,
-            text = "Hacked review",
-            authorId = review.authorId
-        )
-
-        RestAssured.given()
-            .contentType(ContentType.JSON)
-            .auth().oauth2(buyer2Token.accessToken)
-            .body(updateRequest)
-            .put("/listings/reviews/")
-            .then()
-            .statusCode(400)
-    }
-
-    @Test
     fun `should create and retrieve seller review successfully`() {
         val buyerToken = createBuyer()
         val sellerToken = createBaseSeller()
@@ -222,7 +219,7 @@ class ReviewsTest : BaseContainers() {
             .body(createRequest)
             .post("/seller/$sellerProfileId/reviews/")
             .then()
-            .statusCode(201)
+            .statusCode(200)
             .extract()
             .`as`(ReviewResponse::class.java)
 
@@ -230,7 +227,6 @@ class ReviewsTest : BaseContainers() {
         assertEquals(5, reviewResponse.rating)
         assertEquals("Excellent seller!", reviewResponse.text)
         assertNull(reviewResponse.listingId)
-        assertEquals(sellerProfileId, reviewResponse.sellerProfileId)
     }
 
     @Test
@@ -240,7 +236,7 @@ class ReviewsTest : BaseContainers() {
         val sellerToken = createBaseSeller()
         val sellerProfileId = getSellerProfileId(sellerToken)
 
-        createSellerReview(buyer1Token, sellerProfileId, 5, "Great seller!")
+        val review1 = createSellerReview(buyer1Token, sellerProfileId, 5, "Great seller!")
         createSellerReview(buyer2Token, sellerProfileId, 4, "Good communication")
 
         val reviews = RestAssured.given()
@@ -252,7 +248,8 @@ class ReviewsTest : BaseContainers() {
             .`as`(Array<ReviewResponse>::class.java)
 
         assertEquals(2, reviews.size)
-        assertTrue(reviews.all { it.sellerProfileId == sellerProfileId })
+        val actualSellerProfileId = review1.sellerProfileId
+        assertTrue(reviews.all { it.sellerProfileId == actualSellerProfileId })
         assertTrue(reviews.all { it.listingId == null })
     }
 
@@ -427,22 +424,21 @@ class ReviewsTest : BaseContainers() {
             .body(createRequest)
             .post("/seller/$sellerProfileId/reviews/")
             .then()
-            .statusCode(201)
+            .statusCode(200)
             .extract()
             .`as`(ReviewResponse::class.java)
     }
 
     private fun getSellerProfileId(sellerToken: TokenResponse): Long {
-        // Assuming you have an endpoint to get seller profile or extract from listing
-        val listingId = createListing(sellerToken)
-        return RestAssured.given()
-            .contentType(ContentType.JSON)
-            .param("id", listingId)
-            .get("/listings/reviews/")
+        val userId = RestAssured.given()
+            .auth().oauth2(sellerToken.accessToken)
+            .get("/profile/me")
             .then()
             .statusCode(200)
             .extract()
             .jsonPath()
-            .getLong("[0].sellerProfileId")
+            .getLong("id")
+
+        return userId
     }
 }

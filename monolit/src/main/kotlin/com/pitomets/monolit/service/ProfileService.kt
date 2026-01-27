@@ -116,7 +116,7 @@ class ProfileService(
     }
 
     fun getSellerProfileByUserId(sellerId: Long): SellerProfileResponse {
-        val sellerProfile = sellerProfileRepo.findBySellerId(sellerId)
+        val sellerProfile = sellerProfileRepo.findBySeller_Id(sellerId)
             ?: throw UserNotFoundException("Seller profile not found for user ID: $sellerId")
 
         return SellerProfileResponse(

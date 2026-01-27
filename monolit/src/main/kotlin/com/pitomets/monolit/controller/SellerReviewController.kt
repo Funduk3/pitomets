@@ -40,6 +40,7 @@ class SellerReviewController(
         @AuthenticationPrincipal userPrincipal: UserPrincipal,
         @PathVariable reviewId: Long,
     ) {
+        println("Deleting seller review for sellerId: $sellerProfileId and review: $reviewId")
         sellerReviewsService.deleteSellerReview(sellerProfileId, userPrincipal.id, reviewId)
     }
 

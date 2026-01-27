@@ -32,7 +32,7 @@ class Review(
     var author: User,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "seller_id", nullable = false)
+    @JoinColumn(name = "seller_profile_id", nullable = false)
     var sellerProfile: SellerProfile,
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -10,6 +10,8 @@ import com.pitomets.monolit.repository.ReviewsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
 import com.pitomets.monolit.repository.UserRepo
 import com.pitomets.monolit.repository.findUserOrThrow
+import jakarta.persistence.EntityNotFoundException
+import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
 import java.time.OffsetDateTime
 
@@ -19,27 +21,35 @@ class SellerReviewsService(
     private val userRepo: UserRepo,
     private val sellerProfileRepo: SellerProfileRepo,
 ) {
-    fun getReviewsBySeller(sellerProfileId: Long): List<ReviewResponse> =
-        reviewsRepo.findBySellerProfileId(sellerProfileId).map {
-                r ->
+    fun getSellerProfileOrThrow(sellerId: Long): SellerProfile =
+        sellerProfileRepo.findBySeller_Id(sellerId)
+            ?: throw EntityNotFoundException("SellerProfile not found for sellerId=$sellerId")
+
+    fun getReviewsBySeller(sellerProfileId: Long): List<ReviewResponse> {
+        // Получаем профиль продавца по ID пользователя
+        val sellerProfile = getSellerProfileOrThrow(sellerProfileId)
+
+        // Ищем отзывы по реальному ID профиля
+        return reviewsRepo.findBySellerProfileId(sellerProfile.id!!).map { r ->
             ReviewResponse(
                 id = requireNotNull(r.id),
                 rating = r.rating,
                 text = r.text,
                 authorId = requireNotNull(r.author.id),
-                listingId = requireNotNull(r.listing?.id),
-                sellerProfileId = sellerProfileId,
-                createdAt = OffsetDateTime.now(),
+                listingId = r.listing?.id,
+                sellerProfileId = requireNotNull(sellerProfile.id),
+                createdAt = r.createdAt,
             )
         }
+    }
 
     fun createSellerReview(sellerProfileId: Long, authorId: Long, request: CreateReviewRequest): ReviewResponse {
         val author = userRepo.findUserOrThrow(authorId)
-        val sellerProfile = sellerProfileRepo.findBySellerIdOrThrow(sellerProfileId)
+        val sellerProfile = getSellerProfileOrThrow(sellerProfileId)
         if (sellerProfileId == authorId) {
             throw BadReviewException("Seller cannot create review on their own")
         }
-        if (reviewsRepo.findBySellerProfileIdAndAuthorId(request.listingId, authorId) != null) {
+        if (reviewsRepo.findBySellerProfileIdAndAuthorId(sellerProfileId, authorId) != null) {
             throw BadReviewException("Review by this author already exists")
         }
 
@@ -52,7 +62,10 @@ class SellerReviewsService(
             listing = null
         )
         val saved = reviewsRepo.save(review)
-
+        println("CREATED THIS REVIEW")
+        println(review.id)
+        println(review.sellerProfile.id)
+        println("------------------")
         sellerProfile.sumReviews += request.rating
         sellerProfile.countReviews += 1
         sellerProfile.rating =
@@ -71,48 +84,66 @@ class SellerReviewsService(
         )
     }
 
-    // такой же код в другом сервисе, не думаю, что нужно как-то удалять код
     fun deleteSellerReview(sellerProfileId: Long, userId: Long, reviewId: Long) {
-        val review: Review = requireNotNull(reviewsRepo.findBySellerProfileIdAndReviewId(sellerProfileId, reviewId))
+        // Получаем профиль продавца по ID пользователя (seller.id = user_id)
+        val sellerProfile = getSellerProfileOrThrow(sellerProfileId)
+        println("Found seller profile: id=${sellerProfile.id}, seller.id=${sellerProfile.seller?.id}")
+
+        // Ищем отзыв по reviewId И реальному ID профиля (не по userId!)
+        val review: Review = requireNotNull(
+            reviewsRepo.findByIdAndSellerProfile_Id(reviewId, sellerProfile.id!!)
+        ) {
+            "Review not found for reviewId=$reviewId and sellerProfile.id=${sellerProfile.id}"
+        }
+        println("Found review: id=${review.id}")
+
         if (userId != review.author.id) {
             throw BadReviewException("Only author can delete a review")
         }
+        println("Authorization passed")
 
-        val sellerProfile: SellerProfile = requireNotNull(sellerProfileRepo.findBySellerId(sellerProfileId))
         sellerProfile.sumReviews -= review.rating
         sellerProfile.countReviews -= 1
-        sellerProfile.rating =
-            sellerProfile.sumReviews.toDouble() / sellerProfile.countReviews.toDouble()
+        if (sellerProfile.countReviews > 0) {
+            sellerProfile.rating = sellerProfile.sumReviews.toDouble() / sellerProfile.countReviews.toDouble()
+        } else {
+            sellerProfile.rating = 0.0
+        }
 
+        sellerProfileRepo.save(sellerProfile)
         reviewsRepo.deleteById(reviewId)
     }
 
-    fun updateSellerReview(sellerProfileId: Long, authorId: Long, request: UpdateSellerReviewRequest): ReviewResponse {
-        if (authorId != request.authorId) {
-            throw BadReviewException("User cannot change other's review")
-        }
-        val sellerProfile = sellerProfileRepo.findBySellerIdOrThrow(sellerProfileId)
-        val review = reviewsRepo.findBySellerProfileIdAndAuthorId(sellerProfileId, authorId)
-            ?: throw IllegalArgumentException("Review not found")
+    @Transactional
+    fun updateSellerReview(
+        sellerProfileId: Long,
+        currentUserId: Long,
+        request: UpdateSellerReviewRequest
+    ): ReviewResponse {
+        // Получаем профиль продавца по ID пользователя
+        val sellerProfile = getSellerProfileOrThrow(sellerProfileId)
 
-        // думаю работу над рейтингом надо в отдельный сервис или метод
+        // Ищем отзыв по реальному ID профиля продавца
+        val review = reviewsRepo.findBySellerProfileIdAndAuthorId(sellerProfile.id!!, currentUserId)
+            ?: throw BadReviewException("Review not found or access denied")
+
         sellerProfile.sumReviews -= review.rating
         sellerProfile.sumReviews += request.rating
-        sellerProfile.rating =
-            sellerProfile.sumReviews.toDouble() / sellerProfile.countReviews.toDouble()
+        sellerProfile.rating = sellerProfile.sumReviews.toDouble() / sellerProfile.countReviews.toDouble()
 
         review.text = request.text
-        review.createdAt = OffsetDateTime.now()
         review.rating = request.rating
+        review.createdAt = OffsetDateTime.now()
 
         val saved = reviewsRepo.save(review)
+
         return ReviewResponse(
-            id = requireNotNull(saved?.id),
-            rating = request.rating,
-            text = request.text,
-            authorId = authorId,
+            id = requireNotNull(saved.id),
+            rating = saved.rating,
+            text = saved.text,
+            authorId = currentUserId,
             listingId = null,
-            sellerProfileId = sellerProfileId,
+            sellerProfileId = requireNotNull(sellerProfile.id),
             createdAt = saved.createdAt
         )
     }

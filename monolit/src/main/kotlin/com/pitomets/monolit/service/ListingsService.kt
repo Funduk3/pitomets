@@ -226,7 +226,7 @@ class ListingsService(
         sellerProfileRepo: SellerProfileRepo,
         log: Logger
     ): SellerProfile {
-        val seller = sellerProfileRepo.findBySellerId(userId)
+        val seller = sellerProfileRepo.findBySeller_Id(userId)
         if (seller == null) {
             log.error("Seller profile not found for user ID: {}", userId)
             throw UserNotFoundException("User with seller id $userId does not exist")

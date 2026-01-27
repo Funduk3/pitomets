@@ -5,7 +5,6 @@ import com.pitomets.monolit.model.dto.request.CreateReviewRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingReviewRequest
 import com.pitomets.monolit.model.dto.response.ReviewResponse
 import com.pitomets.monolit.model.entity.Review
-import com.pitomets.monolit.model.entity.SellerProfile
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.ReviewsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
@@ -90,49 +89,63 @@ class ListingReviewsService(
             )
         }
 
-    fun deleteListingReview(sellerProfileId: Long, userId: Long, reviewId: Long) {
-        val review: Review = requireNotNull(reviewsRepo.findBySellerProfileIdAndReviewId(sellerProfileId, reviewId))
-        if (userId != review.author.id) {
+    @Transactional
+    fun deleteListingReview(
+        currentUserId: Long,
+        reviewId: Long
+    ) {
+        val review = reviewsRepo.findById(reviewId)
+            .orElseThrow { BadReviewException("Review not found") }
+
+        if (review.author.id != currentUserId) {
             throw BadReviewException("Only author can delete a review")
         }
 
-        val sellerProfile: SellerProfile = requireNotNull(sellerProfileRepo.findBySellerId(sellerProfileId))
+        val sellerProfile = review.sellerProfile
+
         sellerProfile.sumReviews -= review.rating
         sellerProfile.countReviews -= 1
-        sellerProfile.rating =
-            sellerProfile.sumReviews.toDouble() / sellerProfile.countReviews.toDouble()
 
-        reviewsRepo.deleteById(reviewId)
+        sellerProfile.rating =
+            if (sellerProfile.countReviews.toInt() == 0) {
+                0.0
+            } else {
+                sellerProfile.sumReviews.toDouble() / sellerProfile.countReviews.toDouble()
+            }
+
+        reviewsRepo.delete(review)
     }
 
-    fun updateListingReview(authorId: Long, request: UpdateListingReviewRequest): ReviewResponse {
-        if (authorId != request.authorId) {
-            throw BadReviewException("User cannot change other's review")
-        }
-        val listing = listingsRepo.findListingOrThrow(request.listingId)
-        val sellerProfile = listing.sellerProfile
+    @Transactional
+    fun updateListingReview(
+        currentUserId: Long,
+        request: UpdateListingReviewRequest
+    ): ReviewResponse {
+        val review = reviewsRepo.findByListingIdAndAuthorId(
+            request.listingId,
+            currentUserId
+        ) ?: throw BadReviewException("Review not found or access denied")
 
-        val review = reviewsRepo.findByListingIdAndAuthorId(request.listingId, request.authorId)
-            ?: throw IllegalArgumentException("Review not found")
+        val sellerProfile = review.sellerProfile
 
-        // думаю работу над рейтингом надо в отдельный сервис или метод
         sellerProfile.sumReviews -= review.rating
         sellerProfile.sumReviews += request.rating
         sellerProfile.rating =
             sellerProfile.sumReviews.toDouble() / sellerProfile.countReviews.toDouble()
 
         review.text = request.text
-        review.createdAt = OffsetDateTime.now()
         review.rating = request.rating
+        review.createdAt = OffsetDateTime.now()
 
         val saved = reviewsRepo.save(review)
+
         return ReviewResponse(
-            id = requireNotNull(saved?.id),
-            rating = request.rating,
-            text = request.text,
-            authorId = authorId,
-            listingId = requireNotNull(saved.listing?.id),
-            sellerProfileId = requireNotNull(saved.sellerProfile.id),
+            id = saved.id!!,
+            rating = saved.rating,
+            text = saved.text,
+            authorId = currentUserId,
+            listingId = saved.listing!!.id!!,
+            sellerProfileId = saved.sellerProfile.id!!,
             createdAt = saved.createdAt
         )
     }
