@@ -72,16 +72,36 @@ class ElasticTest : BaseContainers() {
         listingOutboxProcessor.processOutbox()
         elasticClient.indices().refresh { r -> r.index("listings") }
 
-        // Убедимся, что два результата содержат наш токен в title
-        val list: List<SearchListingsResponse> = RestAssured.given()
-            .contentType(ContentType.JSON)
-            .param("query", token, "size", 2)
-            .get("/search/listings")
-            .then()
-            .statusCode(200)
-            .extract()
-            .`as`(Array<SearchListingsResponse>::class.java)
-            .toList()
+        // Wait for Elasticsearch to be ready and retry with exponential backoff
+        var list: List<SearchListingsResponse> = emptyList()
+        var attempts = 0
+        val maxAttempts = 10
+
+        while (attempts < maxAttempts) {
+            if (attempts > 0) {
+                Thread.sleep(2000L) // Wait 2s between retries
+            } else {
+                Thread.sleep(3000L) // Initial wait for indexing
+            }
+
+            list = RestAssured.given()
+                .contentType(ContentType.JSON)
+                .param("query", token, "size", 2)
+                .get("/search/listings")
+                .then()
+                .statusCode(200)
+                .extract()
+                .`as`(Array<SearchListingsResponse>::class.java)
+                .toList()
+
+            if (list.size >= 2) {
+                println("Found ${list.size} results on attempt ${attempts + 1}")
+                break
+            }
+
+            attempts++
+            println("Attempt ${attempts + 1}: Found ${list.size} results, expected at least 2, retrying...")
+        }
 
         Assertions.assertTrue(
             list.size >= 2,
@@ -150,16 +170,36 @@ class ElasticTest : BaseContainers() {
         listingOutboxProcessor.processOutbox()
         elasticClient.indices().refresh { it.index("listings") }
 
-        // Ищем похожие
-        val similarListings: List<SearchListingsResponse> = RestAssured.given()
-            .contentType(ContentType.JSON)
-            .param("size", 3)
-            .get("/search/listings/$createdListingId/similar")
-            .then()
-            .statusCode(200)
-            .extract()
-            .`as`(Array<SearchListingsResponse>::class.java)
-            .toList()
+        // Wait and retry for similar listings
+        var similarListings: List<SearchListingsResponse> = emptyList()
+        var attempts = 0
+        val maxAttempts = 10
+
+        while (attempts < maxAttempts) {
+            if (attempts > 0) {
+                Thread.sleep(2000L)
+            } else {
+                Thread.sleep(3000L) // Initial wait
+            }
+
+            similarListings = RestAssured.given()
+                .contentType(ContentType.JSON)
+                .param("size", 3)
+                .get("/search/listings/$createdListingId/similar")
+                .then()
+                .statusCode(200)
+                .extract()
+                .`as`(Array<SearchListingsResponse>::class.java)
+                .toList()
+
+            if (similarListings.isNotEmpty()) {
+                println("Found ${similarListings.size} similar listings on attempt ${attempts + 1}")
+                break
+            }
+
+            attempts++
+            println("Attempt ${attempts + 1}: Found ${similarListings.size} similar listings, retrying...")
+        }
 
         assertEquals(1, similarListings.size)
     }

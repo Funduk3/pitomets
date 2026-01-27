@@ -89,8 +89,9 @@ abstract class BaseContainers {
             withEnv("xpack.security.enabled", "false")
             withEnv("xpack.security.transport.ssl.enabled", "false")
             withEnv("xpack.security.http.ssl.enabled", "false")
-            withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m")
+            withEnv("ES_JAVA_OPTS", "-Xms1g -Xmx1g")
             withExposedPorts(9200)
+            withStartupTimeout(Duration.ofMinutes(3))
         }
 
         @JvmStatic
@@ -252,5 +253,15 @@ abstract class BaseContainers {
                 .then()
                 .statusCode(200)
         }
+    }
+
+    /**
+     * Process outbox and wait for Elasticsearch to index documents
+     */
+    fun processAndWaitForIndexing() {
+        listingOutboxProcessor.processOutbox()
+        elasticClient.indices().refresh { r -> r.index("listings") }
+        // Give Elasticsearch time to complete indexing
+        Thread.sleep(3000)
     }
 }
