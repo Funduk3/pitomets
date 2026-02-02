@@ -1,13 +1,13 @@
 plugins {
-    kotlin("jvm") version "2.0.21"
-    kotlin("plugin.spring") version "2.0.21"
-    id("org.springframework.boot") version "3.5.7"
+    kotlin("jvm") version "2.3.0"
+    kotlin("plugin.spring") version "2.3.0"
+    kotlin("plugin.jpa") version "2.3.0"
+
+    id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.7"
-    kotlin("plugin.jpa") version "2.0.21"
-    id("org.openapi.generator") version "7.17.0"
 
     // Detekt
-    id("io.gitlab.arturbosch.detekt") version "1.23.8"
+    id("dev.detekt") version "2.0.0-alpha.2"
 }
 
 group = "com.pitomets"
@@ -15,9 +15,16 @@ version = "0.0.1-SNAPSHOT"
 description = "monolit"
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21) // todo 25 (kotlin 2.3)
-	}
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    }
+}
+
+kotlin {
+    jvmToolchain(25)
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25)
+    }
 }
 
 repositories {
@@ -25,7 +32,6 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3") // core
     // spring
 	implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -63,15 +69,10 @@ dependencies {
     testImplementation("net.datafaker:datafaker:1.4.0")
     testImplementation("io.rest-assured:rest-assured:5.5.6")
     testImplementation("io.rest-assured:kotlin-extensions:5.5.6")
-
     testImplementation("org.springframework.kafka:spring-kafka-test")
     testImplementation("org.testcontainers:kafka:1.19.3")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0")
 
     testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
-
-    // detekt
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.8")
 
     implementation("co.elastic.clients:elasticsearch-java:9.2.4")
 
@@ -79,7 +80,6 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus")
 
     implementation("io.minio:minio:8.5.7")
-
 }
 
 kotlin {
@@ -87,13 +87,6 @@ kotlin {
         freeCompilerArgs.addAll("-Xjsr305=strict")
     }
 }
-
-sourceSets {
-    main {
-        kotlin.srcDir("$buildDir/generated/openapi/src/main/kotlin")
-    }
-}
-
 
 allOpen {
 	annotation("jakarta.persistence.Entity")
@@ -105,32 +98,7 @@ tasks.withType<Test> {
 	useJUnitPlatform()
 }
 
-//openApiGenerate {
-//    generatorName.set("kotlin-spring")
-//    inputSpec.set("$rootDir/src/main/resources/openapi.yaml")
-//    outputDir.set("$buildDir/generated/openapi")
-//
-//    apiPackage.set("com.pitomets.monolit.api")
-//    modelPackage.set("com.pitomets.monolit.model.dto")
-//    invokerPackage.set("com.pitomets.monolit.invoker")
-//
-//    // опции (для Spring Boot 3 / jakarta)
-//    configOptions.set(
-//        mapOf(
-//            "useSpringBoot3" to "true",
-//            "useJakartaEe" to "true",
-//            "useSwaggerAnnotations" to "false",
-//            "serializationLibrary" to "jackson",
-//            "dateLibrary" to "java8",
-//            "interfaceOnly" to "true"
-//        )
-//    )
-//    // Если ваша версия плагина требует additionalProperties:
-//    additionalProperties.set(mapOf("useSpringBoot3" to "true"))
-//}
-
 tasks.named("compileKotlin") {
-    // dependsOn("openApiGenerate")
     dependsOn("detekt")
 }
 
@@ -139,49 +107,23 @@ springBoot {
 }
 
 detekt {
-    toolVersion = "1.23.8"
+    toolVersion = "2.0.0-alpha.2"
     parallel = true
     buildUponDefaultConfig = true
     allRules = false
-    config = files("$rootDir/config/detekt/detekt.yml")
+    config.setFrom("$rootDir/config/detekt/detekt.yml")
     baseline = file("$rootDir/config/baseline.xml")
+    autoCorrect = true
 }
 
-tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
-    this.autoCorrect = true
+tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
+    jvmTarget = "21"
+}
 
-    reports {
-        html.required.set(true)
-        html.outputLocation.set(file("build/reports/detekt.html"))
-        xml.required.set(true)
-        xml.outputLocation.set(file("build/reports/detekt.xml"))
-        txt.required.set(true)
-        txt.outputLocation.set(file("build/reports/detekt.txt"))
-    }
+tasks.withType<dev.detekt.gradle.DetektCreateBaselineTask>().configureEach {
+    jvmTarget = "21"
 }
 
 tasks.named("bootRun") {
     dependsOn("detekt")
-}
-
-detekt {
-    toolVersion = "1.23.8"
-    parallel = true
-    buildUponDefaultConfig = true
-    allRules = false
-    config = files("$rootDir/config/detekt/detekt.yml")
-    baseline = file("$rootDir/config/baseline.xml")
-}
-
-tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
-    this.autoCorrect = true
-
-    reports {
-        html.required.set(true)
-        html.outputLocation.set(file("build/reports/detekt.html"))
-        xml.required.set(true)
-        xml.outputLocation.set(file("build/reports/detekt.xml"))
-        txt.required.set(true)
-        txt.outputLocation.set(file("build/reports/detekt.txt"))
-    }
 }
