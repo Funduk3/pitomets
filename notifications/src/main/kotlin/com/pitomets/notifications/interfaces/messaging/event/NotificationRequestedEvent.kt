@@ -7,5 +7,5 @@ data class NotificationRequestedEvent(
     val userId: Long,
     val channel: String,
     val payload: String,
-    val occurredAt: Instant
+    val occurredAt: Instant = Instant.now()
 )
