@@ -8,16 +8,16 @@ spring:
   # =========================
   # DATABASE
   # =========================
-  datasource:
-    url: jdbc:postgresql://localhost:5432/notification_db
-    username: notification
-    password: notification
-    driver-class-name: org.postgresql.Driver
+  spring:
+    datasource:
+      url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/pitomets}
+      username: ${SPRING_DATASOURCE_USERNAME:user}
+      password: ${SPRING_DATASOURCE_PASSWORD:password}
 
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate:

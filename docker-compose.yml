@@ -1,6 +1,6 @@
 services:
   app:
-    build: .
+    build: ./monolit
     container_name: spring-app
     ports:
       - "8080:8080"
@@ -36,6 +36,50 @@ services:
 
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092  # ✅ Внутренний адрес в Docker-сети
 
+  notifications-service:
+    build: ./notifications
+    container_name: notifications-service
+    ports:
+      - "8082:8080"  # ✅ Исправлено: хост:8082 → контейнер:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pitomets
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    healthcheck: # ✅ Добавлено
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  messenger:
+    build: ./messenger
+    container_name: messenger-app
+    ports:
+      - "8081:8081"
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres-messenger:5432/messenger
+      DATABASE_USER: user
+      DATABASE_PASSWORD: password
+    depends_on:
+      postgres-messenger:
+        condition: service_healthy
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app/frontend
+    ports:
+      - "3001:3001"
+    volumes:
+      - .:/app
+    command: sh -c "npm install && npm run dev"
+
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -58,6 +102,23 @@ services:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U user -d pitomets" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-messenger:
+    image: postgres:16-alpine
+    container_name: postgres-messenger
+    environment:
+      POSTGRES_DB: messenger
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql-messenger/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user -d messenger" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -94,7 +155,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monolit/prometheus.yml:/etc/prometheus/prometheus.yml
 
   grafana:
     image: grafana/grafana:latest
@@ -120,6 +181,25 @@ services:
     volumes:
       - minio-data:/data
     restart: unless-stopped
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_started
+    environment:
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+    entrypoint: >
+      /bin/sh -c "
+        echo '⏳ Ждём готовности MinIO...' && sleep 10 &&
+        mc alias set myminio http://minio:9000 minioadmin minioadmin &&
+        mc mb myminio/pitomets-images --ignore-existing &&
+        mc mb myminio/pitomets-avatars --ignore-existing &&
+        mc policy set public myminio/pitomets-images &&
+        mc policy set public myminio/pitomets-avatars &&
+        echo '✅ Бакеты созданы: pitomets-images, pitomets-avatars'
+      "
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
@@ -167,22 +247,24 @@ services:
       retries: 10
   kafka-init:
     image: confluentinc/cp-kafka:7.5.0
-    container_name: notification-kafka-init
     depends_on:
       kafka:
         condition: service_healthy
     entrypoint: [ "/bin/bash", "-c" ]
     command: |
       "
-      # Ждем пока Kafka станет доступной
-      sleep 10
+      # Удаляем и пересоздаём топики
+      kafka-topics --bootstrap-server kafka:29092 --delete --topic notification.send
+      kafka-topics --bootstrap-server kafka:29092 --delete --topic notification.sent
+      kafka-topics --bootstrap-server kafka:29092 --delete --topic notification.failed
 
-      # Создаем топики если они не существуют
-      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic notification.send --partitions 3 --replication-factor 1
-      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic notification.sent --partitions 3 --replication-factor 1
-      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic notification.failed --partitions 3 --replication-factor 1
+      sleep 2
 
-      echo 'Topics created successfully'
+      kafka-topics --bootstrap-server kafka:29092 --create --topic notification.send --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:29092 --create --topic notification.sent --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:29092 --create --topic notification.failed --partitions 3 --replication-factor 1
+
+      echo 'Topics recreated successfully'
       "
 
 volumes:
