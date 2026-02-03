@@ -150,9 +150,7 @@ abstract class BaseContainers {
         @JvmStatic
         val kafka = KafkaContainer(
             DockerImageName.parse("confluentinc/cp-kafka:7.6.1")
-        ).apply {
-            start()
-        }
+        )
 
         @JvmStatic
         @DynamicPropertySource

@@ -28,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class UserService(
     private val jwtService: JWTService,
-    private val notificationPublisher: NotificationPublisher,
+//    private val notificationPublisher: NotificationPublisher,
     private val authManager: AuthenticationManager,
     private val repo: UserRepo,
     private val buyerProfileRepo: BuyerProfileRepo,
@@ -53,16 +53,16 @@ class UserService(
 
         log.info("User registered with email: {} and buyer profile created", savedUser.email)
 
-        val eventId = System.currentTimeMillis()
+//        val eventId = System.currentTimeMillis()
 
-        notificationPublisher.publish(
-            NotificationRequestedEvent(
-                eventId = eventId,
-                userId = requireNotNull(savedUser.id) { "User with this user doesn't have a id" },
-                channel = Channel.EMAIL,
-                payload = savedUser.email,
-            )
-        )
+//        notificationPublisher.publish(
+//            NotificationRequestedEvent(
+//                eventId = eventId,
+//                userId = requireNotNull(savedUser.id) { "User with this user doesn't have a id" },
+//                channel = Channel.EMAIL,
+//                payload = savedUser.email,
+//            )
+//        )
         log.info("KAFKA MESSAGE SENT")
 
         return UserResponse(
