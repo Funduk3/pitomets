@@ -14,8 +14,7 @@ class NotificationConsumer {
             "\${notification.kafka.topics.notification-sent}",
             "\${notification.kafka.topics.notification-failed}"
         ],
-        groupId = "user-service-notification-status",
-        containerFactory = "notificationStatusListenerFactory"
+        groupId = "user-service-notification-status"
     )
     fun consumeNotificationStatus(message: String) {
         try {
