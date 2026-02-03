@@ -20,6 +20,7 @@ import net.datafaker.Faker
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.web.server.LocalServerPort
+import org.springframework.context.annotation.Import
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.GenericContainer
@@ -36,6 +37,7 @@ import java.util.Base64
 
 @Suppress("UtilityClassWithPublicConstructor")
 @Testcontainers
+@Import(TestKafkaTopicsConfig::class)
 abstract class BaseContainers {
 
     @LocalServerPort
@@ -69,7 +71,7 @@ abstract class BaseContainers {
         }
 
         @JvmStatic
-        val postgres = PostgreSQLContainer<Nothing>("postgres:15-alpine")
+        val postgres = PostgreSQLContainer<Nothing>("postgres:16-alpine")
             .apply {
                 withDatabaseName("testdb")
                 withUsername("test")
@@ -146,7 +148,11 @@ abstract class BaseContainers {
 
         @Container
         @JvmStatic
-        val kafka = KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"))
+        val kafka = KafkaContainer(
+            DockerImageName.parse("confluentinc/cp-kafka:7.6.1")
+        ).apply {
+            start()
+        }
 
         @JvmStatic
         @DynamicPropertySource
@@ -180,7 +186,14 @@ abstract class BaseContainers {
                 .encodeToString("super-test-secret-key-which-is-long".toByteArray())
             registry.add("jwt.secret") { JWT_TEST_SECRET }
 
-            registry.add("spring.kafka.bootstrap-servers") { BaseContainers.Companion.kafka.bootstrapServers }
+            registry.add("spring.kafka.bootstrap-servers") {
+                kafka.bootstrapServers
+            }
+            registry.add("spring.kafka.admin.properties.bootstrap.servers") {
+                kafka.bootstrapServers
+            }
+            registry.add("spring.kafka.admin.enabled") { "false" }
+            registry.add("spring.kafka.admin.enabled") { "true" }
         }
     }
 
