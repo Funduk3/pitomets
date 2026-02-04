@@ -39,15 +39,24 @@ export const listingsAPI = {
   },
 
   getListingReviews: async (listingId) => {
-    const response = await api.get('/listings/reviews', {
+    const response = await api.get('/listings/reviews/', {
       params: { id: listingId },
     });
     return response.data;
   },
 
   createReview: async (reviewData) => {
-    const response = await api.post('/listings/reviews', reviewData);
+    const response = await api.post('/listings/reviews/', reviewData);
     return response.data;
+  },
+
+  updateReview: async (reviewData) => {
+    const response = await api.put('/listings/reviews/', reviewData);
+    return response.data;
+  },
+
+  deleteReview: async (reviewId) => {
+    await api.delete(`/listings/reviews/${reviewId}`);
   },
 
   getSimilarListings: (listingId, size = 6) =>
@@ -55,4 +64,3 @@ export const listingsAPI = {
         params: { size },
       }).then(res => res.data),
 };
-

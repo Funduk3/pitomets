@@ -85,9 +85,13 @@ class SecurityConfig(
                     "/api/metro/**",
                 ).permitAll()
                 it.requestMatchers(HttpMethod.POST, "/listings/reviews/**").authenticated()
+                it.requestMatchers(HttpMethod.PUT, "/listings/reviews/**").authenticated()
+                it.requestMatchers(HttpMethod.DELETE, "/listings/reviews/**").authenticated()
                 it.requestMatchers(HttpMethod.GET, "/listings/**").permitAll()
-                it.requestMatchers("/listings/**").hasRole("SELLER")
+                it.requestMatchers(HttpMethod.GET, "/seller/{sellerId}/reviews/**").permitAll()
+                it.requestMatchers("/seller/{sellerProfileId}/reviews/**").authenticated()
                 it.requestMatchers("/seller/profile").authenticated() // Создание профиля для всех
+                it.requestMatchers("/listings/**").hasRole("SELLER")
                 it.requestMatchers("/seller/**").hasRole("SELLER")
                 it.anyRequest().authenticated()
             }

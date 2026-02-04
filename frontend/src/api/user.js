@@ -15,12 +15,4 @@ export const userAPI = {
     const response = await api.get('/all');
     return response.data;
   },
-
-  getSellerReviews: async (sellerProfileId) => {
-    const response = await api.get('/reviews', {
-      params: { id: sellerProfileId },
-    });
-    return response.data;
-  },
 };
-

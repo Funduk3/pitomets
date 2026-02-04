@@ -7,11 +7,14 @@ import java.util.*
 interface OutboxJpaRepository : JpaRepository<OutboxEventEntity, Long> {
 
     @Query(
-        """
-        select e from OutboxEventEntity e
-        where e.published = false
-        order by e.createdAt
-    """
+        value = """
+        select *
+        from outbox_events
+        where published = false
+        order by created_at
+        for update skip locked
+    """,
+        nativeQuery = true
     )
     fun findUnpublished(): List<OutboxEventEntity>
 }
