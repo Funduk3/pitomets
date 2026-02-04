@@ -31,7 +31,7 @@ class ListingReviewController(
     ): ReviewResponse =
         listingReviewsService.createListingReview(userPrincipal.id, request)
 
-    @GetMapping("/")
+    @GetMapping
     fun getListingReviews(
         @RequestParam("id") listingId: Long
     ): List<ReviewResponse> =

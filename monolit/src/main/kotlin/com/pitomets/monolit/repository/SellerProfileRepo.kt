@@ -6,6 +6,5 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface SellerProfileRepo : JpaRepository<SellerProfile, Long> {
-    @Suppress("FunctionNaming")
-    fun findBySeller_Id(sellerId: Long): SellerProfile?
+    fun findBySellerId(sellerId: Long): SellerProfile?
 }

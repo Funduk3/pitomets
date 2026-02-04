@@ -137,16 +137,14 @@ class ListingReviewsService(
         review.rating = request.rating
         review.createdAt = OffsetDateTime.now()
 
-        val saved = reviewsRepo.save(review)
-
         return ReviewResponse(
-            id = saved.id!!,
-            rating = saved.rating,
-            text = saved.text,
+            id = review.id!!,
+            rating = review.rating,
+            text = review.text,
             authorId = currentUserId,
-            listingId = saved.listing!!.id!!,
-            sellerProfileId = saved.sellerProfile.id!!,
-            createdAt = saved.createdAt
+            listingId = review.listing!!.id!!,
+            sellerProfileId = review.sellerProfile.id!!,
+            createdAt = review.createdAt
         )
     }
 }

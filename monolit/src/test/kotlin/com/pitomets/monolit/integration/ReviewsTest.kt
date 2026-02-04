@@ -6,12 +6,14 @@ import com.pitomets.monolit.model.dto.request.UpdateListingReviewRequest
 import com.pitomets.monolit.model.dto.request.UpdateSellerReviewRequest
 import com.pitomets.monolit.model.dto.response.ReviewResponse
 import com.pitomets.monolit.model.dto.response.TokenResponse
+import com.pitomets.monolit.repository.SellerProfileRepo
 import com.pitomets.monolit.testContainers.BaseContainers
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertNotNull
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.junit.jupiter.Testcontainers
@@ -25,6 +27,9 @@ import kotlin.test.assertTrue
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")
 class ReviewsTest : BaseContainers() {
+
+    @Autowired
+    private lateinit var sellerProfileRepo: SellerProfileRepo
 
     @Test
     fun `should create and retrieve listing review successfully`() {
@@ -67,7 +72,7 @@ class ReviewsTest : BaseContainers() {
         val reviews = RestAssured.given()
             .contentType(ContentType.JSON)
             .param("id", listingId)
-            .get("/listings/reviews/")
+            .get("/listings/reviews")
             .then()
             .statusCode(200)
             .extract()
@@ -149,7 +154,7 @@ class ReviewsTest : BaseContainers() {
         val reviews = RestAssured.given()
             .contentType(ContentType.JSON)
             .param("id", listingId)
-            .get("/listings/reviews/")
+            .get("/listings/reviews")
             .then()
             .statusCode(200)
             .extract()
@@ -438,7 +443,6 @@ class ReviewsTest : BaseContainers() {
             .extract()
             .jsonPath()
             .getLong("id")
-
-        return userId
+        return sellerProfileRepo.findBySellerId(userId)?.id!!
     }
 }
