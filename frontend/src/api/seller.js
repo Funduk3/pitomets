@@ -22,18 +22,4 @@ export const sellerAPI = {
     const response = await api.get(`/seller/${sellerProfileId}/reviews/`);
     return response.data;
   },
-
-  createSellerReview: async (sellerProfileId, reviewData) => {
-    const response = await api.post(`/seller/${sellerProfileId}/reviews/`, reviewData);
-    return response.data;
-  },
-
-  updateSellerReview: async (sellerProfileId, reviewData) => {
-    const response = await api.put(`/seller/${sellerProfileId}/reviews/`, reviewData);
-    return response.data;
-  },
-
-  deleteSellerReview: async (sellerProfileId, reviewId) => {
-    await api.delete(`/seller/${sellerProfileId}/reviews/${reviewId}`);
-  },
 };
