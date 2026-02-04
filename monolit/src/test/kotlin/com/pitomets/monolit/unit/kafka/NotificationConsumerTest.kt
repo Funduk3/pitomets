@@ -1,6 +1,5 @@
 package com.pitomets.monolit.unit.kafka
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.pitomets.monolit.model.kafka.NotificationFailedEvent
 import com.pitomets.monolit.model.kafka.NotificationSentEvent
 import com.pitomets.monolit.model.kafka.event.Channel
@@ -11,7 +10,6 @@ import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.kafka.core.DefaultKafkaProducerFactory
 import org.springframework.kafka.core.KafkaTemplate
@@ -25,9 +23,6 @@ import java.util.concurrent.TimeUnit
 @ActiveProfiles("test")
 @Testcontainers
 class NotificationConsumerTest : BaseContainers() {
-
-    @Autowired
-    private lateinit var objectMapper: ObjectMapper
 
     private lateinit var kafkaTemplate: KafkaTemplate<String, String>
 
@@ -51,7 +46,7 @@ class NotificationConsumerTest : BaseContainers() {
             userId = 100L,
             channel = Channel.EMAIL
         )
-        val message = objectMapper.writeValueAsString(sentEvent)
+        val message = mapper.writeValueAsString(sentEvent)
 
         kafkaTemplate.send("notification-events", message).get(5, TimeUnit.SECONDS)
 
@@ -69,7 +64,7 @@ class NotificationConsumerTest : BaseContainers() {
             channel = "SMS",
             error = "Invalid phone number"
         )
-        val message = objectMapper.writeValueAsString(failedEvent)
+        val message = mapper.writeValueAsString(failedEvent)
 
         kafkaTemplate.send("notification-events", message).get(5, TimeUnit.SECONDS)
 
@@ -103,7 +98,7 @@ class NotificationConsumerTest : BaseContainers() {
         )
 
         events.forEach { event ->
-            val message = objectMapper.writeValueAsString(event)
+            val message = mapper.writeValueAsString(event)
             kafkaTemplate.send("notification-events", message).get(5, TimeUnit.SECONDS)
         }
 

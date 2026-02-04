@@ -11,13 +11,13 @@ services:
       redis:
         condition: service_started
       postgres:
-        condition: service_healthy
+        condition: service_started
       elasticsearch:
         condition: service_healthy
       minio:
         condition: service_started
       kafka:
-        condition: service_healthy
+        condition: service_started
     environment:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
@@ -43,9 +43,9 @@ services:
       - "8082:8080"  # ✅ Исправлено: хост:8082 → контейнер:8080
     depends_on:
       postgres:
-        condition: service_healthy
+        condition: service_started
       kafka:
-        condition: service_healthy
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pitomets
       SPRING_DATASOURCE_USERNAME: user
@@ -81,7 +81,7 @@ services:
     command: sh -c "npm install && npm run dev"
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: redis
     restart: always
     ports:
@@ -89,7 +89,7 @@ services:
     command: redis-server --save 60 1 --loglevel warning
 
   postgres:
-    image: postgres:15-alpine
+    image: postgres:18-alpine
     container_name: postgres
     restart: always
     environment:
@@ -99,7 +99,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_main_data:/var/lib/postgresql
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U user -d pitomets" ]
       interval: 10s
@@ -107,7 +107,7 @@ services:
       retries: 5
 
   postgres-messenger:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     container_name: postgres-messenger
     environment:
       POSTGRES_DB: messenger
@@ -116,7 +116,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql-messenger/data
+      - postgres_messenger_data:/var/lib/postgresql
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U user -d messenger" ]
       interval: 10s
@@ -201,73 +201,45 @@ services:
         echo '✅ Бакеты созданы: pitomets-images, pitomets-avatars'
       "
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
-    container_name: notification-zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - "2181:2181"
-    healthcheck:
-      test: [ "CMD-SHELL", "echo stat | nc localhost 2181" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   kafka:
-    image: confluentinc/cp-kafka:7.5.0
-    container_name: notification-kafka
-    depends_on:
-      zookeeper:
-        condition: service_healthy
+    image: apache/kafka:4.1.1
+    container_name: kafka
+    ports:
+      - "9092:9092"
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://host.docker.internal:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-      KAFKA_DELETE_TOPIC_ENABLE: "true"
       KAFKA_LOG_RETENTION_HOURS: 168
 
-      # КРИТИЧЕСКИ ВАЖНОЕ ИСПРАВЛЕНИЕ:
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://host.docker.internal:9092,PLAINTEXT_INTERNAL://kafka:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
-
-      # Нужно явно указать, какие listener'ы слушать
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_INTERNAL://0.0.0.0:29092
-    ports:
-      - "9092:9092"  # Для подключений с хоста
-    healthcheck:
-      test: [ "CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:29092" ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
   kafka-init:
-    image: confluentinc/cp-kafka:7.5.0
+    image: apache/kafka:4.1.1
     depends_on:
       kafka:
-        condition: service_healthy
+        condition: service_started
     entrypoint: [ "/bin/bash", "-c" ]
     command: |
       "
-      # Удаляем и пересоздаём топики
-      kafka-topics --bootstrap-server kafka:29092 --delete --topic notification.send
-      kafka-topics --bootstrap-server kafka:29092 --delete --topic notification.sent
-      kafka-topics --bootstrap-server kafka:29092 --delete --topic notification.failed
-
-      sleep 2
-
-      kafka-topics --bootstrap-server kafka:29092 --create --topic notification.send --partitions 3 --replication-factor 1
-      kafka-topics --bootstrap-server kafka:29092 --create --topic notification.sent --partitions 3 --replication-factor 1
-      kafka-topics --bootstrap-server kafka:29092 --create --topic notification.failed --partitions 3 --replication-factor 1
-
-      echo 'Topics recreated successfully'
+      kafka-topics.sh --bootstrap-server kafka:29092 --create --if-not-exists --topic notification.send --partitions 3 --replication-factor 1
+      kafka-topics.sh --bootstrap-server kafka:29092 --create --if-not-exists --topic notification.sent --partitions 3 --replication-factor 1
+      kafka-topics.sh --bootstrap-server kafka:29092 --create --if-not-exists --topic notification.failed --partitions 3 --replication-factor 1
+      echo 'Topics ready'
       "
 
 volumes:
-  postgres_data:
+  postgres_main_data:
+  postgres_messenger_data:
   es_data:
   minio-data:

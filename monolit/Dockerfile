@@ -1,5 +1,5 @@
 # stage: build
-FROM eclipse-temurin:21-jdk AS build
+FROM eclipse-temurin:25-jdk AS build
 WORKDIR /app
 
 # Копируем только файлы, нужные для разрешения зависимостей — это ускоряет кеширование Docker-слоёв
@@ -16,7 +16,7 @@ COPY . .
 RUN ./gradlew --no-daemon bootJar -x test --quiet
 
 # stage: runtime
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 WORKDIR /app
 
 # Копируем jar, который создал Spring Boot (bootJar)

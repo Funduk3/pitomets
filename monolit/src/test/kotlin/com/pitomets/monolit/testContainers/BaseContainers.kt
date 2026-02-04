@@ -22,17 +22,22 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.apache.kafka.clients.admin.AdminClient
+import org.apache.kafka.clients.admin.AdminClientConfig
+import org.apache.kafka.clients.admin.NewTopic
+import org.apache.kafka.common.errors.TopicExistsException
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy
 import org.testcontainers.elasticsearch.ElasticsearchContainer
-import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
 import java.math.BigDecimal
 import java.time.Duration
 import java.util.Base64
+import java.util.Properties
+import java.util.concurrent.TimeUnit
 
 @Suppress("UtilityClassWithPublicConstructor")
 @Testcontainers
@@ -69,7 +74,7 @@ abstract class BaseContainers {
         }
 
         @JvmStatic
-        val postgres = PostgreSQLContainer<Nothing>("postgres:15-alpine")
+        val postgres = PostgreSQLContainer<Nothing>("postgres:16-alpine")
             .apply {
                 withDatabaseName("testdb")
                 withUsername("test")
@@ -108,14 +113,20 @@ abstract class BaseContainers {
                 )
             }
 
+        @JvmStatic
+        val kafka = KafkaContainer(
+            DockerImageName.parse("confluentinc/cp-kafka:7.6.1")
+        )
+
         init {
             postgres.start()
             redis.start()
             elasticsearch.start()
             minio.start()
+            kafka.start()
 
-            // Создаем bucket сразу после старта MinIO
             createMinioBucket()
+            createKafkaTopics()
         }
 
         private fun createMinioBucket() {
@@ -144,9 +155,25 @@ abstract class BaseContainers {
             }
         }
 
-        @Container
-        @JvmStatic
-        val kafka = KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"))
+        private fun createKafkaTopics() {
+            val props = Properties().apply {
+                put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.bootstrapServers)
+            }
+            AdminClient.create(props).use { admin ->
+                val topics = listOf(
+                    NewTopic("notification.send", 1, 1.toShort()),
+                    NewTopic("notification.sent", 1, 1.toShort()),
+                    NewTopic("notification.failed", 1, 1.toShort()),
+                )
+                try {
+                    admin.createTopics(topics).all().get(5, TimeUnit.SECONDS)
+                } catch (e: Exception) {
+                    if (e.cause !is TopicExistsException) {
+                        throw e
+                    }
+                }
+            }
+        }
 
         @JvmStatic
         @DynamicPropertySource
@@ -180,7 +207,14 @@ abstract class BaseContainers {
                 .encodeToString("super-test-secret-key-which-is-long".toByteArray())
             registry.add("jwt.secret") { JWT_TEST_SECRET }
 
-            registry.add("spring.kafka.bootstrap-servers") { BaseContainers.Companion.kafka.bootstrapServers }
+            registry.add("spring.kafka.bootstrap-servers") {
+                kafka.bootstrapServers
+            }
+            registry.add("spring.kafka.admin.properties.bootstrap.servers") {
+                kafka.bootstrapServers
+            }
+            registry.add("spring.kafka.admin.enabled") { true }
+            registry.add("spring.kafka.admin.auto-create") { true }
         }
     }
 
