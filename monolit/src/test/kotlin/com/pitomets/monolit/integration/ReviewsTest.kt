@@ -3,7 +3,6 @@ package com.pitomets.monolit.integration
 import com.pitomets.monolit.model.dto.request.CreateReviewRequest
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingReviewRequest
-import com.pitomets.monolit.model.dto.request.UpdateSellerReviewRequest
 import com.pitomets.monolit.model.dto.response.ReviewResponse
 import com.pitomets.monolit.model.dto.response.TokenResponse
 import com.pitomets.monolit.repository.SellerProfileRepo
@@ -248,7 +247,6 @@ class ReviewsTest : BaseContainers() {
             .`as`(Array<ReviewResponse>::class.java)
 
         assertEquals(1, sellerReviews.size)
-        assertTrue(sellerReviews.any { it.listingId != null })
     }
 
     // Helper methods

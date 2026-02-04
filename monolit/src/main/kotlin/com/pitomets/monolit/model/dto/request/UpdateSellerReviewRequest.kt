@@ -1,9 +1,0 @@
-package com.pitomets.monolit.model.dto.request
-
-data class UpdateSellerReviewRequest(
-    var rating: Int,
-
-    var text: String? = null,
-
-    var authorId: Long,
-)

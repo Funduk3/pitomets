@@ -15,7 +15,7 @@ class SellerReviewsService(
                 rating = r.rating,
                 text = r.text,
                 authorId = requireNotNull(r.author.id),
-                listingId = r.listing?.id,
+                listingId = requireNotNull(r.listing?.id),
                 sellerProfileId = sellerProfileId,
                 createdAt = r.createdAt,
             )

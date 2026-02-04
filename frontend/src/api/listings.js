@@ -39,7 +39,7 @@ export const listingsAPI = {
   },
 
   getListingReviews: async (listingId) => {
-    const response = await api.get('/listings/reviews', {
+    const response = await api.get('/listings/reviews/', {
       params: { id: listingId },
     });
     return response.data;
