@@ -11,6 +11,7 @@ interface OutboxJpaRepository : JpaRepository<OutboxEventEntity, Long> {
         select e from OutboxEventEntity e
         where e.published = false
         order by e.createdAt
+        FOR UPDATE SKIP LOCKED
     """
     )
     fun findUnpublished(): List<OutboxEventEntity>
