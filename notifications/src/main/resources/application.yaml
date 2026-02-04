@@ -8,16 +8,16 @@ spring:
   # =========================
   # DATABASE
   # =========================
-  datasource:
-    url: jdbc:postgresql://localhost:5432/notification_db
-    username: notification
-    password: notification
-    driver-class-name: org.postgresql.Driver
+  spring:
+    datasource:
+      url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/pitomets}
+      username: ${SPRING_DATASOURCE_USERNAME:user}
+      password: ${SPRING_DATASOURCE_PASSWORD:password}
 
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate:
@@ -34,13 +34,14 @@ spring:
       enable-auto-commit: false
       auto-offset-reset: earliest
 
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+  key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
 
-      properties:
-        spring.json.trusted.packages: "*"
-        spring.json.value.default.type: com.pitomets.notifications.interfaces.messaging.event.NotificationRequestedEvent
-        isolation.level: read_committed
+  properties:
+    spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+    spring.json.use.type.headers: false
+    spring.json.value.default.type: com.pitomets.notifications.interfaces.messaging.event.NotificationRequestedEvent
+    spring.json.trusted.packages: "*"
 
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer

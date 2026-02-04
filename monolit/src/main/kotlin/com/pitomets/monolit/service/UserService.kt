@@ -1,5 +1,6 @@
 package com.pitomets.monolit.service
 
+import com.pitomets.monolit.exceptions.IllegalPasswordException
 import com.pitomets.monolit.exceptions.InvalidCredentialsException
 import com.pitomets.monolit.exceptions.UserAlreadyExistsException
 import com.pitomets.monolit.exceptions.UserNotFoundException
@@ -41,6 +42,7 @@ class UserService(
             throw UserAlreadyExistsException("User with this email already exists")
         }
         user.passwordHash = encoder.encode(user.passwordHash)
+            ?: throw IllegalPasswordException("Problem with password")
         user.role = UserRole.USER
 
         val savedUser = repo.save(user)
@@ -61,13 +63,6 @@ class UserService(
                 payload = savedUser.email,
             )
         )
-        /*
-            чтобы было видно в логах, дев версия
-         */
-        log.info("KAFKA MESSAGE SENT")
-        log.info("KAFKA MESSAGE SENT")
-        log.info("KAFKA MESSAGE SENT")
-        log.info("KAFKA MESSAGE SENT")
         log.info("KAFKA MESSAGE SENT")
 
         return UserResponse(
