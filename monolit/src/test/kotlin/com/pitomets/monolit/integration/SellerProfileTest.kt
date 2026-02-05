@@ -106,7 +106,7 @@ class SellerProfileTest : BaseContainers() {
         val createListingRequest = ListingsRequest(
             description = faker.funnyName().name(),
             species = faker.funnyName().name(),
-            ageMonths = faker.number().randomDigit(),
+            ageMonths = faker.number().numberBetween(1, 3),
             price = BigDecimal(faker.number().randomDigit()),
             breed = null,
             title = faker.name().fullName(),
