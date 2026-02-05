@@ -5,6 +5,8 @@ import { userAPI } from '../api/user';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { citiesAPI } from '../api/cities';
 import { metroAPI } from '../api/metro';
+import { AGE_LABELS } from '../util/age';
+import { GENDER_LABELS, GenderEnum } from '../util/gender';
 
 export const ListingForm = () => {
   const { id } = useParams();
@@ -17,9 +19,8 @@ export const ListingForm = () => {
     species: '',
     breed: '',
     ageMonths: 0,
+    gender: GenderEnum.ANY,
     price: '',
-    mother: '',
-    father: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -128,10 +129,9 @@ export const ListingForm = () => {
         description: listing.description || '',
         species: listing.species || '',
         breed: listing.breed || '',
-        ageMonths: listing.ageMonths || 0,
+        ageMonths: listing.ageMonths ?? 0,
+        gender: listing.gender || GenderEnum.ANY,
         price: listing.price?.toString() || '',
-        mother: listing.mother?.toString() || '',
-        father: listing.father?.toString() || '',
       });
 
       if (listing.cityId && listing.cityTitle) {
@@ -178,10 +178,9 @@ export const ListingForm = () => {
         description: formData.description,
         species: formData.species,
         breed: formData.breed || null,
-        ageMonths: parseInt(formData.ageMonths),
+        ageMonths: Number(formData.ageMonths),
+        gender: formData.gender,
         price: priceValue.toString(),
-        mother: formData.mother ? parseInt(formData.mother) : null,
-        father: formData.father ? parseInt(formData.father) : null,
         cityId,
         metroId: metroId ? parseInt(metroId) : null
       };
@@ -295,15 +294,34 @@ export const ListingForm = () => {
             />
           </div>
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Возраст (в месяцах):</label>
-            <input
-              type="number"
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Возраст:</label>
+            <select
               value={formData.ageMonths}
-              onChange={(e) => setFormData({ ...formData, ageMonths: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, ageMonths: Number(e.target.value) })}
               required
-              min="0"
               style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
-            />
+            >
+              {Object.entries(AGE_LABELS).map(([value, label]) => (
+                <option key={value} value={Number(value)}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Пол:</label>
+            <select
+              value={formData.gender}
+              onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+              required
+              style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
+            >
+              {Object.entries(GENDER_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
           </div>
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Цена:</label>
@@ -314,24 +332,6 @@ export const ListingForm = () => {
               onChange={(e) => setFormData({ ...formData, price: e.target.value })}
               required
               min="0"
-              style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
-            />
-          </div>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Mother ID (optional):</label>
-            <input
-              type="number"
-              value={formData.mother}
-              onChange={(e) => setFormData({ ...formData, mother: e.target.value })}
-              style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
-            />
-          </div>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Father ID (optional):</label>
-            <input
-              type="number"
-              value={formData.father}
-              onChange={(e) => setFormData({ ...formData, father: e.target.value })}
               style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
             />
           </div>
@@ -470,4 +470,3 @@ export const ListingForm = () => {
     </ProtectedRoute>
   );
 };
-

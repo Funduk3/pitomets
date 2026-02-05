@@ -6,6 +6,8 @@ import { favouritesAPI } from '../api/favourites';
 import { messengerAPI } from '../api/messenger';
 import { sellerAPI } from '../api/seller';
 import { useAuth } from '../context/AuthContext';
+import { AGE_LABELS } from '../util/age';
+import { GENDER_LABELS } from '../util/gender';
 
 export const ListingDetail = () => {
   const { id } = useParams();
@@ -312,9 +314,14 @@ export const ListingDetail = () => {
           <p><strong>Цена:</strong> {listing.price} ₽</p>
           <p><strong>Вид:</strong> {listing.species || 'N/A'}</p>
           {listing.breed && <p><strong>Breed:</strong> {listing.breed}</p>}
-          <p><strong>Возраст:</strong> {listing.ageMonths} months</p>
-          {listing.mother && <p><strong>Mother ID:</strong> {listing.mother}</p>}
-          {listing.father && <p><strong>Father ID:</strong> {listing.father}</p>}
+          <p>
+            <strong>Возраст:</strong>{' '}
+            {listing.ageMonths != null ? (AGE_LABELS[listing.ageMonths] || 'Не указан') : 'Не указан'}
+          </p>
+          <p>
+            <strong>Пол:</strong>{' '}
+            {listing.gender ? (GENDER_LABELS[listing.gender] || 'Любой') : 'Любой'}
+          </p>
           {isAuthenticated() && user?.id === listing.sellerId && (
             <Link
               to={`/listings/${id}/photos`}
@@ -482,4 +489,3 @@ export const ListingDetail = () => {
     </div>
   );
 };
-

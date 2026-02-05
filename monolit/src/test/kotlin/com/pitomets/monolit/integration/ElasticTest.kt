@@ -1,5 +1,6 @@
 package com.pitomets.monolit.integration
 
+import com.pitomets.monolit.model.Gender
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
 import com.pitomets.monolit.testContainers.BaseContainers
@@ -36,12 +37,13 @@ class ElasticTest : BaseContainers() {
         val targetReq1 = ListingsRequest(
             description = "This is the best match A for $token",
             species = faker.name().name(),
-            ageMonths = faker.number().numberBetween(1, 24),
+            ageMonths = faker.number().numberBetween(1, 3),
             price = BigDecimal.valueOf(faker.number().numberBetween(1L, 24L)),
             breed = null,
             title = targetTitle1,
             cityId = 4L,
             metroId = null,
+            gender = Gender.M,
         )
         RestAssured.given()
             .contentType(ContentType.JSON)
@@ -60,6 +62,7 @@ class ElasticTest : BaseContainers() {
             title = targetTitle2,
             cityId = 4L,
             metroId = null,
+            gender = Gender.M,
         )
         RestAssured.given()
             .contentType(ContentType.JSON)
@@ -107,23 +110,25 @@ class ElasticTest : BaseContainers() {
         val createListingRequest = ListingsRequest(
             description = "Base desc $token",
             species = faker.funnyName().name(),
-            ageMonths = faker.number().randomDigit(),
+            ageMonths = faker.number().numberBetween(1, 3),
             price = BigDecimal(faker.number().randomDigit()),
             breed = null,
             title = "Base title $token",
             cityId = 4L,
             metroId = null,
+            gender = Gender.M,
         )
 
         val similarListingRequest = ListingsRequest(
             description = "Similar desc $token",
             species = faker.funnyName().name(),
-            ageMonths = faker.number().randomDigit(),
+            ageMonths = faker.number().numberBetween(1, 3),
             price = BigDecimal(faker.number().randomDigit()),
             breed = null,
             title = "Similar title $token",
             cityId = 4L,
             metroId = null,
+            gender = Gender.M,
         )
 
         createSomeListings(8, sellerTokens)

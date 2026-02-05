@@ -5,6 +5,8 @@ import { photosAPI } from '../api/photos';
 import { messengerAPI } from '../api/messenger';
 import { listingsAPI } from '../api/listings';
 import { useAuth } from '../context/AuthContext';
+import { GENDER_LABELS } from '../util/gender';
+import { AGE_LABELS } from '../util/age';
 
 export const SellerProfileView = () => {
   const { sellerId } = useParams();
@@ -348,9 +350,14 @@ export const SellerProfileView = () => {
                             </span>
                           )}
                         </div>
-                        {listing.ageMonths && (
+                        {listing.ageMonths != null && (
                           <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: '#666' }}>
-                            Возраст: {listing.ageMonths} мес.
+                            Возраст: {AGE_LABELS[listing.ageMonths] || 'Не указан'}
+                          </p>
+                        )}
+                        {listing.gender && (
+                          <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: '#666' }}>
+                            Пол: {GENDER_LABELS[listing.gender] || 'Любой'}
                           </p>
                         )}
                       </div>
@@ -390,4 +397,3 @@ export const SellerProfileView = () => {
     </div>
   );
 };
-

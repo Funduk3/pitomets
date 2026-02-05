@@ -1,5 +1,7 @@
 package com.pitomets.monolit.integration
 
+import com.pitomets.monolit.model.Gender
+import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.testContainers.BaseContainers
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
@@ -9,11 +11,23 @@ import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.junit.jupiter.Testcontainers
+import java.math.BigDecimal
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class PhotoTest : BaseContainers() {
+
+    val createListingRequest = ListingsRequest(
+        description = faker.lorem().sentence(),
+        species = faker.animal().name(),
+        ageMonths = faker.number().numberBetween(1, 3),
+        price = BigDecimal.valueOf(faker.number().numberBetween(1, 100).toLong()),
+        breed = null,
+        title = faker.book().title(),
+        cityId = 4L,
+        gender = Gender.M
+    )
 
     @Test
     fun `upload avatar test`() {
@@ -186,19 +200,7 @@ class PhotoTest : BaseContainers() {
             .given()
             .auth().oauth2(sellerToken.accessToken)
             .contentType(ContentType.JSON)
-            .body(
-                """
-                {
-                    "title": "Test Pet",
-                    "description": "Test description",
-                    "species": "DOG",
-                    "breed": "Labrador",
-                    "ageMonths": 12,
-                    "price": 1000,
-                    "cityId": 4
-                }
-                """.trimIndent()
-            )
+            .body(createListingRequest)
             .post("/listings/")
             .then()
             .statusCode(200)
@@ -230,19 +232,7 @@ class PhotoTest : BaseContainers() {
             .given()
             .auth().oauth2(sellerToken.accessToken)
             .contentType(ContentType.JSON)
-            .body(
-                """
-                {
-                    "title": "Test Pet",
-                    "description": "Test description",
-                    "species": "DOG",
-                    "breed": "Labrador",
-                    "ageMonths": 12,
-                    "price": 1000,
-                    "cityId": 4
-                }
-                """.trimIndent()
-            )
+            .body(createListingRequest)
             .post("/listings/")
             .then()
             .statusCode(200)
@@ -284,19 +274,7 @@ class PhotoTest : BaseContainers() {
             .given()
             .auth().oauth2(sellerToken.accessToken)
             .contentType(ContentType.JSON)
-            .body(
-                """
-                {
-                    "title": "Test Pet",
-                    "description": "Test description",
-                    "species": "DOG",
-                    "breed": "Labrador",
-                    "ageMonths": 12,
-                    "price": 1000,
-                    "cityId": 4
-                }
-                """.trimIndent()
-            )
+            .body(createListingRequest)
             .post("/listings/")
             .then()
             .statusCode(200)
@@ -341,19 +319,7 @@ class PhotoTest : BaseContainers() {
             .given()
             .auth().oauth2(sellerToken.accessToken)
             .contentType(ContentType.JSON)
-            .body(
-                """
-                {
-                    "title": "Test Pet",
-                    "description": "Test description",
-                    "species": "DOG",
-                    "breed": "Labrador",
-                    "ageMonths": 12,
-                    "price": 1000,
-                    "cityId": 4
-                }
-                """.trimIndent()
-            )
+            .body(createListingRequest)
             .post("/listings/")
             .then()
             .statusCode(200)
@@ -402,19 +368,7 @@ class PhotoTest : BaseContainers() {
             .given()
             .auth().oauth2(sellerToken.accessToken)
             .contentType(ContentType.JSON)
-            .body(
-                """
-                {
-                    "title": "Test Pet",
-                    "description": "Test description",
-                    "species": "DOG",
-                    "breed": "Labrador",
-                    "ageMonths": 12,
-                    "price": 1000,
-                    "cityId": 4
-                }
-                """.trimIndent()
-            )
+            .body(createListingRequest)
             .post("/listings/")
             .then()
             .statusCode(200)
@@ -446,19 +400,7 @@ class PhotoTest : BaseContainers() {
             .given()
             .auth().oauth2(sellerToken.accessToken)
             .contentType(ContentType.JSON)
-            .body(
-                """
-                {
-                    "title": "Test Pet",
-                    "description": "Test description",
-                    "species": "DOG",
-                    "breed": "Labrador",
-                    "ageMonths": 12,
-                    "price": 1000,
-                    "cityId": 4
-                }
-                """.trimIndent()
-            )
+            .body(createListingRequest)
             .post("/listings/")
             .then()
             .statusCode(200)
@@ -499,19 +441,7 @@ class PhotoTest : BaseContainers() {
             .given()
             .auth().oauth2(sellerToken.accessToken)
             .contentType(ContentType.JSON)
-            .body(
-                """
-                {
-                    "title": "Test Pet with Photos",
-                    "description": "Test description",
-                    "species": "DOG",
-                    "breed": "Labrador",
-                    "ageMonths": 12,
-                    "price": 1000,
-                    "cityId": 4
-                }
-                """.trimIndent()
-            )
+            .body(createListingRequest)
             .post("/listings/")
             .then()
             .statusCode(200)
@@ -544,7 +474,7 @@ class PhotoTest : BaseContainers() {
             .get("/listings/$listingId/photos")
             .then()
             .statusCode(200)
-            .body("title", equalTo("Test Pet with Photos"))
+            .body("title", equalTo(createListingRequest.title))
             .body("photos.size()", equalTo(5))
             .extract()
             .path<List<String>>("photos")

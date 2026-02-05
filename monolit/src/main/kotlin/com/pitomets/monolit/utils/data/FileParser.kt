@@ -6,6 +6,8 @@ import com.pitomets.monolit.model.dto.utils.ApiResponseDto
 import com.pitomets.monolit.model.dto.utils.CityDto
 import com.pitomets.monolit.model.dto.utils.MetroLineDto
 import com.pitomets.monolit.model.dto.utils.RegionDto
+import com.pitomets.monolit.model.entity.AnimalType
+import com.pitomets.monolit.model.entity.Breed
 import com.pitomets.monolit.model.entity.CityEntity
 import com.pitomets.monolit.model.entity.MetroLineEntity
 import com.pitomets.monolit.model.entity.MetroStationEntity
@@ -56,9 +58,24 @@ fun MetroLineDto.toEntity(cityId: Long): MetroLineEntity {
     return line
 }
 
+fun hasBreed(title: String): Boolean {
+    return title == "Собаки" || title == "Кошки"
+}
+
 object FileParser {
     // todo use 1 mapper everywhere
     private val mapper = jacksonObjectMapper()
+
+    private fun readTxtFromResources(path: String): List<String> {
+        val resource = requireNotNull(
+            object {}.javaClass.classLoader.getResource(path)
+        ) { "Resource not found: $path" }
+
+        return resource.readText(StandardCharsets.UTF_8)
+            .lines()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+    }
 
     fun parseRegion(filePath: String): List<RegionEntity> {
         val json = readJsonFromFile(filePath)
@@ -87,5 +104,29 @@ object FileParser {
         )
 
         return dtoList.map { it.toEntity(cityId) }
+    }
+
+    fun parseAnimalType(path: String): List<AnimalType> {
+        return readTxtFromResources(path)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .map { title ->
+                AnimalType(
+                    title = title,
+                    hasBreed = hasBreed(title),
+                )
+            }
+    }
+
+    fun parseBreed(path: String, animalType: AnimalType): List<Breed> {
+        return readTxtFromResources(path)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .map { title ->
+                Breed(
+                    title = title,
+                    animalType = animalType,
+                )
+            }
     }
 }
