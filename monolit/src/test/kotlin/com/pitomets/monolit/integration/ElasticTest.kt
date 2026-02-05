@@ -56,7 +56,7 @@ class ElasticTest : BaseContainers() {
         val targetReq2 = ListingsRequest(
             description = "This is the best match B for $token",
             species = faker.name().name(),
-            ageMonths = faker.number().numberBetween(1, 24),
+            ageMonths = faker.number().numberBetween(1, 3),
             price = BigDecimal.valueOf(faker.number().numberBetween(1L, 24L)),
             breed = null,
             title = targetTitle2,
