@@ -81,6 +81,7 @@ class ProfileService(
             email = requireNotNull(user.email),
             fullName = user.fullName,
             isSeller = user.sellerProfile != null,
+            sellerProfileId = user.sellerProfile?.id,
             shopName = user.sellerProfile?.shopName,
             description = user.sellerProfile?.description,
             rating = user.sellerProfile?.rating,
@@ -132,6 +133,22 @@ class ProfileService(
     fun getSellerProfileByUserId(sellerId: Long): SellerProfileResponse {
         val sellerProfile = sellerProfileRepo.findBySellerId(sellerId)
             ?: throw UserNotFoundException("Seller profile not found for user ID: $sellerId")
+
+        return SellerProfileResponse(
+            id = requireNotNull(sellerProfile.id) { "Seller profile ID cannot be null" },
+            userId = sellerProfile.seller?.id,
+            shopName = sellerProfile.shopName,
+            description = sellerProfile.description,
+            rating = sellerProfile.rating,
+            isVerified = sellerProfile.isVerified,
+            createdAt = sellerProfile.createdAt,
+            avatarKey = sellerProfile.seller?.avatarKey
+        )
+    }
+
+    fun getSellerProfileByProfileId(sellerProfileId: Long): SellerProfileResponse {
+        val sellerProfile = sellerProfileRepo.findById(sellerProfileId)
+            .orElseThrow { UserNotFoundException("Seller profile not found for id: $sellerProfileId") }
 
         return SellerProfileResponse(
             id = requireNotNull(sellerProfile.id) { "Seller profile ID cannot be null" },

@@ -9,6 +9,8 @@ data class ChatEntity(
     val id: Long,
     val user1Id: Long,
     val user2Id: Long,
+    val listingId: Long? = null,
+    val listingTitle: String? = null,
     @Contextual val createdAt: Instant,
     @Contextual val updatedAt: Instant,
     val unreadCountUser1: Int,

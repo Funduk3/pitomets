@@ -136,23 +136,7 @@ export const UserProfileView = () => {
       return;
     }
 
-    if (!profile?.id) {
-      alert('User information not available');
-      return;
-    }
-
-    if (user?.id === profile.id) {
-      alert('You cannot message yourself');
-      return;
-    }
-
-    try {
-      const chat = await messengerAPI.createOrGetChat(profile.id);
-      navigate(`/chats/${chat.id}`);
-    } catch (err) {
-      console.error('Failed to create chat:', err);
-      alert('Failed to start conversation');
-    }
+    alert('Напишите пользователю из конкретного объявления.');
   };
 
   if (loading) return <div>Грузим...</div>;

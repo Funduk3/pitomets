@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.PathVariable
 
 @RestController
 @RequestMapping("/seller")
@@ -40,4 +41,10 @@ class SellerProfileController(
         @RequestParam("sellerId") sellerId: Long
     ): SellerProfileResponse =
         profileService.getSellerProfileByUserId(sellerId)
+
+    @GetMapping("/profile/{sellerProfileId}")
+    fun getSellerProfileById(
+        @PathVariable sellerProfileId: Long
+    ): SellerProfileResponse =
+        profileService.getSellerProfileByProfileId(sellerProfileId)
 }

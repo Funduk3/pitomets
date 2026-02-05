@@ -223,7 +223,11 @@ export const ListingDetail = () => {
     }
 
     try {
-      const chat = await messengerAPI.createOrGetChat(listing.sellerId);
+      const chat = await messengerAPI.createOrGetChat(
+        listing.sellerId,
+        listing.listingsId,
+        listing.title
+      );
       navigate(`/chats/${chat.id}`);
     } catch (err) {
       console.error('Failed to create chat:', err);

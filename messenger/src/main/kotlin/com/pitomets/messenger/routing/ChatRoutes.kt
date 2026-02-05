@@ -22,7 +22,12 @@ fun Route.chatRoutes(chatService: ChatService, messageService: MessageService) {
             val currentUserId = call.request.header("X-User-Id")?.toLongOrNull()
                 ?: return@post call.respond(HttpStatusCode.Unauthorized, "Missing X-User-Id header")
 
-            val chat = chatService.createOrGetChat(currentUserId, request.userId)
+            val chat = chatService.createOrGetChat(
+                currentUserId,
+                request.userId,
+                request.listingId,
+                request.listingTitle
+            )
             call.respond(HttpStatusCode.OK, ChatResponse.from(chat))
         }
 

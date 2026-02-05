@@ -41,7 +41,7 @@ export const SellerProfileView = () => {
 
   const loadProfile = async () => {
     try {
-      const data = await sellerAPI.getSellerProfile(parseInt(sellerId));
+      const data = await sellerAPI.getSellerProfileById(parseInt(sellerId));
       setProfile(data);
     } catch (err) {
       setError('Failed to load seller profile');
@@ -137,23 +137,7 @@ export const SellerProfileView = () => {
       return;
     }
 
-    if (!profile?.userId) {
-      alert('Seller information not available');
-      return;
-    }
-
-    if (user?.id === profile.userId) {
-      alert('You cannot message yourself');
-      return;
-    }
-
-    try {
-      const chat = await messengerAPI.createOrGetChat(profile.userId);
-      navigate(`/chats/${chat.id}`);
-    } catch (err) {
-      console.error('Failed to create chat:', err);
-      alert('Failed to start conversation with seller');
-    }
+    alert('Напишите продавцу из конкретного объявления.');
   };
 
   if (loading) return <div>Грузим...</div>;
