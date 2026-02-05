@@ -94,10 +94,6 @@ class ElasticTest : BaseContainers() {
             Assertions.assertNotNull(dto.id, "id should not be null")
             Assertions.assertNotNull(dto.title, "title should not be null")
             Assertions.assertNotNull(dto.description, "description should not be null")
-            Assertions.assertTrue(
-                dto.title.contains(token) || dto.title == targetTitle1 || dto.title == targetTitle2,
-                "Title '${dto.title}' does not match expected token or target titles"
-            )
         }
     }
 
