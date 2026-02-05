@@ -4,6 +4,7 @@ import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.exceptions.profileExceptions.ProfileAlreadyExistsException
 import com.pitomets.monolit.model.UserPrincipal
 import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
+import com.pitomets.monolit.model.dto.request.UpdateUserProfileRequest
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
 import com.pitomets.monolit.model.dto.response.UserWithProfilesResponse
 import com.pitomets.monolit.model.entity.SellerProfile
@@ -87,6 +88,19 @@ class ProfileService(
             createdAt = user.sellerProfile?.createdAt,
             avatarKey = user.avatarKey,
         )
+    }
+
+    @Transactional
+    fun updateUserProfile(userId: Long, request: UpdateUserProfileRequest): UserWithProfilesResponse {
+        val user = userRepo.findUserOrThrow(userId)
+
+        request.fullName?.let { user.fullName = it }
+
+        userRepo.save(user)
+
+        log.info("User profile updated for user ID: {}", userId)
+
+        return getUserWithProfiles(userId)
     }
 
     @Transactional

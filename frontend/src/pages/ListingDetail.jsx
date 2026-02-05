@@ -323,20 +323,34 @@ export const ListingDetail = () => {
             {listing.gender ? (GENDER_LABELS[listing.gender] || 'Любой') : 'Любой'}
           </p>
           {isAuthenticated() && user?.id === listing.sellerId && (
-            <Link
-              to={`/listings/${id}/photos`}
-              style={{
-                display: 'inline-block',
-                marginTop: '0.75rem',
-                padding: '0.5rem 1rem',
-                backgroundColor: '#f39c12',
-                color: 'white',
-                textDecoration: 'none',
-                borderRadius: '4px'
-              }}
-            >
-              Изменить фотографии
-            </Link>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+              <Link
+                to={`/listings/${id}/edit`}
+                style={{
+                  display: 'inline-block',
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#3498db',
+                  color: 'white',
+                  textDecoration: 'none',
+                  borderRadius: '4px'
+                }}
+              >
+                Изменить объявление
+              </Link>
+              <Link
+                to={`/listings/${id}/photos`}
+                style={{
+                  display: 'inline-block',
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#f39c12',
+                  color: 'white',
+                  textDecoration: 'none',
+                  borderRadius: '4px'
+                }}
+              >
+                Изменить фотографии
+              </Link>
+            </div>
           )}
           {isAuthenticated() && user?.id !== listing.sellerId && (
             <button

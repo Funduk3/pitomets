@@ -11,6 +11,11 @@ export const userAPI = {
     return response.data;
   },
 
+  updateCurrentProfile: async (data) => {
+    const response = await api.put('/profile/me', data);
+    return response.data;
+  },
+
   getAllUsers: async () => {
     const response = await api.get('/all');
     return response.data;
