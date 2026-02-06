@@ -41,7 +41,13 @@ export const SellerProfileView = () => {
 
   const loadProfile = async () => {
     try {
-      const data = await sellerAPI.getSellerProfileById(parseInt(sellerId));
+      const parsedId = parseInt(sellerId);
+      let data;
+      try {
+        data = await sellerAPI.getSellerProfileById(parsedId);
+      } catch (e) {
+        data = await sellerAPI.getSellerProfile(parsedId);
+      }
       setProfile(data);
     } catch (err) {
       setError('Failed to load seller profile');
