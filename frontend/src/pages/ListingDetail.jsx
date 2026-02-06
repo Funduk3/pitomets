@@ -301,7 +301,7 @@ export const ListingDetail = () => {
           )}
           <div style={{ flex: 1 }}>
             <Link
-              to={`/seller/profile/view/${sellerProfile.userId}`}
+              to={`/seller/profile/view/${sellerProfile.id}`}
               style={{
                 textDecoration: 'none',
                 color: '#3498db',
