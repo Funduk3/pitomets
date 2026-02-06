@@ -2,7 +2,9 @@ package com.pitomets.notifications.infrastructure.kafka
 
 import com.pitomets.notifications.application.event.NotificationSentEvent
 import org.springframework.kafka.core.KafkaTemplate
+import org.springframework.stereotype.Component
 
+@Component
 class NotificationStatusProducer(
     private val kafkaTemplate: KafkaTemplate<String, Any>
 ) {
