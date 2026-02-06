@@ -19,6 +19,7 @@ class KafkaNotificationConsumer(
         topics = ["notification.send"],
         groupId = "notification-service"
     )
+    @Suppress("TooGenericExceptionCaught")
     fun consume(event: NotificationRequestedEvent) {
         try {
             val command = NotificationMapper.toCommand(event)
@@ -26,6 +27,15 @@ class KafkaNotificationConsumer(
         } catch (ex: IllegalArgumentException) {
             logger.warn("Invalid notification request ${event.eventId}: ${ex.message}")
             invalidEventHandler.handle(event, ex)
+        } catch (ex: Exception) {
+            // Перехватываем любые неожиданные ошибки, чтобы не допускать автоматического ретрая контейнера
+            logger.error("Unexpected error while processing notification ${event.eventId}: ${ex.message}", ex)
+            try {
+                invalidEventHandler.handle(event, ex)
+            } catch (handlerEx: Exception) {
+                logger.error("Failed to handle invalid event ${event.eventId}", handlerEx)
+            }
+            // не пробрасываем исключение дальше — обработали и сохранили ошибку
         }
     }
 }

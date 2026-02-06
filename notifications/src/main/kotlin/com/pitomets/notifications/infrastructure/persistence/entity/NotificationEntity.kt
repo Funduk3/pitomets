@@ -17,7 +17,7 @@ data class NotificationEntity(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null,
 
-    @Column(name = "event_id", nullable = false)
+    @Column(name = "event_id", nullable = false, unique = true)
     val eventId: Long,
 
     @Column(name = "user_id", nullable = false)

@@ -14,7 +14,7 @@ class NotificationOutboxAdapter(
 
     override fun save(event: Any) {
         val entity = OutboxEventEntity(
-            eventType = event.javaClass.simpleName,
+            eventType = event.javaClass.name,
             eventData = objectMapper.writeValueAsString(event),
             published = false
         )

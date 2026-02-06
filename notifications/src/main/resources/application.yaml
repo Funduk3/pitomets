@@ -8,11 +8,10 @@ spring:
   # =========================
   # DATABASE
   # =========================
-  spring:
-    datasource:
-      url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/pitomets}
-      username: ${SPRING_DATASOURCE_USERNAME:user}
-      password: ${SPRING_DATASOURCE_PASSWORD:password}
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/pitomets}
+    username: ${SPRING_DATASOURCE_USERNAME:user}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
 
   jpa:
     hibernate:
@@ -33,15 +32,20 @@ spring:
       group-id: notification-service
       enable-auto-commit: false
       auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
 
-  key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-  value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        # Увеличиваем таймауты для дожидания транзакций
+        max.poll.interval.ms: 300000      # 5 минут на обработку одного батча
+        session.timeout.ms: 45000         # 45 секунд таймаут сессии
+        heartbeat.interval.ms: 3000       # heartbeat каждые 3 секунды
 
-  properties:
-    spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
-    spring.json.use.type.headers: false
-    spring.json.value.default.type: com.pitomets.notifications.interfaces.messaging.event.NotificationRequestedEvent
-    spring.json.trusted.packages: "*"
+        # Настройки десериализации
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.pitomets.notifications.interfaces.messaging.event.NotificationRequestedEvent
+        spring.json.trusted.packages: "*"
 
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -62,13 +66,13 @@ spring:
   # EMAIL (SMTP)
   # =========================
   mail:
-    host: smtp.mailgun.org
-    port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:test}
+    password: ${MAIL_PASSWORD:test}
     properties:
-      mail.smtp.auth: true
-      mail.smtp.starttls.enable: true
+      mail.smtp.auth: false
+      mail.smtp.starttls.enable: false
 
 # =========================
 # APPLICATION (CUSTOM)
@@ -96,4 +100,4 @@ logging:
     root: INFO
     org.springframework.kafka: INFO
     org.apache.kafka: WARN
-    com.example.notification: DEBUG
+    com.pitomets.notifications: DEBUG

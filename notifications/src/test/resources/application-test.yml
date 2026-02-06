@@ -30,11 +30,14 @@ spring:
   mail:
     host: localhost
     port: 1025
-    username: test
-    password: test
+    username: ''
+    password: ''
     properties:
-      mail.smtp.auth: false
-      mail.smtp.starttls.enable: false
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
 
 logging:
   level:

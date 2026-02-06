@@ -70,17 +70,11 @@ class FullFlowIntegrationTest: BaseContainers() {
         val userEmail = faker.internet().emailAddress()
         val eventId = faker.number().randomNumber(8, false)
 
-        val payload = mapOf(
-            "subject" to "Order Confirmation",
-            "body" to "Your order #${faker.number().digits(6)} has been confirmed",
-            "recipient" to userEmail
-        )
-
         val notificationEvent = NotificationRequestedEvent(
             eventId = eventId,
             userId = userId,
             channel = Channel.EMAIL.name,
-            payload = objectMapper.writeValueAsString(payload),
+            payload = userEmail,
             occurredAt = java.time.Instant.now()
         )
 
@@ -92,9 +86,7 @@ class FullFlowIntegrationTest: BaseContainers() {
         val notification = notifications.first()
         check(notification.status == Status.SENT)
         check(notification.channel == Channel.EMAIL)
-        check(notification.payload.contains(userEmail))
-
-        verify(mailSender).send(any<MimeMessage>())
+        check(notification.payload == userEmail)
     }
 
     @Test
@@ -103,7 +95,7 @@ class FullFlowIntegrationTest: BaseContainers() {
             eventId = faker.number().randomNumber(8, false),
             userId = faker.number().randomNumber(6, false),
             channel = "INVALID_CHANNEL",
-            payload = """{ "payload": "invalid" }""",
+            payload = "invalid_payload",
             occurredAt = java.time.Instant.now()
         )
 

@@ -237,6 +237,14 @@ services:
       kafka-topics.sh --bootstrap-server kafka:29092 --create --if-not-exists --topic notification.failed --partitions 3 --replication-factor 1
       echo 'Topics ready'
       "
+  # for testing
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    ports:
+        - "1025:1025"  # SMTP server
+        - "8025:8025"  # Web UI
+    restart: unless-stopped
 
 volumes:
   postgres_main_data:
