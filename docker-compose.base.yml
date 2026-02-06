@@ -1,6 +1,6 @@
 services:
   app:
-    build: ./monolit
+    build: ${MONOLIT_IMAGE}
     container_name: spring-app
     ports:
       - "8080:8080"
@@ -35,6 +35,8 @@ services:
       MESSENGER_URL: http://host.docker.internal:8081
 
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092  # ✅ Внутренний адрес в Docker-сети
+    networks:
+      - web
 
   notifications-service:
     build: ./notifications
@@ -57,9 +59,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    networks:
+      - web
 
   messenger:
-    build: ./messenger
+    image: ${MESSENGER_IMAGE}
     container_name: messenger-app
     ports:
       - "8081:8081"
@@ -70,6 +74,8 @@ services:
     depends_on:
       postgres-messenger:
         condition: service_healthy
+    networks:
+      - web
 
   frontend:
     image: node:20-alpine
@@ -79,6 +85,8 @@ services:
     volumes:
       - .:/app
     command: sh -c "npm install && npm run dev"
+    networks:
+      - web
 
   redis:
     image: redis:8-alpine
@@ -87,6 +95,8 @@ services:
     ports:
       - "6379:6379"
     command: redis-server --save 60 1 --loglevel warning
+    networks:
+      - web
 
   postgres:
     image: postgres:18-alpine
@@ -105,6 +115,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - web
 
   postgres-messenger:
     image: postgres:18-alpine
@@ -122,6 +134,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - web
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:9.2.4
@@ -149,6 +163,8 @@ services:
       nofile:
         soft: 65536
         hard: 65536
+    networks:
+      - web
 
   prometheus:
     image: prom/prometheus:latest
@@ -156,6 +172,8 @@ services:
       - "9090:9090"
     volumes:
       - ./monolit/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - web
 
   grafana:
     image: grafana/grafana:latest
@@ -167,6 +185,8 @@ services:
 
     depends_on:
       - prometheus
+    networks:
+      - web
 
   minio:
     image: minio/minio:latest
@@ -181,6 +201,8 @@ services:
     volumes:
       - minio-data:/data
     restart: unless-stopped
+    networks:
+      - web
 
   minio-init:
     image: minio/mc:latest
@@ -200,6 +222,8 @@ services:
         mc policy set public myminio/pitomets-avatars &&
         echo '✅ Бакеты созданы: pitomets-images, pitomets-avatars'
       "
+    networks:
+      - web
 
 
   kafka:
@@ -223,6 +247,8 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_LOG_RETENTION_HOURS: 168
+    networks:
+      - web
 
   kafka-init:
     image: apache/kafka:4.1.1
@@ -237,6 +263,8 @@ services:
       kafka-topics.sh --bootstrap-server kafka:29092 --create --if-not-exists --topic notification.failed --partitions 3 --replication-factor 1
       echo 'Topics ready'
       "
+    networks:
+      - web
   # for testing
   mailhog:
     image: mailhog/mailhog:latest
@@ -245,9 +273,15 @@ services:
         - "1025:1025"  # SMTP server
         - "8025:8025"  # Web UI
     restart: unless-stopped
+    networks:
+      - web
 
 volumes:
   postgres_main_data:
   postgres_messenger_data:
   es_data:
   minio-data:
+
+networks:
+  web:
+    external: true
