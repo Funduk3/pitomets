@@ -27,7 +27,7 @@ class EmailNotificationSenderTest {
 
     @BeforeEach
     fun setUp() {
-        sender = EmailNotificationSender(mailSender, objectMapper)
+        sender = EmailNotificationSender(mailSender)
         val session = Session.getInstance(Properties())
         whenever(mailSender.createMimeMessage()).thenReturn(MimeMessage(session))
     }
