@@ -29,8 +29,8 @@ class EmailNotificationSender(
             val recipientEmail = notification.payload.trim()
 
             helper.setTo(recipientEmail)
-            helper.setSubject("Welcome!")
-            helper.setText("Welcome to our platform!", true)
+            helper.setSubject("Thank you for registration!")
+            helper.setText("Welcome to pitomets", true)
 
             // пока не подключается к реальному почтовому ящику, поэтому закоменчено
             // javaMailSender.send(message)
