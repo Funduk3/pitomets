@@ -1,7 +1,10 @@
 package com.pitomets.monolit.model.entity
 
+import com.pitomets.monolit.model.Gender
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
@@ -29,6 +32,9 @@ class Listing(
 
     @Column(name = "age_months")
     var ageMonths: Int,
+
+    @Enumerated(EnumType.STRING)
+    var gender: Gender? = null,
 
     // mother/father reference to Pet (FK to pets.id)
     @ManyToOne(fetch = FetchType.LAZY)

@@ -5,6 +5,8 @@ import { photosAPI } from '../api/photos';
 import { messengerAPI } from '../api/messenger';
 import { listingsAPI } from '../api/listings';
 import { useAuth } from '../context/AuthContext';
+import { GENDER_LABELS } from '../util/gender';
+import { AGE_LABELS } from '../util/age';
 
 export const SellerProfileView = () => {
   const { sellerId } = useParams();
@@ -39,7 +41,7 @@ export const SellerProfileView = () => {
 
   const loadProfile = async () => {
     try {
-      const data = await sellerAPI.getSellerProfile(parseInt(sellerId));
+      const data = await sellerAPI.getSellerProfileById(parseInt(sellerId));
       setProfile(data);
     } catch (err) {
       setError('Failed to load seller profile');
@@ -135,23 +137,7 @@ export const SellerProfileView = () => {
       return;
     }
 
-    if (!profile?.userId) {
-      alert('Seller information not available');
-      return;
-    }
-
-    if (user?.id === profile.userId) {
-      alert('You cannot message yourself');
-      return;
-    }
-
-    try {
-      const chat = await messengerAPI.createOrGetChat(profile.userId);
-      navigate(`/chats/${chat.id}`);
-    } catch (err) {
-      console.error('Failed to create chat:', err);
-      alert('Failed to start conversation with seller');
-    }
+    alert('Напишите продавцу из конкретного объявления.');
   };
 
   if (loading) return <div>Грузим...</div>;
@@ -348,9 +334,14 @@ export const SellerProfileView = () => {
                             </span>
                           )}
                         </div>
-                        {listing.ageMonths && (
+                        {listing.ageMonths != null && (
                           <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: '#666' }}>
-                            Возраст: {listing.ageMonths} мес.
+                            Возраст: {AGE_LABELS[listing.ageMonths] || 'Не указан'}
+                          </p>
+                        )}
+                        {listing.gender && (
+                          <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: '#666' }}>
+                            Пол: {GENDER_LABELS[listing.gender] || 'Любой'}
                           </p>
                         )}
                       </div>
@@ -390,4 +381,3 @@ export const SellerProfileView = () => {
     </div>
   );
 };
-

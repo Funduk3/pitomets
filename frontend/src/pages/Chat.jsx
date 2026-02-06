@@ -2,6 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { messengerAPI } from '../api/messenger';
 import { userAPI } from '../api/user';
+import { sellerAPI } from '../api/seller';
 import { photosAPI } from '../api/photos';
 import { useAuth } from '../context/AuthContext';
 import { useMessengerWS } from '../context/MessengerWSContext';
@@ -16,7 +17,8 @@ export const Chat = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [otherProfile, setOtherProfile] = useState(null);
-  const [otherAvatarUrl, setOtherAvatarUrl] = useState(null);
+  const [listingPhotoUrl, setListingPhotoUrl] = useState(null);
+  const [otherSellerProfileId, setOtherSellerProfileId] = useState(null);
   const [isTabVisible, setIsTabVisible] = useState(!document.hidden);
   const [unreadBoundaryId, setUnreadBoundaryId] = useState(null);
   const syncIntervalRef = useRef(null);
@@ -153,9 +155,6 @@ export const Chat = () => {
         const profile = await userAPI.getUserProfile(otherUserId);
         if (!cancelled) {
           setOtherProfile(profile);
-          if (profile?.id) {
-            loadOtherAvatar(profile.id);
-          }
         }
       } catch (e) {
         if (!cancelled) setOtherProfile(null);
@@ -164,34 +163,58 @@ export const Chat = () => {
 
     return () => {
       cancelled = true;
-      if (otherAvatarUrl && otherAvatarUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(otherAvatarUrl);
-      }
     };
   }, [chat?.id, chat?.user1Id, chat?.user2Id, user?.id]);
 
-  const loadOtherAvatar = async (userId) => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        const response = await fetch(photosAPI.getAvatarByUserId(userId), {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const blob = await response.blob();
-          const url = URL.createObjectURL(blob);
-          setOtherAvatarUrl(url);
-        } else {
-          setOtherAvatarUrl(null);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to load avatar:', err);
-      setOtherAvatarUrl(null);
+  useEffect(() => {
+    const otherUserId = chat?.user1Id === user?.id ? chat?.user2Id : chat?.user1Id;
+    if (!otherUserId) return;
+    if (otherProfile?.sellerProfileId) {
+      setOtherSellerProfileId(otherProfile.sellerProfileId);
+      return;
     }
-  };
+    let cancelled = false;
+    (async () => {
+      try {
+        const sellerProfile = await sellerAPI.getSellerProfile(otherUserId);
+        if (!cancelled) {
+          setOtherSellerProfileId(sellerProfile?.id ?? null);
+        }
+      } catch (_) {
+        if (!cancelled) setOtherSellerProfileId(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [chat?.id, chat?.user1Id, chat?.user2Id, user?.id, otherProfile?.sellerProfileId]);
+
+  useEffect(() => {
+    if (!chat?.listingId) {
+      setListingPhotoUrl(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await photosAPI.getListingPhotos(chat.listingId);
+        const first = data?.photos?.[0];
+        if (!cancelled) {
+          if (first) {
+            const url = first.startsWith('http') ? first : `http://localhost:8080${first}`;
+            setListingPhotoUrl(url);
+          } else {
+            setListingPhotoUrl(null);
+          }
+        }
+      } catch (err) {
+        if (!cancelled) setListingPhotoUrl(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [chat?.listingId]);
 
   const loadMessages = async () => {
     try {
@@ -325,38 +348,90 @@ export const Chat = () => {
 
   const otherUserId = chat.user1Id === user?.id ? chat.user2Id : chat.user1Id;
   const otherName = otherProfile?.shopName || otherProfile?.fullName || `Пользователь #${otherUserId}`;
-  const profileLink = otherProfile?.isSeller 
-    ? `/seller/profile/view/${otherUserId}`
+  const isSeller = Boolean(user?.isSeller);
+  const resolvedSellerProfileId = otherProfile?.sellerProfileId ?? otherSellerProfileId;
+  const profileLink = resolvedSellerProfileId
+    ? `/seller/profile/view/${resolvedSellerProfileId}`
     : `/user/profile/${otherUserId}`;
+  const listingTitle = chat?.listingTitle || 'Объявление';
+  const listingLink = chat?.listingId ? `/listings/${chat.listingId}` : null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }}>
       <div style={{ padding: '1rem', borderBottom: '1px solid #ddd', backgroundColor: '#f9f9f9', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        {otherAvatarUrl && (
+        {listingPhotoUrl && (
           <img 
-            src={otherAvatarUrl} 
-            alt="User avatar" 
+            src={listingPhotoUrl} 
+            alt="Listing" 
             style={{ 
-              width: '50px', 
-              height: '50px', 
-              borderRadius: '50%', 
+              width: '56px', 
+              height: '56px', 
+              borderRadius: '8px', 
               objectFit: 'cover',
               border: '2px solid #ddd'
             }} 
           />
         )}
         <div style={{ flex: 1 }}>
-          <Link
-            to={profileLink}
-            style={{
-              textDecoration: 'none',
-              color: '#3498db',
-              fontSize: '1.2rem',
-              fontWeight: 'bold'
-            }}
-          >
-            {otherName}
-          </Link>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            {isSeller ? (
+              <>
+                <Link
+                  to={profileLink}
+                  style={{
+                    textDecoration: 'none',
+                    color: '#3498db',
+                    fontSize: '1.2rem',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  {otherName}
+                </Link>
+                {listingLink ? (
+                  <Link
+                    to={listingLink}
+                    style={{
+                      textDecoration: 'none',
+                      color: '#666',
+                      fontSize: '0.95rem'
+                    }}
+                  >
+                    {listingTitle}
+                  </Link>
+                ) : (
+                  <div style={{ fontSize: '0.95rem', color: '#666' }}>{listingTitle}</div>
+                )}
+              </>
+            ) : (
+              <>
+                {listingLink ? (
+                  <Link
+                    to={listingLink}
+                    style={{
+                      textDecoration: 'none',
+                      color: '#3498db',
+                      fontSize: '1.2rem',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {listingTitle}
+                  </Link>
+                ) : (
+                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{listingTitle}</div>
+                )}
+                <Link
+                  to={profileLink}
+                  style={{
+                    textDecoration: 'none',
+                    color: '#666',
+                    fontSize: '0.95rem'
+                  }}
+                >
+                  {otherName}
+                </Link>
+              </>
+            )}
+          </div>
           <div style={{ fontSize: '0.9rem', color: '#666' }}>
             {wsConnected ? '🟢 Подключено' : '🔴 Отключено'}
           </div>
@@ -477,4 +552,3 @@ export const Chat = () => {
     </div>
   );
 };
-

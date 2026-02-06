@@ -1,5 +1,6 @@
 package com.pitomets.monolit.model.dto.response
 
+import com.pitomets.monolit.model.Gender
 import java.math.BigDecimal
 
 data class ListingsResponse(
@@ -18,6 +19,8 @@ data class ListingsResponse(
     val breed: String?,
 
     val ageMonths: Int,
+
+    val gender: Gender?,
 
     val price: BigDecimal,
 

@@ -1,5 +1,6 @@
 package com.pitomets.monolit.integration
 
+import com.pitomets.monolit.model.Gender
 import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
@@ -105,12 +106,13 @@ class SellerProfileTest : BaseContainers() {
         val createListingRequest = ListingsRequest(
             description = faker.funnyName().name(),
             species = faker.funnyName().name(),
-            ageMonths = faker.number().randomDigit(),
+            ageMonths = faker.number().numberBetween(1, 3),
             price = BigDecimal(faker.number().randomDigit()),
             breed = null,
             title = faker.name().fullName(),
             cityId = 4L,
             metroId = null,
+            gender = Gender.M,
         )
         RestAssured.given()
             .contentType(ContentType.JSON)
@@ -152,6 +154,7 @@ class SellerProfileTest : BaseContainers() {
         val newDescription = faker.funnyName().name()
         val updateListingRequest = UpdateListingRequest(
             newDescription,
+            null,
             null,
             null,
             null,

@@ -6,6 +6,8 @@ import { messengerAPI } from '../api/messenger';
 import { sellerAPI } from '../api/seller';
 import { listingsAPI } from '../api/listings';
 import { useAuth } from '../context/AuthContext';
+import { GENDER_LABELS } from '../util/gender';
+import { AGE_LABELS } from '../util/age';
 
 export const UserProfileView = () => {
   const { userId } = useParams();
@@ -134,23 +136,7 @@ export const UserProfileView = () => {
       return;
     }
 
-    if (!profile?.id) {
-      alert('User information not available');
-      return;
-    }
-
-    if (user?.id === profile.id) {
-      alert('You cannot message yourself');
-      return;
-    }
-
-    try {
-      const chat = await messengerAPI.createOrGetChat(profile.id);
-      navigate(`/chats/${chat.id}`);
-    } catch (err) {
-      console.error('Failed to create chat:', err);
-      alert('Failed to start conversation');
-    }
+    alert('Напишите пользователю из конкретного объявления.');
   };
 
   if (loading) return <div>Грузим...</div>;
@@ -353,9 +339,14 @@ export const UserProfileView = () => {
                               </span>
                             )}
                           </div>
-                          {listing.ageMonths && (
+                          {listing.ageMonths != null && (
                             <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: '#666' }}>
-                              Возраст: {listing.ageMonths} мес.
+                              Возраст: {AGE_LABELS[listing.ageMonths] || 'Не указан'}
+                            </p>
+                          )}
+                          {listing.gender && (
+                            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: '#666' }}>
+                              Пол: {GENDER_LABELS[listing.gender] || 'Любой'}
                             </p>
                           )}
                         </div>
@@ -402,4 +393,3 @@ export const UserProfileView = () => {
     </div>
   );
 };
-

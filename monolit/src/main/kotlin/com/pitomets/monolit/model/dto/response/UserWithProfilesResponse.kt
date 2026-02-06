@@ -12,6 +12,7 @@ data class UserWithProfilesResponse(
     val isSeller: Boolean,
 
     // seller
+    val sellerProfileId: Long?,
     val shopName: String?,
     val description: String?,
     val rating: Double?,

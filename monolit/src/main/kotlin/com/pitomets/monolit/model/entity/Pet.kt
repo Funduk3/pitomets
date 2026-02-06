@@ -1,5 +1,6 @@
 package com.pitomets.monolit.model.entity
 
+import com.pitomets.monolit.model.Gender
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -9,6 +10,9 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 
+// Этот класс по факту дублирует listing,
+// Мы его использовали только для mother/father,
+// По факту нигде не используется
 @Entity
 @Table(name = "pets")
 class Pet(

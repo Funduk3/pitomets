@@ -1,5 +1,6 @@
 package com.pitomets.monolit.components
 
+import com.pitomets.monolit.repository.AnimalTypeRepository
 import com.pitomets.monolit.repository.MetroRepository
 import com.pitomets.monolit.service.ImportService
 import org.slf4j.LoggerFactory
@@ -13,9 +14,10 @@ import org.springframework.stereotype.Component
 class DbInitRunner(
     private val jdbcTemplate: JdbcTemplate,
     private val importService: ImportService,
-    private val metroRepository: MetroRepository
+    private val metroRepository: MetroRepository,
+    private val animalTypeRepository: AnimalTypeRepository,
 ) : ApplicationRunner {
-
+    @Suppress("LongMethod")
     override fun run(args: ApplicationArguments) {
         if (!tableExists("regions")) {
             importService.importFromFileRegion("data/regions.txt")
@@ -23,7 +25,6 @@ class DbInitRunner(
         if (!tableExists("cities")) {
             importService.importFromFileCity("data/cities.txt")
         }
-
         if (!tableExists("metro_lines")) {
             importService.importFromFileMetro(
                 path = "data/metro/metro_moscow.txt",
@@ -55,13 +56,38 @@ class DbInitRunner(
             )
             updateAllMetroLineColors()
         }
+        if (!tableExists("animal_type")) {
+            importService.importFromFileAnimalType("data/animal/animal_type.txt")
+        }
+        if (!tableExists("breed")) {
+            val catType = checkNotNull(
+                animalTypeRepository
+                    .findByTitle("Кошки")
+            ) {
+                "Нет типа животного Кошки"
+            }
+            val dogType = checkNotNull(
+                animalTypeRepository
+                    .findByTitle("Собаки")
+            ) {
+                "Нет типа животного Собаки"
+            }
+            importService.importFromFileBreed(
+                "data/animal/animal_breed/cat.txt",
+                catType
+            )
+            importService.importFromFileBreed(
+                "data/animal/animal_breed/dog.txt",
+                dogType
+            )
+        }
     }
 
     private fun tableExists(tableName: String): Boolean {
         return try {
             jdbcTemplate.queryForObject("SELECT 1 FROM $tableName LIMIT 1", Int::class.java)
             true
-        } catch (ex: DataAccessException) {
+        } catch (_: DataAccessException) {
             false
         }
     }
@@ -82,10 +108,6 @@ class DbInitRunner(
         return requireNotNull(cityColors[colorName]) {
             log.info("SOS {}, {}", colorName, cityId)
         }
-    }
-
-    fun cityHasMetro(cityId: Int): Boolean {
-        return COLOR_MAPPINGS.containsKey(cityId)
     }
 
     companion object {

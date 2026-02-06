@@ -6,6 +6,8 @@ import { favouritesAPI } from '../api/favourites';
 import { messengerAPI } from '../api/messenger';
 import { sellerAPI } from '../api/seller';
 import { useAuth } from '../context/AuthContext';
+import { AGE_LABELS } from '../util/age';
+import { GENDER_LABELS } from '../util/gender';
 
 export const ListingDetail = () => {
   const { id } = useParams();
@@ -24,6 +26,10 @@ export const ListingDetail = () => {
   const [similarLoading, setSimilarLoading] = useState(false);
   const [cityTitle, setCityTitle] = useState('');
   const [metroStation, setMetroStation] = useState(null);
+  const [editReviewId, setEditReviewId] = useState(null);
+  const [editRating, setEditRating] = useState(5);
+  const [editText, setEditText] = useState('');
+  const [reviewActionLoading, setReviewActionLoading] = useState(false);
 
   useEffect(() => {
     loadListing();
@@ -76,6 +82,49 @@ export const ListingDetail = () => {
       setReviews(data);
     } catch (err) {
       console.error('Failed to load reviews:', err);
+    }
+  };
+
+  const startEditReview = (review) => {
+    setEditReviewId(review.id);
+    setEditRating(review.rating);
+    setEditText(review.text || '');
+  };
+
+  const cancelEditReview = () => {
+    setEditReviewId(null);
+    setEditRating(5);
+    setEditText('');
+  };
+
+  const handleUpdateReview = async (e) => {
+    e.preventDefault();
+    setReviewActionLoading(true);
+    try {
+      await listingsAPI.updateReview({
+        listingId: parseInt(id),
+        rating: editRating,
+        text: editText || null,
+      });
+      cancelEditReview();
+      loadReviews();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update review');
+    } finally {
+      setReviewActionLoading(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm('Удалить отзыв?')) return;
+    setReviewActionLoading(true);
+    try {
+      await listingsAPI.deleteReview(reviewId);
+      loadReviews();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete review');
+    } finally {
+      setReviewActionLoading(false);
     }
   };
 
@@ -174,7 +223,11 @@ export const ListingDetail = () => {
     }
 
     try {
-      const chat = await messengerAPI.createOrGetChat(listing.sellerId);
+      const chat = await messengerAPI.createOrGetChat(
+        listing.sellerId,
+        listing.listingsId,
+        listing.title
+      );
       navigate(`/chats/${chat.id}`);
     } catch (err) {
       console.error('Failed to create chat:', err);
@@ -248,7 +301,7 @@ export const ListingDetail = () => {
           )}
           <div style={{ flex: 1 }}>
             <Link
-              to={`/seller/profile/view/${sellerProfile.userId}`}
+              to={`/seller/profile/view/${sellerProfile.id}`}
               style={{
                 textDecoration: 'none',
                 color: '#3498db',
@@ -312,24 +365,43 @@ export const ListingDetail = () => {
           <p><strong>Цена:</strong> {listing.price} ₽</p>
           <p><strong>Вид:</strong> {listing.species || 'N/A'}</p>
           {listing.breed && <p><strong>Breed:</strong> {listing.breed}</p>}
-          <p><strong>Возраст:</strong> {listing.ageMonths} months</p>
-          {listing.mother && <p><strong>Mother ID:</strong> {listing.mother}</p>}
-          {listing.father && <p><strong>Father ID:</strong> {listing.father}</p>}
+          <p>
+            <strong>Возраст:</strong>{' '}
+            {listing.ageMonths != null ? (AGE_LABELS[listing.ageMonths] || 'Не указан') : 'Не указан'}
+          </p>
+          <p>
+            <strong>Пол:</strong>{' '}
+            {listing.gender ? (GENDER_LABELS[listing.gender] || 'Любой') : 'Любой'}
+          </p>
           {isAuthenticated() && user?.id === listing.sellerId && (
-            <Link
-              to={`/listings/${id}/photos`}
-              style={{
-                display: 'inline-block',
-                marginTop: '0.75rem',
-                padding: '0.5rem 1rem',
-                backgroundColor: '#f39c12',
-                color: 'white',
-                textDecoration: 'none',
-                borderRadius: '4px'
-              }}
-            >
-              Изменить фотографии
-            </Link>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+              <Link
+                to={`/listings/${id}/edit`}
+                style={{
+                  display: 'inline-block',
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#3498db',
+                  color: 'white',
+                  textDecoration: 'none',
+                  borderRadius: '4px'
+                }}
+              >
+                Изменить объявление
+              </Link>
+              <Link
+                to={`/listings/${id}/photos`}
+                style={{
+                  display: 'inline-block',
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#f39c12',
+                  color: 'white',
+                  textDecoration: 'none',
+                  borderRadius: '4px'
+                }}
+              >
+                Изменить фотографии
+              </Link>
+            </div>
           )}
           {isAuthenticated() && user?.id !== listing.sellerId && (
             <button
@@ -375,11 +447,104 @@ export const ListingDetail = () => {
           <div>
             {reviews.map((review) => (
               <div key={review.id} style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '1rem', marginBottom: '1rem' }}>
-                <p><strong>Оценка:</strong> {'⭐'.repeat(review.rating)}</p>
-                {review.text && <p>{review.text}</p>}
-                <p style={{ fontSize: '0.9rem', color: '#666' }}>
-                  {new Date(review.createdAt).toLocaleDateString()}
-                </p>
+                {editReviewId === review.id ? (
+                  <form onSubmit={handleUpdateReview}>
+                    <div style={{ marginBottom: '0.75rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem' }}>Оценка:</label>
+                      <select
+                        value={editRating}
+                        onChange={(e) => setEditRating(parseInt(e.target.value))}
+                        style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
+                      >
+                        <option value={1}>1 ⭐</option>
+                        <option value={2}>2 ⭐⭐</option>
+                        <option value={3}>3 ⭐⭐⭐</option>
+                        <option value={4}>4 ⭐⭐⭐⭐</option>
+                        <option value={5}>5 ⭐⭐⭐⭐⭐</option>
+                      </select>
+                    </div>
+                    <div style={{ marginBottom: '0.75rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem' }}>Текст отзыва:</label>
+                      <textarea
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        rows="4"
+                        style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        type="submit"
+                        disabled={reviewActionLoading}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          backgroundColor: '#3498db',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: reviewActionLoading ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        {reviewActionLoading ? 'Сохраняем...' : 'Сохранить'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelEditReview}
+                        disabled={reviewActionLoading}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          backgroundColor: '#95a5a6',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: reviewActionLoading ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        Отмена
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <p><strong>Оценка:</strong> {'⭐'.repeat(review.rating)}</p>
+                    {review.text && <p>{review.text}</p>}
+                    <p style={{ fontSize: '0.9rem', color: '#666' }}>
+                      {new Date(review.createdAt).toLocaleDateString()}
+                    </p>
+                    {isAuthenticated() && user?.id === review.authorId && (
+                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        <button
+                          onClick={() => startEditReview(review)}
+                          disabled={reviewActionLoading}
+                          style={{
+                            padding: '0.4rem 0.75rem',
+                            backgroundColor: '#f39c12',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: reviewActionLoading ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          Редактировать
+                        </button>
+                        <button
+                          onClick={() => handleDeleteReview(review.id)}
+                          disabled={reviewActionLoading}
+                          style={{
+                            padding: '0.4rem 0.75rem',
+                            backgroundColor: '#e74c3c',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: reviewActionLoading ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          Удалить
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             ))}
           </div>
@@ -482,4 +647,3 @@ export const ListingDetail = () => {
     </div>
   );
 };
-

@@ -1,8 +1,10 @@
 package com.pitomets.monolit.service
 
+import com.pitomets.monolit.exceptions.BadAgeException
 import com.pitomets.monolit.exceptions.ListingNotFoundException
 import com.pitomets.monolit.exceptions.PetNotFoundException
 import com.pitomets.monolit.exceptions.UserNotFoundException
+import com.pitomets.monolit.model.AgeEnum
 import com.pitomets.monolit.model.EventType
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
@@ -44,6 +46,10 @@ class ListingsService(
         userId: Long,
         request: ListingsRequest
     ): ListingsResponse {
+        if (request.ageMonths < 0 || request.ageMonths >= AgeEnum.entries.size) {
+            throw BadAgeException("Invalid ageMonths: ${request.ageMonths}")
+        }
+
         val seller = findSellerProfile(userId, sellerProfileRepo, log)
         val (father, mother) = findParentPets(request, petsRepo, log)
 
@@ -109,6 +115,7 @@ class ListingsService(
         request.species?.let { listing.species = it }
         request.price?.let { listing.price = it }
         request.ageMonths?.let { listing.ageMonths = it }
+        request.gender?.let { listing.gender = it }
         request.breed?.let { listing.breed = it }
         request.isArchived?.let { listing.isArchived = it }
 
@@ -154,6 +161,7 @@ class ListingsService(
             description = saved.description,
             species = saved.species,
             ageMonths = saved.ageMonths,
+            gender = saved.gender,
             price = saved.price,
             breed = saved.breed,
             isArchived = saved.isArchived,
@@ -263,6 +271,7 @@ class ListingsService(
         species = request.species,
         breed = request.breed,
         ageMonths = request.ageMonths,
+        gender = request.gender,
         father = father,
         mother = mother,
         price = request.price,
@@ -288,6 +297,7 @@ class ListingsService(
         species = savedListing.species,
         breed = savedListing.breed,
         ageMonths = savedListing.ageMonths,
+        gender = savedListing.gender,
         father = father?.id,
         mother = mother?.id,
         listingsId = requireNotNull(savedListing.id),

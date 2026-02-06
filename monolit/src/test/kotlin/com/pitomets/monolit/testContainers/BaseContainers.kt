@@ -3,6 +3,7 @@ package com.pitomets.monolit.testContainers
 import co.elastic.clients.elasticsearch.ElasticsearchClient
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.pitomets.monolit.components.ListingOutboxProcessor
+import com.pitomets.monolit.model.Gender
 import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.LoginRequest
@@ -270,11 +271,12 @@ abstract class BaseContainers {
             val req = ListingsRequest(
                 description = faker.lorem().sentence(),
                 species = faker.animal().name(),
-                ageMonths = faker.number().numberBetween(1, 24),
+                ageMonths = faker.number().numberBetween(1, 3),
                 price = BigDecimal.valueOf(faker.number().numberBetween(1, 100).toLong()),
                 breed = null,
                 title = faker.book().title(),
-                cityId = 4L
+                cityId = 4L,
+                gender = Gender.M
             )
             RestAssured.given()
                 .contentType(ContentType.JSON)

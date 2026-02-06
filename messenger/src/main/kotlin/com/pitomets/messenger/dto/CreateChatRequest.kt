@@ -4,5 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CreateChatRequest(
-    val userId: Long // ID пользователя из монолита для создания чата
+    val userId: Long, // ID пользователя из монолита для создания чата
+    val listingId: Long,
+    val listingTitle: String? = null
 )

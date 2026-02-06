@@ -13,21 +13,15 @@ export const Chats = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [profilesByUserId, setProfilesByUserId] = useState({});
-  const [avatarsByUserId, setAvatarsByUserId] = useState({});
+  const [listingPhotosByListingId, setListingPhotosByListingId] = useState({});
   const pendingChatFetchRef = useRef(new Set());
+  const pendingListingPhotoFetchRef = useRef(new Set());
 
   useEffect(() => {
     if (isAuthenticated()) {
       loadChats();
     }
-    return () => {
-      // Очищаем blob URLs при размонтировании
-      Object.values(avatarsByUserId).forEach((url) => {
-        if (url && url.startsWith('blob:')) {
-          URL.revokeObjectURL(url);
-        }
-      });
-    };
+    return () => {};
   }, [isAuthenticated]);
 
   // Realtime: если мы на странице "Мои чаты" и пришло сообщение, обновляем превью/бейджи
@@ -78,12 +72,14 @@ export const Chats = () => {
                 try {
                   const profile = await userAPI.getUserProfile(otherUserId);
                   setProfilesByUserId((prev) => ({ ...prev, [otherUserId]: profile }));
-                  // Загружаем аватарку
-                  loadAvatarForUser(otherUserId);
                 } catch (_) {
                   setProfilesByUserId((prev) => ({ ...prev, [otherUserId]: null }));
                 }
               }
+            }
+
+            if (chat.listingId != null) {
+              loadListingPhoto(chat.listingId);
             }
           } catch (e) {
             // если не получилось — на всякий случай просто обновим список целиком
@@ -151,12 +147,13 @@ export const Chats = () => {
           for (const [id, profile] of results) next[id] = profile;
           return next;
         });
-
-        // Загружаем аватарки для всех пользователей
-        missingIds.forEach((id) => {
-          loadAvatarForUser(id);
-        });
       }
+
+      // Подтягиваем фото объявлений
+      const listingIds = Array.from(
+        new Set((data || []).map((c) => c.listingId).filter((id) => id != null))
+      );
+      listingIds.forEach((listingId) => loadListingPhoto(listingId));
     } catch (err) {
       console.error('Failed to load chats:', err);
       setError('Failed to load chats');
@@ -165,30 +162,28 @@ export const Chats = () => {
     }
   };
 
-  const loadAvatarForUser = async (userId) => {
-    if (avatarsByUserId[userId]) return; // Уже загружена
-    
+  const loadListingPhoto = async (listingId) => {
+    if (listingPhotosByListingId[listingId]) return;
+    if (pendingListingPhotoFetchRef.current.has(listingId)) return;
+    pendingListingPhotoFetchRef.current.add(listingId);
     try {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        const response = await fetch(photosAPI.getAvatarByUserId(userId), {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const blob = await response.blob();
-          const url = URL.createObjectURL(blob);
-          setAvatarsByUserId((prev) => ({ ...prev, [userId]: url }));
-        }
+      const data = await photosAPI.getListingPhotos(listingId);
+      const first = data?.photos?.[0];
+      if (first) {
+        const url = first.startsWith('http') ? first : `http://localhost:8080${first}`;
+        setListingPhotosByListingId((prev) => ({ ...prev, [listingId]: url }));
+      } else {
+        setListingPhotosByListingId((prev) => ({ ...prev, [listingId]: null }));
       }
     } catch (err) {
-      // Игнорируем ошибки загрузки аватарок
-      console.debug('Failed to load avatar for user', userId, err);
+      console.debug('Failed to load listing photo', listingId, err);
+      setListingPhotosByListingId((prev) => ({ ...prev, [listingId]: null }));
+    } finally {
+      pendingListingPhotoFetchRef.current.delete(listingId);
     }
   };
 
-  const getDisplayName = (profile, fallbackUserId) => {
+  const getUserDisplayName = (profile, fallbackUserId) => {
     if (!profile) return `Пользователь #${fallbackUserId}`;
     return profile.shopName || profile.fullName || `Пользователь #${fallbackUserId}`;
   };
@@ -227,7 +222,9 @@ export const Chats = () => {
           {sortedChats.map((chat) => {
             const otherUserId = chat.user1Id === user?.id ? chat.user2Id : chat.user1Id;
             const profile = profilesByUserId[otherUserId];
-            const displayName = getDisplayName(profile, otherUserId);
+            const displayName = getUserDisplayName(profile, otherUserId);
+            const listingTitle = chat.listingTitle || 'Объявление';
+            const listingPhoto = chat.listingId != null ? listingPhotosByListingId[chat.listingId] : null;
             const last = chat.lastMessage;
             const lastTime = last?.createdAt ? new Date(last.createdAt).toLocaleTimeString() : null;
             const lastText = last?.content ? formatPreview(last.content) : 'Нет сообщений';
@@ -248,14 +245,14 @@ export const Chats = () => {
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-                  {avatarsByUserId[otherUserId] && (
+                  {listingPhoto && (
                     <img 
-                      src={avatarsByUserId[otherUserId]} 
-                      alt="User avatar" 
+                      src={listingPhoto} 
+                      alt="Listing" 
                       style={{ 
-                        width: '50px', 
-                        height: '50px', 
-                        borderRadius: '50%', 
+                        width: '60px', 
+                        height: '60px', 
+                        borderRadius: '8px', 
                         objectFit: 'cover',
                         border: '2px solid #ddd',
                         flexShrink: 0
@@ -264,8 +261,7 @@ export const Chats = () => {
                   )}
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'baseline' }}>
-                      <strong>{displayName}</strong>
-                      <span style={{ fontSize: '0.85rem', color: '#888' }}>#{otherUserId}</span>
+                      <strong>{listingTitle}</strong>
                       {unreadCount > 0 && (
                         <span
                           style={{
@@ -282,6 +278,9 @@ export const Chats = () => {
                           {unreadCount}
                         </span>
                       )}
+                    </div>
+                    <div style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: '#888' }}>
+                      {displayName} • #{otherUserId}
                     </div>
 
                     <div style={{ marginTop: '0.35rem', fontSize: '0.95rem', color: '#333' }}>
@@ -305,4 +304,3 @@ export const Chats = () => {
     </div>
   );
 };
-

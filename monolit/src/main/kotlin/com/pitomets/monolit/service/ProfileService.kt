@@ -4,6 +4,7 @@ import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.exceptions.profileExceptions.ProfileAlreadyExistsException
 import com.pitomets.monolit.model.UserPrincipal
 import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
+import com.pitomets.monolit.model.dto.request.UpdateUserProfileRequest
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
 import com.pitomets.monolit.model.dto.response.UserWithProfilesResponse
 import com.pitomets.monolit.model.entity.SellerProfile
@@ -80,6 +81,7 @@ class ProfileService(
             email = requireNotNull(user.email),
             fullName = user.fullName,
             isSeller = user.sellerProfile != null,
+            sellerProfileId = user.sellerProfile?.id,
             shopName = user.sellerProfile?.shopName,
             description = user.sellerProfile?.description,
             rating = user.sellerProfile?.rating,
@@ -87,6 +89,19 @@ class ProfileService(
             createdAt = user.sellerProfile?.createdAt,
             avatarKey = user.avatarKey,
         )
+    }
+
+    @Transactional
+    fun updateUserProfile(userId: Long, request: UpdateUserProfileRequest): UserWithProfilesResponse {
+        val user = userRepo.findUserOrThrow(userId)
+
+        request.fullName?.let { user.fullName = it }
+
+        userRepo.save(user)
+
+        log.info("User profile updated for user ID: {}", userId)
+
+        return getUserWithProfiles(userId)
     }
 
     @Transactional
@@ -118,6 +133,22 @@ class ProfileService(
     fun getSellerProfileByUserId(sellerId: Long): SellerProfileResponse {
         val sellerProfile = sellerProfileRepo.findBySellerId(sellerId)
             ?: throw UserNotFoundException("Seller profile not found for user ID: $sellerId")
+
+        return SellerProfileResponse(
+            id = requireNotNull(sellerProfile.id) { "Seller profile ID cannot be null" },
+            userId = sellerProfile.seller?.id,
+            shopName = sellerProfile.shopName,
+            description = sellerProfile.description,
+            rating = sellerProfile.rating,
+            isVerified = sellerProfile.isVerified,
+            createdAt = sellerProfile.createdAt,
+            avatarKey = sellerProfile.seller?.avatarKey
+        )
+    }
+
+    fun getSellerProfileByProfileId(sellerProfileId: Long): SellerProfileResponse {
+        val sellerProfile = sellerProfileRepo.findById(sellerProfileId)
+            .orElseThrow { UserNotFoundException("Seller profile not found for id: $sellerProfileId") }
 
         return SellerProfileResponse(
             id = requireNotNull(sellerProfile.id) { "Seller profile ID cannot be null" },

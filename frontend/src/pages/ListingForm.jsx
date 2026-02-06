@@ -5,6 +5,9 @@ import { userAPI } from '../api/user';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { citiesAPI } from '../api/cities';
 import { metroAPI } from '../api/metro';
+import { animalAPI } from '../api/animal';
+import { AGE_LABELS } from '../util/age';
+import { GENDER_LABELS, GenderEnum } from '../util/gender';
 
 export const ListingForm = () => {
   const { id } = useParams();
@@ -17,9 +20,8 @@ export const ListingForm = () => {
     species: '',
     breed: '',
     ageMonths: 0,
+    gender: GenderEnum.ANY,
     price: '',
-    mother: '',
-    father: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -34,8 +36,16 @@ export const ListingForm = () => {
   const [metroStations, setMetroStations] = useState([]);
   const [metroId, setMetroId] = useState(null);
   const [metroLoading, setMetroLoading] = useState(false);
+  const [animalTypes, setAnimalTypes] = useState([]);
+  const [animalTypesLoading, setAnimalTypesLoading] = useState(false);
+  const [animalTypeId, setAnimalTypeId] = useState(null);
+  const [animalTypeHasBreed, setAnimalTypeHasBreed] = useState(false);
+  const [breedQuery, setBreedQuery] = useState('');
+  const [breeds, setBreeds] = useState([]);
+  const [breedLoading, setBreedLoading] = useState(false);
   const cityRef = useRef(null);
   const metroRef = useRef(null);
+  const breedRef = useRef(null);
 
   useEffect(() => {
     if (!isEdit) {
@@ -44,6 +54,22 @@ export const ListingForm = () => {
       loadListing();
     }
   }, [id]);
+
+  useEffect(() => {
+    const loadAnimalTypes = async () => {
+      try {
+        setAnimalTypesLoading(true);
+        const data = await animalAPI.getTypes();
+        setAnimalTypes(data);
+      } catch (e) {
+        console.error('Ошибка загрузки типов животных:', e);
+      } finally {
+        setAnimalTypesLoading(false);
+      }
+    };
+
+    loadAnimalTypes();
+  }, []);
 
   useEffect(() => {
     if (cityQuery.length < 2) {
@@ -90,12 +116,36 @@ export const ListingForm = () => {
   }, [metroQuery, cityId]);
 
   useEffect(() => {
+    if (breedQuery.length < 2 || !animalTypeId) {
+      setBreeds([]);
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      try {
+        setBreedLoading(true);
+        const data = await animalAPI.searchBreeds(breedQuery, animalTypeId);
+        setBreeds(data);
+      } catch (e) {
+        console.error('Ошибка запроса пород:', e);
+      } finally {
+        setBreedLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [breedQuery, animalTypeId]);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (cityRef.current && !cityRef.current.contains(event.target)) {
         setCities([]);
       }
       if (metroRef.current && !metroRef.current.contains(event.target)) {
         setMetroStations([]);
+      }
+      if (breedRef.current && !breedRef.current.contains(event.target)) {
+        setBreeds([]);
       }
     };
 
@@ -128,11 +178,11 @@ export const ListingForm = () => {
         description: listing.description || '',
         species: listing.species || '',
         breed: listing.breed || '',
-        ageMonths: listing.ageMonths || 0,
+        ageMonths: listing.ageMonths ?? 0,
+        gender: listing.gender || GenderEnum.ANY,
         price: listing.price?.toString() || '',
-        mother: listing.mother?.toString() || '',
-        father: listing.father?.toString() || '',
       });
+      setBreedQuery(listing.breed || '');
 
       if (listing.cityId && listing.cityTitle) {
         setCityId(listing.cityId);
@@ -152,6 +202,15 @@ export const ListingForm = () => {
       setError('Failed to load listing');
     }
   };
+
+  useEffect(() => {
+    if (!animalTypes.length || animalTypeId || !formData.species) return;
+    const match = animalTypes.find((t) => t.title === formData.species);
+    if (match) {
+      setAnimalTypeId(match.id);
+      setAnimalTypeHasBreed(!!match.hasBreed);
+    }
+  }, [animalTypes, animalTypeId, formData.species]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -177,11 +236,10 @@ export const ListingForm = () => {
         title: formData.title,
         description: formData.description,
         species: formData.species,
-        breed: formData.breed || null,
-        ageMonths: parseInt(formData.ageMonths),
+        breed: animalTypeHasBreed ? (formData.breed || null) : null,
+        ageMonths: Number(formData.ageMonths),
+        gender: formData.gender,
         price: priceValue.toString(),
-        mother: formData.mother ? parseInt(formData.mother) : null,
-        father: formData.father ? parseInt(formData.father) : null,
         cityId,
         metroId: metroId ? parseInt(metroId) : null
       };
@@ -277,33 +335,107 @@ export const ListingForm = () => {
           </div>
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Вид:</label>
-            <input
-              type="text"
-              value={formData.species}
-              onChange={(e) => setFormData({ ...formData, species: e.target.value })}
+            <select
+              value={animalTypeId ?? ''}
+              onChange={(e) => {
+                const nextId = e.target.value ? Number(e.target.value) : null;
+                const selected = animalTypes.find((t) => t.id === nextId);
+                setAnimalTypeId(nextId);
+                setAnimalTypeHasBreed(!!selected?.hasBreed);
+                setFormData({
+                  ...formData,
+                  species: selected?.title || '',
+                  breed: ''
+                });
+                setBreedQuery('');
+                setBreeds([]);
+              }}
               required
               style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
-            />
+            >
+              <option value="" disabled>
+                {animalTypesLoading ? 'Загрузка типов...' : 'Выберите вид'}
+              </option>
+              {animalTypes.slice(0, 10).map((type) => (
+                <option key={type.id} value={type.id}>
+                  {type.title}
+                </option>
+              ))}
+            </select>
           </div>
+          {animalTypeHasBreed && (
+            <div style={{ marginBottom: '1rem', position: 'relative' }} ref={breedRef}>
+              <label style={{ display: 'block', marginBottom: '0.5rem' }}>Порода (опционально):</label>
+              <input
+                type="text"
+                value={breedQuery}
+                onChange={(e) => {
+                  setBreedQuery(e.target.value);
+                  setFormData({ ...formData, breed: e.target.value });
+                }}
+                placeholder="Начните вводить породу"
+                style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
+              />
+
+              {breedLoading && <div>Загрузка...</div>}
+
+              {breeds.length > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  background: 'white',
+                  border: '1px solid #ddd',
+                  width: '100%',
+                  zIndex: 10,
+                  maxHeight: '200px',
+                  overflowY: 'auto'
+                }}>
+                  {breeds.map((breed) => (
+                    <div
+                      key={breed.id}
+                      style={{ padding: '0.5rem', cursor: 'pointer' }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setBreedQuery(breed.title);
+                        setFormData({ ...formData, breed: breed.title });
+                        setBreeds([]);
+                      }}
+                    >
+                      {breed.title}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Порода (опционально):</label>
-            <input
-              type="text"
-              value={formData.breed}
-              onChange={(e) => setFormData({ ...formData, breed: e.target.value })}
-              style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
-            />
-          </div>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Возраст (в месяцах):</label>
-            <input
-              type="number"
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Возраст:</label>
+            <select
               value={formData.ageMonths}
-              onChange={(e) => setFormData({ ...formData, ageMonths: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, ageMonths: Number(e.target.value) })}
               required
-              min="0"
               style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
-            />
+            >
+              {Object.entries(AGE_LABELS).map(([value, label]) => (
+                <option key={value} value={Number(value)}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Пол:</label>
+            <select
+              value={formData.gender}
+              onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+              required
+              style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
+            >
+              {Object.entries(GENDER_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
           </div>
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Цена:</label>
@@ -314,24 +446,6 @@ export const ListingForm = () => {
               onChange={(e) => setFormData({ ...formData, price: e.target.value })}
               required
               min="0"
-              style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
-            />
-          </div>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Mother ID (optional):</label>
-            <input
-              type="number"
-              value={formData.mother}
-              onChange={(e) => setFormData({ ...formData, mother: e.target.value })}
-              style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
-            />
-          </div>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Father ID (optional):</label>
-            <input
-              type="number"
-              value={formData.father}
-              onChange={(e) => setFormData({ ...formData, father: e.target.value })}
               style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
             />
           </div>
@@ -470,4 +584,3 @@ export const ListingForm = () => {
     </ProtectedRoute>
   );
 };
-

@@ -1,5 +1,6 @@
 package com.pitomets.monolit.model.dto.request
 
+import com.pitomets.monolit.model.Gender
 import java.math.BigDecimal
 
 data class UpdateListingRequest(
@@ -10,6 +11,8 @@ data class UpdateListingRequest(
     val breed: String?,
 
     val ageMonths: Int?,
+
+    val gender: Gender?,
 
     val mother: Long?,
 

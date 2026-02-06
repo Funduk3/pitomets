@@ -1,5 +1,6 @@
 package com.pitomets.monolit.integration
 
+import com.pitomets.monolit.model.Gender
 import com.pitomets.monolit.model.dto.request.CreateReviewRequest
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingReviewRequest
@@ -261,12 +262,13 @@ class ReviewsTest : BaseContainers() {
         val req = ListingsRequest(
             description = faker.lorem().sentence(),
             species = faker.animal().name(),
-            ageMonths = faker.number().numberBetween(1, 24),
+            ageMonths = faker.number().numberBetween(1, 3),
             price = BigDecimal.valueOf(faker.number().numberBetween(1, 100).toLong()),
             breed = null,
             title = faker.book().title(),
             cityId = 4L,
-            metroId = null
+            metroId = null,
+            gender = Gender.M,
         )
         return RestAssured.given()
             .contentType(ContentType.JSON)

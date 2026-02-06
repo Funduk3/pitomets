@@ -2,8 +2,8 @@ import api from './axios';
 
 export const messengerAPI = {
   // Chats
-  createOrGetChat: async (userId) => {
-    const response = await api.post('/api/messenger/chats', { userId });
+  createOrGetChat: async (userId, listingId, listingTitle) => {
+    const response = await api.post('/api/messenger/chats', { userId, listingId, listingTitle });
     return response.data;
   },
 
@@ -38,4 +38,3 @@ export const messengerAPI = {
     return response.data;
   },
 };
-

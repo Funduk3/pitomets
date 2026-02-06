@@ -12,12 +12,14 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 
 class ChatService {
-    fun createOrGetChat(user1Id: Long, user2Id: Long): ChatEntity {
+    fun createOrGetChat(user1Id: Long, user2Id: Long, listingId: Long, listingTitle: String?): ChatEntity {
         return transaction {
             // Проверяем, существует ли уже чат между этими пользователями
             val existingChat = Chat.select {
-                ((Chat.user1Id eq user1Id) and (Chat.user2Id eq user2Id)) or
-                    ((Chat.user1Id eq user2Id) and (Chat.user2Id eq user1Id))
+                (
+                    ((Chat.user1Id eq user1Id) and (Chat.user2Id eq user2Id)) or
+                        ((Chat.user1Id eq user2Id) and (Chat.user2Id eq user1Id))
+                    ) and (Chat.listingId eq listingId)
             }.singleOrNull()
 
             if (existingChat != null) {
@@ -26,6 +28,8 @@ class ChatService {
                 val chatId = Chat.insertAndGetId {
                     it[Chat.user1Id] = user1Id
                     it[Chat.user2Id] = user2Id
+                    it[Chat.listingId] = listingId
+                    it[Chat.listingTitle] = listingTitle
                     it[Chat.createdAt] = Clock.System.now()
                     it[Chat.updatedAt] = Clock.System.now()
                 }.value
@@ -65,6 +69,8 @@ class ChatService {
             id = row[Chat.id].value,
             user1Id = row[Chat.user1Id],
             user2Id = row[Chat.user2Id],
+            listingId = row[Chat.listingId],
+            listingTitle = row[Chat.listingTitle],
             createdAt = row[Chat.createdAt],
             updatedAt = row[Chat.updatedAt],
             unreadCountUser1 = row[Chat.unreadCountUser1],

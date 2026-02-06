@@ -18,6 +18,11 @@ export const sellerAPI = {
     return response.data;
   },
 
+  getSellerProfileById: async (sellerProfileId) => {
+    const response = await api.get(`/seller/profile/${sellerProfileId}`);
+    return response.data;
+  },
+
   getSellerReviews: async (sellerProfileId) => {
     const response = await api.get(`/seller/${sellerProfileId}/reviews/`);
     return response.data;
