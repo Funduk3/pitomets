@@ -1,0 +1,46 @@
+services:
+  monolit:
+    image: ${MONOLIT_IMAGE}
+    container_name: monolit
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.monolit.rule=Host(`api.example.com`)"
+      - "traefik.http.routers.monolit.entrypoints=websecure"
+      - "traefik.http.routers.monolit.tls.certresolver=le"
+      - "traefik.http.services.monolit.loadbalancer.server.port=8080"
+
+  messenger:
+    image: ${MESSENGER_IMAGE}
+    container_name: messenger
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - web
+
+  notifications:
+    image: ${NOTIFICATIONS_IMAGE}
+    container_name: notifications
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - web
+
+  frontend:
+    image: ${FRONTEND_IMAGE}
+    container_name: frontend
+    restart: unless-stopped
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`pitomets.com`) || Host(`www.pitomets.com`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=le"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3001"

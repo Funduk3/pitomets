@@ -1,6 +1,6 @@
 services:
   app:
-    build: ${MONOLIT_IMAGE}
+    build: ./monolit
     container_name: spring-app
     ports:
       - "8080:8080"
@@ -63,7 +63,7 @@ services:
       - web
 
   messenger:
-    image: ${MESSENGER_IMAGE}
+    build: ./messenger
     container_name: messenger-app
     ports:
       - "8081:8081"
