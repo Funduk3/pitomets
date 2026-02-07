@@ -79,9 +79,7 @@ minio:
   secret-key: minioadmin
 
 messenger:
-  # When monolit runs in Docker and messenger1 is published on host port 8081,
-  # use host.docker.internal. Override via env MESSENGER_URL if needed.
-  url: ${MESSENGER_URL:http://host.docker.internal:8081}
+  url: http://messenger:8081
 
 # топик кафки
 notification:

@@ -52,7 +52,11 @@ class SecurityConfig(
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
-        configuration.allowedOrigins = listOf("http://localhost:3001")
+        configuration.allowedOriginPatterns = listOf(
+            "http://localhost:3001",
+            "https://pitomets.com",
+            "https://www.pitomets.com"
+        )
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
         configuration.allowedHeaders = listOf("*")
         configuration.allowCredentials = true
@@ -75,8 +79,11 @@ class SecurityConfig(
             .authorizeHttpRequests {
                 it.requestMatchers(
                     "/register",
+                    "/api/register",
                     "/login",
+                    "/api/login",
                     "/refresh",
+                    "/api/refresh",
                     "/search/listings/**",
                     "/search/deleteALL", // todo delete
                     "/actuator/prometheus", // todo put in admin

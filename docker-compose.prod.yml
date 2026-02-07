@@ -25,6 +25,13 @@ services:
       - .env
     networks:
       - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.messenger.rule=(Host(`pitomets.com`) || Host(`www.pitomets.com`)) && PathPrefix(`/ws`)"
+      - "traefik.http.routers.messenger.entrypoints=websecure"
+      - "traefik.http.routers.messenger.tls.certresolver=le"
+      - "traefik.http.routers.messenger.priority=90"
+      - "traefik.http.services.messenger.loadbalancer.server.port=8081"
 
   notifications:
     image: ${NOTIFICATIONS_IMAGE}
@@ -43,7 +50,7 @@ services:
       - web
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=(Host(`pitomets.com`) || Host(`www.pitomets.com`)) && !PathPrefix(`/api`)"
+      - "traefik.http.routers.frontend.rule=(Host(`pitomets.com`) || Host(`www.pitomets.com`)) && !PathPrefix(`/api`) && !PathPrefix(`/ws`)"
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=le"
       - "traefik.http.routers.frontend.priority=1"
