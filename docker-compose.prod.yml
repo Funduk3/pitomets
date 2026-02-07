@@ -9,7 +9,7 @@ services:
       - web
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.monolit.rule=Host(`api.example.com`)"
+      - "traefik.http.routers.monolit.rule=Host(`pitomets.com`) && PathPrefix(`/api`)"
       - "traefik.http.routers.monolit.entrypoints=websecure"
       - "traefik.http.routers.monolit.tls.certresolver=le"
       - "traefik.http.services.monolit.loadbalancer.server.port=8080"
@@ -43,4 +43,4 @@ services:
       - "traefik.http.routers.frontend.rule=Host(`pitomets.com`) || Host(`www.pitomets.com`)"
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=le"
-      - "traefik.http.services.frontend.loadbalancer.server.port=3001"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
