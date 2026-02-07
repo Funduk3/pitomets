@@ -10,11 +10,19 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 object DatabaseFactory {
     fun init() {
+        val resolvedJdbcUrl = System.getenv("DATABASE_URL")
+            ?: System.getenv("JDBC_DATABASE_URL")
+            ?: "jdbc:postgresql://postgres-messenger:5432/messenger"
+
+        val resolvedUser = System.getenv("DATABASE_USER") ?: System.getenv("JDBC_DATABASE_USER") ?: "user"
+        val resolvedPassword = System.getenv("DATABASE_PASSWORD")
+            ?: System.getenv("JDBC_DATABASE_PASSWORD") ?: "password"
+
         val config = HikariConfig().apply {
-            jdbcUrl = System.getenv("DATABASE_URL")
+            jdbcUrl = resolvedJdbcUrl
             driverClassName = "org.postgresql.Driver"
-            username = System.getenv("DATABASE_USER")
-            password = System.getenv("DATABASE_PASSWORD")
+            username = resolvedUser
+            password = resolvedPassword
             maximumPoolSize = MAX_POOL_SIZE
             isAutoCommit = false
             transactionIsolation = "TRANSACTION_REPEATABLE_READ"
