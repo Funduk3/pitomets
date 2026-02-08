@@ -144,7 +144,17 @@ export const SellerProfileView = () => {
       return;
     }
 
-    alert('Напишите продавцу из конкретного объявления.');
+    if (!profile?.userId) {
+      alert('Seller information not available');
+      return;
+    }
+
+    try {
+      const chat = await messengerAPI.createOrGetChat(profile.userId, null, null);
+      navigate(`/chats/${chat.id}`);
+    } catch (err) {
+      alert('Failed to create chat');
+    }
   };
 
   if (loading) return <div>Грузим...</div>;

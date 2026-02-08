@@ -19,6 +19,7 @@ export const Chat = () => {
   const [error, setError] = useState('');
   const [otherProfile, setOtherProfile] = useState(null);
   const [listingPhotoUrl, setListingPhotoUrl] = useState(null);
+  const [otherAvatarUrl, setOtherAvatarUrl] = useState(null);
   const [otherSellerProfileId, setOtherSellerProfileId] = useState(null);
   const [isTabVisible, setIsTabVisible] = useState(!document.hidden);
   const [unreadBoundaryId, setUnreadBoundaryId] = useState(null);
@@ -164,6 +165,39 @@ export const Chat = () => {
 
     return () => {
       cancelled = true;
+    };
+  }, [chat?.id, chat?.user1Id, chat?.user2Id, user?.id]);
+
+  useEffect(() => {
+    const otherUserId = chat?.user1Id === user?.id ? chat?.user2Id : chat?.user1Id;
+    if (!otherUserId) {
+      setOtherAvatarUrl(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+        const response = await fetch(photosAPI.getAvatarByUserId(otherUserId), {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) {
+          if (!cancelled) setOtherAvatarUrl(null);
+          return;
+        }
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        if (!cancelled) setOtherAvatarUrl(url);
+      } catch (_) {
+        if (!cancelled) setOtherAvatarUrl(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (otherAvatarUrl && otherAvatarUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(otherAvatarUrl);
+      }
     };
   }, [chat?.id, chat?.user1Id, chat?.user2Id, user?.id]);
 
@@ -354,13 +388,15 @@ export const Chat = () => {
   const profileLink = resolvedSellerProfileId
     ? `/seller/profile/view/${resolvedSellerProfileId}`
     : `/user/profile/${otherUserId}`;
-  const listingTitle = chat?.listingTitle || 'Объявление';
-  const listingLink = chat?.listingId ? `/listings/${chat.listingId}` : null;
+  const isListingChat = chat?.listingId != null;
+  const listingTitle = isListingChat ? (chat?.listingTitle || 'Объявление') : otherName;
+  const listingLink = isListingChat ? `/listings/${chat.listingId}` : null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }}>
       <div style={{ padding: '1rem', borderBottom: '1px solid #ddd', backgroundColor: '#f9f9f9', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        {listingPhotoUrl && (
+        {isListingChat ? (
+          listingPhotoUrl ? (
           <img 
             src={listingPhotoUrl} 
             alt="Listing" 
@@ -371,6 +407,39 @@ export const Chat = () => {
               objectFit: 'cover',
               border: '2px solid #ddd'
             }} 
+          />
+          ) : (
+            <div
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '8px',
+                backgroundColor: '#e9ecef',
+                border: '2px solid #ddd'
+              }}
+            />
+          )
+        ) : otherAvatarUrl ? (
+          <img 
+            src={otherAvatarUrl} 
+            alt="User avatar" 
+            style={{ 
+              width: '56px', 
+              height: '56px', 
+              borderRadius: '50%', 
+              objectFit: 'cover',
+              border: '2px solid #ddd'
+            }} 
+          />
+        ) : (
+          <div
+            style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              backgroundColor: '#e9ecef',
+              border: '2px solid #ddd'
+            }}
           />
         )}
         <div style={{ flex: 1 }}>
@@ -388,7 +457,7 @@ export const Chat = () => {
                 >
                   {otherName}
                 </Link>
-                {listingLink ? (
+                {isListingChat && (
                   <Link
                     to={listingLink}
                     style={{
@@ -399,8 +468,6 @@ export const Chat = () => {
                   >
                     {listingTitle}
                   </Link>
-                ) : (
-                  <div style={{ fontSize: '0.95rem', color: '#666' }}>{listingTitle}</div>
                 )}
               </>
             ) : (
@@ -418,18 +485,30 @@ export const Chat = () => {
                     {listingTitle}
                   </Link>
                 ) : (
-                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{listingTitle}</div>
+                  <Link
+                    to={profileLink}
+                    style={{
+                      textDecoration: 'none',
+                      color: '#3498db',
+                      fontSize: '1.2rem',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {listingTitle}
+                  </Link>
                 )}
-                <Link
-                  to={profileLink}
-                  style={{
-                    textDecoration: 'none',
-                    color: '#666',
-                    fontSize: '0.95rem'
-                  }}
-                >
-                  {otherName}
-                </Link>
+                {isListingChat && (
+                  <Link
+                    to={profileLink}
+                    style={{
+                      textDecoration: 'none',
+                      color: '#666',
+                      fontSize: '0.95rem'
+                    }}
+                  >
+                    {otherName}
+                  </Link>
+                )}
               </>
             )}
           </div>

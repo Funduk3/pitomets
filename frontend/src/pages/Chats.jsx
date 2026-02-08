@@ -14,6 +14,7 @@ export const Chats = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [profilesByUserId, setProfilesByUserId] = useState({});
+  const [avatarByUserId, setAvatarByUserId] = useState({});
   const [listingPhotosByListingId, setListingPhotosByListingId] = useState({});
   const pendingChatFetchRef = useRef(new Set());
   const pendingListingPhotoFetchRef = useRef(new Set());
@@ -73,6 +74,10 @@ export const Chats = () => {
                 try {
                   const profile = await userAPI.getUserProfile(otherUserId);
                   setProfilesByUserId((prev) => ({ ...prev, [otherUserId]: profile }));
+                  const token = localStorage.getItem('accessToken');
+                  if (token) {
+                    loadAvatarForUserId(otherUserId, token);
+                  }
                 } catch (_) {
                   setProfilesByUserId((prev) => ({ ...prev, [otherUserId]: null }));
                 }
@@ -150,6 +155,15 @@ export const Chats = () => {
         });
       }
 
+      // Подтягиваем аватары собеседников
+      const avatarMissingIds = otherIds.filter((id) => avatarByUserId[id] == null);
+      if (avatarMissingIds.length) {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+          avatarMissingIds.forEach((id) => loadAvatarForUserId(id, token));
+        }
+      }
+
       // Подтягиваем фото объявлений
       const listingIds = Array.from(
         new Set((data || []).map((c) => c.listingId).filter((id) => id != null))
@@ -171,7 +185,7 @@ export const Chats = () => {
       const data = await photosAPI.getListingPhotos(listingId);
       const first = data?.photos?.[0];
       if (first) {
-        const url = resolveApiUrl(first);
+        const url = resolveApiUrl(first?.url || first);
         setListingPhotosByListingId((prev) => ({ ...prev, [listingId]: url }));
       } else {
         setListingPhotosByListingId((prev) => ({ ...prev, [listingId]: null }));
@@ -183,6 +197,31 @@ export const Chats = () => {
       pendingListingPhotoFetchRef.current.delete(listingId);
     }
   };
+
+  const loadAvatarForUserId = async (userId, token) => {
+    try {
+      const response = await fetch(photosAPI.getAvatarByUserId(userId), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        setAvatarByUserId((prev) => ({ ...prev, [userId]: null }));
+        return;
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setAvatarByUserId((prev) => ({ ...prev, [userId]: url }));
+    } catch (_) {
+      setAvatarByUserId((prev) => ({ ...prev, [userId]: null }));
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      Object.values(avatarByUserId).forEach((url) => {
+        if (url && url.startsWith('blob:')) URL.revokeObjectURL(url);
+      });
+    };
+  }, [avatarByUserId]);
 
   const getUserDisplayName = (profile, fallbackUserId) => {
     if (!profile) return `Пользователь #${fallbackUserId}`;
@@ -224,8 +263,11 @@ export const Chats = () => {
             const otherUserId = chat.user1Id === user?.id ? chat.user2Id : chat.user1Id;
             const profile = profilesByUserId[otherUserId];
             const displayName = getUserDisplayName(profile, otherUserId);
+            const avatarUrl = avatarByUserId[otherUserId];
             const listingTitle = chat.listingTitle || 'Объявление';
             const listingPhoto = chat.listingId != null ? listingPhotosByListingId[chat.listingId] : null;
+            const isListingChat = chat.listingId != null;
+            const titleText = isListingChat ? listingTitle : displayName;
             const last = chat.lastMessage;
             const lastTime = last?.createdAt ? new Date(last.createdAt).toLocaleTimeString() : null;
             const lastText = last?.content ? formatPreview(last.content) : 'Нет сообщений';
@@ -246,23 +288,60 @@ export const Chats = () => {
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-                  {listingPhoto && (
+                  {isListingChat ? (
+                    listingPhoto ? (
+                      <img 
+                        src={listingPhoto} 
+                        alt="Listing" 
+                        style={{ 
+                          width: '60px', 
+                          height: '60px', 
+                          borderRadius: '8px', 
+                          objectFit: 'cover',
+                          border: '2px solid #ddd',
+                          flexShrink: 0
+                        }} 
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: '60px',
+                          height: '60px',
+                          borderRadius: '8px',
+                          backgroundColor: '#e9ecef',
+                          border: '2px solid #ddd',
+                          flexShrink: 0
+                        }}
+                      />
+                    )
+                  ) : avatarUrl ? (
                     <img 
-                      src={listingPhoto} 
-                      alt="Listing" 
+                      src={avatarUrl} 
+                      alt="User avatar" 
                       style={{ 
                         width: '60px', 
                         height: '60px', 
-                        borderRadius: '8px', 
+                        borderRadius: '50%', 
                         objectFit: 'cover',
                         border: '2px solid #ddd',
                         flexShrink: 0
                       }} 
                     />
+                  ) : (
+                    <div
+                      style={{
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '50%',
+                        backgroundColor: '#e9ecef',
+                        border: '2px solid #ddd',
+                        flexShrink: 0
+                      }}
+                    />
                   )}
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'baseline' }}>
-                      <strong>{listingTitle}</strong>
+                      <strong>{titleText}</strong>
                       {unreadCount > 0 && (
                         <span
                           style={{
@@ -280,10 +359,11 @@ export const Chats = () => {
                         </span>
                       )}
                     </div>
-                    <div style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: '#888' }}>
-                      {displayName} • #{otherUserId}
-                    </div>
-
+                    {isListingChat && (
+                      <div style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: '#888' }}>
+                        {displayName} • #{otherUserId}
+                      </div>
+                    )}
                     <div style={{ marginTop: '0.35rem', fontSize: '0.95rem', color: '#333' }}>
                       <span style={{ fontWeight: isUnread ? 700 : 400 }}>
                         {lastText}
