@@ -3,6 +3,7 @@ package com.pitomets.monolit.controller
 import com.pitomets.monolit.model.UserPrincipal
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
+import com.pitomets.monolit.model.dto.response.ListingsCursorResponse
 import com.pitomets.monolit.model.dto.response.ListingsResponse
 import com.pitomets.monolit.service.ListingsService
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -37,6 +38,12 @@ class ListingController(
         @RequestParam("sellerId") sellerId: Long
     ): List<ListingsResponse> =
         listingsService.getUserListings(sellerId)
+
+    @GetMapping("/home")
+    fun getHomeListings(
+        @RequestParam("cursor", required = false) cursor: Long?
+    ): ListingsCursorResponse =
+        listingsService.getHomeListings(cursor)
 
     @PostMapping("/")
     fun createListings(
