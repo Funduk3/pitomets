@@ -22,3 +22,8 @@ docker buildx build \
 -t artshar/frontend:1.0.0 \
 --push .
 ```
+
+Дропнуть всё
+```
+docker stop $(docker ps -aq) docker rm $(docker ps -aq) docker volume rm $(docker volume ls -q)
+```
