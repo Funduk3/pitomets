@@ -1,6 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { messengerAPI } from '../api/messenger';
+import { resolveApiUrl } from '../api/axios';
 import { userAPI } from '../api/user';
 import { sellerAPI } from '../api/seller';
 import { photosAPI } from '../api/photos';
@@ -201,7 +202,7 @@ export const Chat = () => {
         const first = data?.photos?.[0];
         if (!cancelled) {
           if (first) {
-            const url = first.startsWith('http') ? first : `http://localhost:8080${first}`;
+            const url = resolveApiUrl(first);
             setListingPhotoUrl(url);
           } else {
             setListingPhotoUrl(null);

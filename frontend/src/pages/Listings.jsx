@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listingsAPI } from '../api/listings';
+import { resolveApiUrl } from '../api/axios';
 import { photosAPI } from '../api/photos';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { Link } from 'react-router-dom';
@@ -98,7 +99,7 @@ export const Listings = () => {
                 <div key={listing.listingsId} style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
                   {firstPhoto ? (
                     <img
-                      src={firstPhoto.startsWith('http') ? firstPhoto : `http://localhost:8080${firstPhoto}`}
+                      src={resolveApiUrl(firstPhoto)}
                       alt={listing.title || 'Untitled'}
                       style={{
                         width: '100%',
@@ -181,4 +182,3 @@ export const Listings = () => {
     </ProtectedRoute>
   );
 };
-

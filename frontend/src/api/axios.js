@@ -1,7 +1,21 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080';
-// const API_BASE_URL = 'https://pitomets.com/api';
+export const API_BASE_URL = 'http://localhost:8080';
+// export const API_BASE_URL = 'https://pitomets.com/api';
+
+const normalizeBase = (base) => (base.endsWith('/') ? base.slice(0, -1) : base);
+const API_BASE = normalizeBase(API_BASE_URL);
+
+export const resolveApiUrl = (path) => {
+    if (!path) return path;
+    if (path.startsWith('http')) return path;
+    const base = API_BASE.startsWith('http')
+        ? API_BASE
+        : `${window.location.origin}${API_BASE.startsWith('/') ? '' : '/'}${API_BASE}`;
+    const prefix = normalizeBase(base);
+    const p = path.startsWith('/') ? path : `/${path}`;
+    return `${prefix}${p}`;
+};
 
 const api = axios.create({
   baseURL: API_BASE_URL,

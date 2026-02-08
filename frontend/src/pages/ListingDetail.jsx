@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { listingsAPI } from '../api/listings';
+import { resolveApiUrl } from '../api/axios';
 import { photosAPI } from '../api/photos';
 import { favouritesAPI } from '../api/favourites';
 import { messengerAPI } from '../api/messenger';
@@ -332,7 +333,7 @@ export const ListingDetail = () => {
               {photos.map((photoUrl, index) => (
                 <img
                   key={index}
-                  src={photoUrl.startsWith('http') ? photoUrl : `http://localhost:8080${photoUrl}`}
+                  src={resolveApiUrl(photoUrl)}
                   alt={`Photo ${index + 1}`}
                   style={{ width: '100%', maxWidth: '500px', marginBottom: '1rem', borderRadius: '8px' }}
                 />
@@ -604,7 +605,7 @@ export const ListingDetail = () => {
                       <img
                           src={firstPhoto.startsWith('http')
                               ? firstPhoto
-                              : `http://localhost:8080${firstPhoto}`}
+                              : resolveApiUrl(firstPhoto)}
                           alt={listing.title || 'Untitled'}
                           style={{
                             width: '100%',

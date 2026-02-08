@@ -4,6 +4,7 @@ import { userAPI } from '../api/user';
 import { photosAPI } from '../api/photos';
 import { messengerAPI } from '../api/messenger';
 import { sellerAPI } from '../api/seller';
+import { resolveApiUrl } from '../api/axios';
 import { listingsAPI } from '../api/listings';
 import { useAuth } from '../context/AuthContext';
 import { GENDER_LABELS } from '../util/gender';
@@ -299,7 +300,7 @@ export const UserProfileView = () => {
                       >
                         {firstPhoto ? (
                           <img
-                            src={firstPhoto.startsWith('http') ? firstPhoto : `http://localhost:8080${firstPhoto}`}
+                            src={resolveApiUrl(firstPhoto)}
                             alt={listing.title}
                             style={{
                               width: '100%',
