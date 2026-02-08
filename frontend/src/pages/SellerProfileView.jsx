@@ -333,7 +333,7 @@ export const SellerProfileView = () => {
                         </p>
                         <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#27ae60' }}>
-                            ${listing.price}
+                            {listing.price} ₽
                           </span>
                           {listing.species && (
                             <span style={{ fontSize: '0.85rem', color: '#666' }}>
