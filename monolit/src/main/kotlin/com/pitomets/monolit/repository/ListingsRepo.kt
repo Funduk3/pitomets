@@ -5,6 +5,9 @@ import com.pitomets.monolit.model.entity.Listing
 import com.pitomets.monolit.model.entity.SellerProfile
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.domain.Pageable
+import org.springframework.data.jpa.repository.Modifying
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Repository
 
@@ -14,6 +17,13 @@ interface ListingsRepo : JpaRepository<Listing, Long> {
     fun findBySellerProfile(sellerProfile: SellerProfile): List<Listing>
     fun findByIsArchivedFalseOrderByIdDesc(pageable: Pageable): List<Listing>
     fun findByIsArchivedFalseAndIdLessThanOrderByIdDesc(id: Long, pageable: Pageable): List<Listing>
+
+    @Modifying
+    @Query("update Listing l set l.sellerAvatarKey = :avatarKey where l.sellerProfile.seller.id = :sellerId")
+    fun updateSellerAvatarKeyBySellerId(
+        @Param("sellerId") sellerId: Long,
+        @Param("avatarKey") avatarKey: String?
+    ): Int
 }
 
 fun ListingsRepo.findListingOrThrow(listingId: Long): Listing =

@@ -1,6 +1,7 @@
 package com.pitomets.monolit.service
 
 import com.pitomets.monolit.exceptions.AvatarNotFoundException
+import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.UserRepo
 import com.pitomets.monolit.repository.findUserOrThrow
 import jakarta.transaction.Transactional
@@ -12,7 +13,8 @@ import java.util.UUID
 @Service
 class UserPhotoService(
     private val minioService: MinioService,
-    private val userRepo: UserRepo
+    private val userRepo: UserRepo,
+    private val listingsRepo: ListingsRepo
 ) : PhotoService() {
 
     @Transactional
@@ -37,6 +39,7 @@ class UserPhotoService(
 
         user.avatarKey = objectKey
         userRepo.save(user)
+        listingsRepo.updateSellerAvatarKeyBySellerId(userId, objectKey)
 
         return objectKey
     }
@@ -62,6 +65,7 @@ class UserPhotoService(
 
         user.avatarKey = null
         userRepo.save(user)
+        listingsRepo.updateSellerAvatarKeyBySellerId(userId, null)
 
         return avatarKey
     }

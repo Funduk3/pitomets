@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { listingsAPI } from '../api/listings';
+import { resolveApiUrl } from '../api/axios';
 
 export const Home = () => {
   const { isAuthenticated } = useAuth();
@@ -103,12 +104,39 @@ export const Home = () => {
                   style={{
                     border: '1px solid #ddd',
                     borderRadius: '8px',
-                    padding: '1rem'
+                    overflow: 'hidden'
                   }}
                 >
-                  <h3 style={{ margin: '0 0 0.5rem 0' }}>
-                    {listing.title || 'Без названия'}
-                  </h3>
+                  {listing.coverPhotoId ? (
+                    <img
+                      src={resolveApiUrl(`/listings/${listing.listingsId}/photos/${listing.coverPhotoId}`)}
+                      alt="Listing cover"
+                      style={{
+                        width: '100%',
+                        height: '180px',
+                        objectFit: 'cover',
+                        display: 'block'
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '180px',
+                        backgroundColor: '#f0f0f0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#999'
+                      }}
+                    >
+                      Нет фото
+                    </div>
+                  )}
+                  <div style={{ padding: '1rem' }}>
+                    <h3 style={{ margin: '0 0 0.5rem 0' }}>
+                      {listing.title || 'Без названия'}
+                    </h3>
                   <p style={{ margin: '0.5rem 0', color: '#666' }}>
                     {listing.description?.substring(0, 90)}
                     {listing.description && listing.description.length > 90
@@ -136,6 +164,7 @@ export const Home = () => {
                   >
                     Посмотреть
                   </Link>
+                  </div>
                 </div>
               ))}
             </div>
