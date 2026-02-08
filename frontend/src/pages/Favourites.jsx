@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { favouritesAPI } from '../api/favourites';
+import { resolveApiUrl } from '../api/axios';
 import { photosAPI } from '../api/photos';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { Link } from 'react-router-dom';
@@ -74,7 +75,7 @@ export const Favourites = () => {
                 <div key={listing.id} style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
                   {firstPhoto ? (
                     <img
-                      src={firstPhoto.startsWith('http') ? firstPhoto : `http://localhost:8080${firstPhoto}`}
+                      src={resolveApiUrl(firstPhoto)}
                       alt={listing.title}
                       style={{
                         width: '100%',
@@ -141,4 +142,3 @@ export const Favourites = () => {
     </ProtectedRoute>
   );
 };
-

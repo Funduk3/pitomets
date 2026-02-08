@@ -50,8 +50,11 @@ export const MessengerWSProvider = ({ children }) => {
       reconnectTimeoutRef.current = null;
     }
 
-    // Один WS на приложение (messenger1 напрямую)
-    const wsUrl = `ws://localhost:8081/ws/chat?userId=${userId}`;
+    // Один WS на приложение: в проде используем текущий домен, в деве — localhost
+    const isHttps = window.location.protocol === 'https:';
+    const wsProtocol = isHttps ? 'wss' : 'ws';
+    const wsHost = window.location.host || 'localhost:8081';
+    const wsUrl = `${wsProtocol}://${wsHost}/ws/chat?userId=${userId}`;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
@@ -307,5 +310,4 @@ export const MessengerWSProvider = ({ children }) => {
 
   return <MessengerWSContext.Provider value={value}>{children}</MessengerWSContext.Provider>;
 };
-
 

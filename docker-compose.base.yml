@@ -1,85 +1,4 @@
 services:
-  app:
-    build: ./monolit
-    container_name: spring-app
-    ports:
-      - "8080:8080"
-    extra_hosts:
-      # ensure host.docker.internal resolves inside Linux containers (Docker Desktop)
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      redis:
-        condition: service_started
-      postgres:
-        condition: service_started
-      elasticsearch:
-        condition: service_healthy
-      minio:
-        condition: service_started
-      kafka:
-        condition: service_started
-    environment:
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pitomets
-      SPRING_DATASOURCE_USERNAME: user
-      SPRING_DATASOURCE_PASSWORD: password
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-
-      ELASTICSEARCH_HOST: elasticsearch
-      ELASTICSEARCH_PORT: 9200
-
-      MINIO_URL: http://minio:9000
-      # messenger1 runs separately; from inside Docker use host.docker.internal to reach host-mapped 8081
-      MESSENGER_URL: http://host.docker.internal:8081
-
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092  # ✅ Внутренний адрес в Docker-сети
-
-  notifications-service:
-    build: ./notifications
-    container_name: notifications-service
-    ports:
-      - "8082:8080"  # ✅ Исправлено: хост:8082 → контейнер:8080
-    depends_on:
-      postgres:
-        condition: service_started
-      kafka:
-        condition: service_started
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pitomets
-      SPRING_DATASOURCE_USERNAME: user
-      SPRING_DATASOURCE_PASSWORD: password
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-    healthcheck: # ✅ Добавлено
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-
-  messenger:
-    build: ./messenger
-    container_name: messenger-app
-    ports:
-      - "8081:8081"
-    environment:
-      DATABASE_URL: jdbc:postgresql://postgres-messenger:5432/messenger
-      DATABASE_USER: user
-      DATABASE_PASSWORD: password
-    depends_on:
-      postgres-messenger:
-        condition: service_healthy
-
-  frontend:
-    image: node:20-alpine
-    working_dir: /app/frontend
-    ports:
-      - "3001:3001"
-    volumes:
-      - .:/app
-    command: sh -c "npm install && npm run dev"
-
   redis:
     image: redis:8-alpine
     container_name: redis
@@ -87,6 +6,8 @@ services:
     ports:
       - "6379:6379"
     command: redis-server --save 60 1 --loglevel warning
+    networks:
+      - web
 
   postgres:
     image: postgres:18-alpine
@@ -105,6 +26,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - web
 
   postgres-messenger:
     image: postgres:18-alpine
@@ -122,6 +45,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - web
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:9.2.4
@@ -149,16 +74,20 @@ services:
       nofile:
         soft: 65536
         hard: 65536
+    networks:
+      - web
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.9.1
     ports:
       - "9090:9090"
     volumes:
-      - ./monolit/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - web
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:12.3.2
     ports:
       - "3000:3000"
     environment:
@@ -167,9 +96,11 @@ services:
 
     depends_on:
       - prometheus
+    networks:
+      - web
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     container_name: minio
     command: server /data --console-address ":9001"
     ports:
@@ -181,9 +112,11 @@ services:
     volumes:
       - minio-data:/data
     restart: unless-stopped
+    networks:
+      - web
 
   minio-init:
-    image: minio/mc:latest
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
     depends_on:
       minio:
         condition: service_started
@@ -200,6 +133,8 @@ services:
         mc policy set public myminio/pitomets-avatars &&
         echo '✅ Бакеты созданы: pitomets-images, pitomets-avatars'
       "
+    networks:
+      - web
 
 
   kafka:
@@ -207,15 +142,16 @@ services:
     container_name: kafka
     ports:
       - "9092:9092"
+      - "29092:29092"
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
 
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://host.docker.internal:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
 
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -223,6 +159,8 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_LOG_RETENTION_HOURS: 168
+    networks:
+      - web
 
   kafka-init:
     image: apache/kafka:4.1.1
@@ -237,17 +175,25 @@ services:
       kafka-topics.sh --bootstrap-server kafka:29092 --create --if-not-exists --topic notification.failed --partitions 3 --replication-factor 1
       echo 'Topics ready'
       "
+    networks:
+      - web
   # for testing
   mailhog:
-    image: mailhog/mailhog:latest
+    image: mailhog/mailhog:v1.0.1
     container_name: mailhog
     ports:
         - "1025:1025"  # SMTP server
         - "8025:8025"  # Web UI
     restart: unless-stopped
+    networks:
+      - web
 
 volumes:
   postgres_main_data:
   postgres_messenger_data:
   es_data:
   minio-data:
+
+networks:
+  web:
+    external: true

@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { messengerAPI } from '../api/messenger';
+import { resolveApiUrl } from '../api/axios';
 import { userAPI } from '../api/user';
 import { photosAPI } from '../api/photos';
 import { useAuth } from '../context/AuthContext';
@@ -170,7 +171,7 @@ export const Chats = () => {
       const data = await photosAPI.getListingPhotos(listingId);
       const first = data?.photos?.[0];
       if (first) {
-        const url = first.startsWith('http') ? first : `http://localhost:8080${first}`;
+        const url = resolveApiUrl(first);
         setListingPhotosByListingId((prev) => ({ ...prev, [listingId]: url }));
       } else {
         setListingPhotosByListingId((prev) => ({ ...prev, [listingId]: null }));

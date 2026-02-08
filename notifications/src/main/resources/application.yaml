@@ -9,7 +9,7 @@ spring:
   # DATABASE
   # =========================
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/pitomets}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/pitomets}
     username: ${SPRING_DATASOURCE_USERNAME:user}
     password: ${SPRING_DATASOURCE_PASSWORD:password}
 
@@ -26,7 +26,7 @@ spring:
   # KAFKA
   # =========================
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka:29092}
 
     consumer:
       group-id: notification-service
@@ -66,7 +66,7 @@ spring:
   # EMAIL (SMTP)
   # =========================
   mail:
-    host: ${MAIL_HOST:localhost}
+    host: ${MAIL_HOST:mailhog}
     port: ${MAIL_PORT:1025}
     username: ${MAIL_USERNAME:test}
     password: ${MAIL_PASSWORD:test}

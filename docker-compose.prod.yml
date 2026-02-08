@@ -1,0 +1,57 @@
+services:
+  monolit:
+    image: ${MONOLIT_IMAGE}
+    container_name: monolit
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.monolit.rule=(Host(`pitomets.com`) || Host(`www.pitomets.com`)) && PathPrefix(`/api`)"
+      - "traefik.http.routers.monolit.entrypoints=websecure"
+      - "traefik.http.routers.monolit.tls.certresolver=le"
+      - "traefik.http.routers.monolit.priority=100"
+      - "traefik.http.routers.monolit.middlewares=monolit-strip"
+      - "traefik.http.middlewares.monolit-strip.stripprefix.prefixes=/api"
+      - "traefik.http.services.monolit.loadbalancer.server.port=8080"
+
+  messenger:
+    image: ${MESSENGER_IMAGE}
+    container_name: messenger
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.messenger.rule=(Host(`pitomets.com`) || Host(`www.pitomets.com`)) && PathPrefix(`/ws`)"
+      - "traefik.http.routers.messenger.entrypoints=websecure"
+      - "traefik.http.routers.messenger.tls.certresolver=le"
+      - "traefik.http.routers.messenger.priority=90"
+      - "traefik.http.services.messenger.loadbalancer.server.port=8081"
+
+  notifications:
+    image: ${NOTIFICATIONS_IMAGE}
+    container_name: notifications
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - web
+
+  frontend:
+    image: ${FRONTEND_IMAGE}
+    container_name: frontend
+    restart: unless-stopped
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=(Host(`pitomets.com`) || Host(`www.pitomets.com`)) && !PathPrefix(`/api`) && !PathPrefix(`/ws`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=le"
+      - "traefik.http.routers.frontend.priority=1"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"

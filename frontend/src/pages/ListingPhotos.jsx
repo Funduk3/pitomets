@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { photosAPI } from '../api/photos';
+import { resolveApiUrl } from '../api/axios';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { useAuth } from '../context/AuthContext';
 
@@ -81,7 +82,7 @@ export const ListingPhotos = () => {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
           {photos.map((photoUrl, index) => {
-            const fullUrl = photoUrl.startsWith('http') ? photoUrl : `http://localhost:8080${photoUrl}`;
+            const fullUrl = resolveApiUrl(photoUrl);
             return (
               <div key={index} style={{ position: 'relative' }}>
                 <img
@@ -115,4 +116,3 @@ export const ListingPhotos = () => {
     </div>
   );
 };
-

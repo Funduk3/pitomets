@@ -1,6 +1,7 @@
 import {useState, useEffect} from 'react';
 import {searchAPI} from '../api/search';
 import {photosAPI} from '../api/photos';
+import { resolveApiUrl } from '../api/axios';
 import {Link} from 'react-router-dom';
 import { citiesAPI } from '../api/cities';
 import { metroAPI } from '../api/metro';
@@ -454,7 +455,7 @@ export const Search = () => {
                             >
                                 {firstPhoto ? (
                                     <img
-                                        src={firstPhoto.startsWith('http') ? firstPhoto : `http://localhost:8080${firstPhoto}`}
+                                        src={resolveApiUrl(firstPhoto)}
                                         alt={listing.title}
                                         style={{
                                             width: '100%',
@@ -491,4 +492,3 @@ export const Search = () => {
         </div>
     );
 };
-

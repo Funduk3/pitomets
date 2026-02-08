@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { sellerAPI } from '../api/seller';
+import { resolveApiUrl } from '../api/axios';
 import { photosAPI } from '../api/photos';
 import { messengerAPI } from '../api/messenger';
 import { listingsAPI } from '../api/listings';
@@ -300,7 +301,7 @@ export const SellerProfileView = () => {
                     >
                       {firstPhoto ? (
                         <img
-                          src={firstPhoto.startsWith('http') ? firstPhoto : `http://localhost:8080${firstPhoto}`}
+                          src={resolveApiUrl(firstPhoto)}
                           alt={listing.title}
                           style={{
                             width: '100%',
