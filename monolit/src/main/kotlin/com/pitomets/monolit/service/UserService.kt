@@ -45,6 +45,9 @@ class UserService(
             ?: throw IllegalPasswordException("Problem with password")
         user.role = UserRole.USER
 
+        val token = java.util.UUID.randomUUID().toString()
+        user.confirmationToken = token
+
         val savedUser = repo.save(user)
         val buyerProfile = BuyerProfile(
             buyer = savedUser
@@ -60,10 +63,10 @@ class UserService(
                 eventId = eventId,
                 userId = requireNotNull(savedUser.id) { "User with this user doesn't have a id" },
                 channel = Channel.EMAIL,
-                payload = savedUser.email,
+                payload = "confirm ${savedUser.email} $token",
             )
         )
-        log.info("KAFKA MESSAGE SENT")
+        log.info("KAFKA REGISTRATION MESSAGE SENT")
 
         return UserResponse(
             id = requireNotNull(savedUser.id) { "User ID cannot be null" },
@@ -126,5 +129,48 @@ class UserService(
                 hasSellerProfile = it.sellerProfile != null
             )
         }
+    }
+
+    fun changePassword(email: String, newPassword: String) {
+        val user: User = repo.findByEmail(email) ?: throw UserNotFoundException("User not found")
+        user.passwordHash = encoder.encode(newPassword)
+            ?: throw IllegalPasswordException("Problem with password")
+    }
+
+    fun confirmEmail(token: String) {
+        val user = repo.findByConfirmationToken(token)
+            ?: throw InvalidTokenException("Invalid confirmation token")
+        user.isConfirmed = true
+        user.confirmationToken = null
+        repo.save(user)
+    }
+
+    fun forgotPassword(email: String) {
+        val user = repo.findByEmail(email)
+        if (user != null) {
+            val token = java.util.UUID.randomUUID().toString()
+            user.passwordResetToken = token
+            repo.save(user)
+
+            val eventId = System.currentTimeMillis()
+            notificationPublisher.publish(
+                NotificationRequestedEvent(
+                    eventId = eventId,
+                    userId = requireNotNull(user.id),
+                    channel = Channel.EMAIL,
+                    payload = "RESTORE_PASSWORD ${user.email} $token",
+                )
+            )
+        }
+    }
+
+    fun resetPassword(token: String, newPassword: String) {
+        val user = repo.findByPasswordResetToken(token)
+            ?: throw InvalidTokenException("Invalid reset token")
+
+        user.passwordHash = encoder.encode(newPassword)
+            ?: throw IllegalPasswordException("Problem with password")
+        user.passwordResetToken = null
+        repo.save(user)
     }
 }

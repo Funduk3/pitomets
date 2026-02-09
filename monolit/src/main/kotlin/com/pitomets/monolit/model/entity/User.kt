@@ -48,6 +48,15 @@ class User(
     @OneToOne(mappedBy = "admin", cascade = [CascadeType.ALL], orphanRemoval = true)
     var adminProfile: AdminProfile? = null,
 
+    @Column(name = "is_confirmed", nullable = false)
+    var isConfirmed: Boolean = false,
+
+    @Column(name = "confirmation_token")
+    var confirmationToken: String? = null,
+
+    @Column(name = "password_reset_token")
+    var passwordResetToken: String? = null,
+
     @OneToOne(mappedBy = "user", cascade = [CascadeType.ALL], orphanRemoval = true)
     var address: Address? = null,
 

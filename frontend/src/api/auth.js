@@ -30,5 +30,16 @@ export const authAPI = {
       refreshToken,
     });
   },
-};
 
+  confirm: async (token) => {
+    await api.get(`/confirm?token=${token}`);
+  },
+
+  forgotPassword: async (email) => {
+    await api.post('/forgot-password', { email });
+  },
+
+  resetPassword: async (token, newPassword) => {
+    await api.post('/reset-password', { token, newPassword });
+  },
+};

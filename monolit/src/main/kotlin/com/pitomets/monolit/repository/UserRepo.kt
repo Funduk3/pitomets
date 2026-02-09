@@ -9,6 +9,8 @@ import org.springframework.stereotype.Repository
 @Repository
 interface UserRepo : JpaRepository<User, Long> {
     fun findByEmail(email: String): User?
+    fun findByConfirmationToken(token: String): User?
+    fun findByPasswordResetToken(token: String): User?
 }
 
 fun UserRepo.findUserOrThrow(userId: Long): User =

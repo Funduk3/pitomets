@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
@@ -47,11 +48,24 @@ class UserController(
         service.refreshAccessToken(request.refreshToken)
 
     @PostMapping("/logout")
-    @ResponseStatus(HttpStatus.OK)
     fun logout(
-        @RequestBody request: RefreshTokenRequest
-    ) =
-        service.logout(request.refreshToken)
+        @RequestParam refreshToken: String
+    ) = service.logout(refreshToken)
+
+    @GetMapping("/confirm")
+    fun confirm(@RequestParam token: String) {
+        service.confirmEmail(token)
+    }
+
+    @PostMapping("/forgot-password")
+    fun forgotPassword(@RequestBody request: com.pitomets.monolit.model.dto.request.ForgotPasswordRequest) {
+        service.forgotPassword(request.email)
+    }
+
+    @PostMapping("/reset-password")
+    fun resetPassword(@RequestBody request: com.pitomets.monolit.model.dto.request.ResetPasswordRequest) {
+        service.resetPassword(request.token, request.newPassword)
+    }
 
     // todo delete
     @GetMapping("/all")

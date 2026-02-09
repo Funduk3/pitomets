@@ -58,7 +58,7 @@ export const Login = () => {
           style={{
             width: '100%',
             padding: '0.75rem',
-            backgroundColor: '#3498db',
+            backgroundColor: '#007bff',
             color: 'white',
             border: 'none',
             borderRadius: '4px',
@@ -68,11 +68,13 @@ export const Login = () => {
         >
           {loading ? 'Входим...' : 'Войти'}
         </button>
+        <div style={{ marginTop: '10px', textAlign: 'center' }}>
+          <Link to="/forgot-password" style={{ color: '#007bff', textDecoration: 'none' }}>Забыли пароль?</Link>
+        </div>
       </form>
-      <p style={{ marginTop: '1rem', textAlign: 'center' }}>
+      <div style={{ marginTop: '1rem', textAlign: 'center' }}>
         Ещё нет аккаунта? <Link to="/register">Регистрация здесь</Link>
-      </p>
+      </div>
     </div>
   );
 };
-
