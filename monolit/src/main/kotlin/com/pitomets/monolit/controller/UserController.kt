@@ -3,6 +3,7 @@ package com.pitomets.monolit.controller
 import com.pitomets.monolit.model.dto.request.LoginRequest
 import com.pitomets.monolit.model.dto.request.RefreshTokenRequest
 import com.pitomets.monolit.model.dto.request.RegisterRequest
+import com.pitomets.monolit.model.dto.request.ResetPasswordRequest
 import com.pitomets.monolit.model.dto.response.TokenResponse
 import com.pitomets.monolit.model.dto.response.UserResponse
 import com.pitomets.monolit.model.entity.User
@@ -63,7 +64,7 @@ class UserController(
     }
 
     @PostMapping("/reset-password")
-    fun resetPassword(@RequestBody request: com.pitomets.monolit.model.dto.request.ResetPasswordRequest) {
+    fun resetPassword(@RequestBody request: ResetPasswordRequest) {
         service.resetPassword(request.token, request.newPassword)
     }
 }
