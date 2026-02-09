@@ -64,7 +64,7 @@ class UserService(
                 userId = requireNotNull(savedUser.id) { "User with this user doesn't have a id" },
                 channel = Channel.EMAIL,
                 messageType = "CONFIRM",
-                payload = "confirm ${savedUser.email} $token",
+                payload = "${savedUser.email} $token",
             )
         )
         log.info("KAFKA REGISTRATION MESSAGE SENT")
@@ -74,16 +74,26 @@ class UserService(
             email = savedUser.email,
             fullName = savedUser.fullName,
             hasBuyerProfile = true,
-            hasSellerProfile = false
+            hasSellerProfile = false,
+            message = "на вашу почту отправлено письмо с подтверждением," +
+                    " проверьте свой почтовый ящик и перейдите по ссылке, чтобы подтвердить почту"
         )
     }
 
+    @Suppress("ThrowsCount")
     fun login(email: String, rawPassword: String): TokenResponse {
         try {
             val authToken = UsernamePasswordAuthenticationToken(email, rawPassword)
             val authentication: Authentication = authManager.authenticate(authToken)
 
             if (authentication.isAuthenticated) {
+                val user = repo.findByEmail(email)
+                    ?: throw UserNotFoundException("User not found")
+                if (!user.isConfirmed) {
+                    log.warn("Login blocked: email not confirmed for user {}", email)
+                    throw AuthenticationException("подтвердите электронную почту")
+                }
+
                 val accessToken = jwtService.generateAccessToken(email)
                 val refreshToken = jwtService.createRefreshToken(email)
 
@@ -139,11 +149,17 @@ class UserService(
     }
 
     fun confirmEmail(token: String) {
+        log.info("Confirm email requested with token={}", token)
         val user = repo.findByConfirmationToken(token)
-            ?: throw InvalidTokenException("Invalid confirmation token")
+        if (user == null) {
+            log.warn("Confirm email failed: no user found for token={}", token)
+            throw InvalidTokenException("Invalid confirmation token")
+        }
+        log.info("Confirm email found user id={} email={}", user.id, user.email)
         user.isConfirmed = true
         user.confirmationToken = null
         repo.save(user)
+        log.info("Confirm email success for user id={}", user.id)
     }
 
     fun forgotPassword(email: String) {

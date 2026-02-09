@@ -48,7 +48,7 @@ class User(
     @OneToOne(mappedBy = "admin", cascade = [CascadeType.ALL], orphanRemoval = true)
     var adminProfile: AdminProfile? = null,
 
-    @Column(name = "is_confirmed", nullable = false)
+    @Column(name = "is_confirmed", nullable = false, columnDefinition = "boolean default false")
     var isConfirmed: Boolean = false,
 
     @Column(name = "confirmation_token")

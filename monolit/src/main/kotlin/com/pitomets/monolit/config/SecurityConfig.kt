@@ -68,6 +68,7 @@ class SecurityConfig(
     }
 
     @Bean
+    @Suppress("LongMethod")
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         val mapper = jacksonObjectMapper()
 
@@ -84,6 +85,8 @@ class SecurityConfig(
                     "/api/login",
                     "/refresh",
                     "/api/refresh",
+                    "/confirm",
+                    "/api/confirm",
                     "/search/listings/**",
                     "/search/deleteALL", // todo delete
                     "/actuator/prometheus", // todo put in admin

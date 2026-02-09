@@ -5,5 +5,6 @@ data class UserResponse(
     val email: String,
     val fullName: String,
     val hasBuyerProfile: Boolean,
-    val hasSellerProfile: Boolean
+    val hasSellerProfile: Boolean,
+    val message: String? = null
 )

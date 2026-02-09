@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export const Register = () => {
@@ -7,19 +7,23 @@ export const Register = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
 
     try {
       // Note: In production, password should be hashed on client or sent securely
-      await register(email, password, fullName);
-      navigate('/login');
+      const response = await register(email, password, fullName);
+      setSuccess(
+        response?.message ||
+          'на вашу почту отправлено письмо с подтверждением, проверьте свой почтовый ящик и перейдите по ссылке, чтобы подтвердить почту'
+      );
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
@@ -30,6 +34,7 @@ export const Register = () => {
   return (
     <div style={{ maxWidth: '400px', margin: '2rem auto', padding: '2rem', border: '1px solid #ddd', borderRadius: '8px' }}>
       <h2>Регистрация</h2>
+      {success && <div style={{ color: 'green', marginBottom: '1rem' }}>{success}</div>}
       {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '1rem' }}>
@@ -85,4 +90,3 @@ export const Register = () => {
     </div>
   );
 };
-
