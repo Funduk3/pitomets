@@ -54,9 +54,6 @@ class Listing(
     @JoinColumn(name = "seller_profile_id")
     var sellerProfile: SellerProfile,
 
-    @Column(name = "seller_avatar_key")
-    var sellerAvatarKey: String? = null,
-
     @Column(name = "cover_photo_id")
     var coverPhotoId: Long? = null,
 

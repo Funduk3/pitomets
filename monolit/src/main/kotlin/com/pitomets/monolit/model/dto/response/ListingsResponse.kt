@@ -14,8 +14,6 @@ data class ListingsResponse(
 
     val sellerReviewsCount: Long?,
 
-    val sellerAvatarKey: String?,
-
     val coverPhotoId: Long?,
 
     val species: String?,

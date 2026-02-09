@@ -213,7 +213,6 @@ class ListingsService(
             sellerId = requireNotNull(saved.sellerProfile.seller?.id),
             sellerRating = saved.sellerProfile.rating,
             sellerReviewsCount = saved.sellerProfile.countReviews,
-            sellerAvatarKey = saved.sellerAvatarKey,
             coverPhotoId = saved.coverPhotoId,
             mother = saved.mother?.id,
             father = saved.father?.id,
@@ -323,7 +322,6 @@ class ListingsService(
         mother = mother,
         price = request.price,
         sellerProfile = seller,
-        sellerAvatarKey = seller.seller?.avatarKey,
         title = request.title,
         city = cityRepo.findById(cityId)
             .orElseThrow(),
@@ -342,7 +340,6 @@ class ListingsService(
         sellerId = requireNotNull(savedListing.sellerProfile.seller?.id),
         sellerRating = savedListing.sellerProfile.rating,
         sellerReviewsCount = savedListing.sellerProfile.countReviews,
-        sellerAvatarKey = savedListing.sellerAvatarKey,
         coverPhotoId = savedListing.coverPhotoId,
         species = savedListing.species,
         breed = savedListing.breed,
