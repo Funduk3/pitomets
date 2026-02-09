@@ -47,12 +47,12 @@ jobs:
         run: ./gradlew clean assemble --parallel
 
       # Free up disk space for Docker containers
-      - name: Free Disk Space
-        run: |
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          df -h
+#      - name: Free Disk Space
+#        run: |
+#          sudo rm -rf /usr/local/lib/android
+#          sudo rm -rf /usr/share/dotnet
+#          sudo rm -rf /opt/ghc
+#          df -h
 
       # Run tests with increased timeout and without parallel execution for stability
       - name: Run tests

@@ -8,7 +8,7 @@ ssh -i ~/.ssh/pitomets -L 5432:localhost:5432 student@178.154.194.186
 
 дев сборка
 ```
-docker compose -f docker-compose.base.yml -f docker-compose.dev.yml down && docker compose -f docker-compose.base.yml -f docker-compose.dev.yml up --build```
+docker compose -f docker-compose.base.yml -f docker-compose.dev.yml down && docker compose -f docker-compose.base.yml -f docker-compose.dev.yml up --build
 ```
 прод сборка
 ```
