@@ -65,11 +65,12 @@ spring:
   # =========================
   # EMAIL (SMTP)
   # =========================
+  # =========================
   mail:
     host: ${MAIL_HOST:mailhog}
     port: ${MAIL_PORT:1025}
-    username: ${MAIL_USERNAME:test}
-    password: ${MAIL_PASSWORD:test}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail.smtp.auth: false
       mail.smtp.starttls.enable: false
@@ -78,6 +79,9 @@ spring:
 # APPLICATION (CUSTOM)
 # =========================
 app:
+  # Base URL фронтенда для формирования ссылок в письмах
+  frontend-url: ${FRONTEND_URL:http://localhost:3001}
+
   kafka:
     topics:
       notification-send: notification.send

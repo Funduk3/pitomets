@@ -2,6 +2,7 @@ package com.pitomets.notifications.application.service
 
 import com.pitomets.notifications.application.event.NotificationFailedEvent
 import com.pitomets.notifications.domain.model.Channel
+import com.pitomets.notifications.domain.model.MessageType
 import com.pitomets.notifications.domain.model.Notification
 import com.pitomets.notifications.domain.model.Status
 import com.pitomets.notifications.domain.port.NotificationOutbox
@@ -28,7 +29,8 @@ class InvalidEventHandler(
             userId = event.userId,
             channel = Channel.UNKNOWN,
             payload = event.payload,
-            status = Status.FAILED
+            status = Status.FAILED,
+            messageType = MessageType.ERROR
         )
         val saved = notificationRepository.save(failedNotification)
         logger.info("Saved failed notification with id: ${saved.id} for eventId: ${event.eventId}")

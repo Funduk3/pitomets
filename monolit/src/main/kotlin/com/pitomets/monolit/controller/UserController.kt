@@ -66,9 +66,4 @@ class UserController(
     fun resetPassword(@RequestBody request: com.pitomets.monolit.model.dto.request.ResetPasswordRequest) {
         service.resetPassword(request.token, request.newPassword)
     }
-
-    // todo delete
-    @GetMapping("/all")
-    fun getAll(): List<UserResponse> =
-        service.getAll()
 }

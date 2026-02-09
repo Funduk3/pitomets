@@ -7,6 +7,7 @@ data class Notification(
     val eventId: Long,
     val userId: Long,
     val channel: Channel,
+    val messageType: MessageType,
     val payload: String,
     val status: Status
 ) {
@@ -21,6 +22,7 @@ data class Notification(
                 eventId = cmd.eventId,
                 userId = cmd.userId,
                 channel = cmd.channel,
+                messageType = cmd.messageType,
                 payload = cmd.payload,
                 status = Status.NEW
             )

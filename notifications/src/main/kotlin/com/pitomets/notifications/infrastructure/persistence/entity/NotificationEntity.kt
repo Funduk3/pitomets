@@ -26,6 +26,9 @@ data class NotificationEntity(
     @Column(nullable = false)
     val channel: String,
 
+    @Column(name = "message_type", nullable = false)
+    val messageType: String,
+
     @Column(columnDefinition = "TEXT", nullable = false)
     val payload: String,
 
@@ -39,6 +42,7 @@ data class NotificationEntity(
             eventId = eventId,
             userId = userId,
             channel = Channel.valueOf(channel),
+            messageType = com.pitomets.notifications.domain.model.MessageType.valueOf(messageType),
             payload = payload,
             status = Status.valueOf(status)
         )
@@ -52,6 +56,7 @@ data class NotificationEntity(
                 eventId = notification.eventId,
                 userId = notification.userId,
                 channel = notification.channel.name,
+                messageType = notification.messageType.name,
                 payload = notification.payload,
                 status = notification.status.name
             )

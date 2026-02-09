@@ -6,6 +6,7 @@ import com.pitomets.notifications.domain.model.Notification
 import com.pitomets.notifications.domain.port.NotificationSender
 import com.pitomets.notifications.exceptions.FailedToSendNotificationException
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.mail.MailException
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Component
 @Component
 class EmailNotificationSender(
     private val javaMailSender: JavaMailSender,
+    @Value("\${app.frontend-url}")
+    private val frontendUrl: String
 ) : NotificationSender {
 
     private val logger = LoggerFactory.getLogger(EmailNotificationSender::class.java)
@@ -24,21 +27,19 @@ class EmailNotificationSender(
     override fun send(notification: Notification) {
         try {
             val parts = notification.payload.trim().split(" ")
-            val typeName = parts[0]
-            val email = parts[1]
-            val token = parts.getOrNull(2)
 
-            val type = MessageType.entries.firstOrNull {
-                it.name.equals(typeName, ignoreCase = true)
-            }
+            // Payload structure depends on message type now, but usually it is "email token" or just "email"
+            // Previous implementations put "confirm email token", so we need to be careful.
+            // In UserService I changed payload to be "email token" for CONFIRM and RESTORE_PASSWORD.
 
-            when (type) {
+            val email = parts[0]
+            val token = parts.getOrNull(1)
+
+            when (notification.messageType) {
                 MessageType.REGISTRATION -> sendAfterRegistration(email)
                 MessageType.CONFIRM -> sendToConfirm(email, token)
                 MessageType.RESTORE_PASSWORD -> sendRestorePassword(email, token)
-                else -> {
-                    throw IllegalArgumentException("Unsupported message type $typeName")
-                }
+                else -> throw FailedToSendNotificationException("Something went wrong", cause = null)
             }
             logger.info("Email sent successfully for notification id: ${notification.id} to $email")
 
@@ -74,8 +75,9 @@ class EmailNotificationSender(
 
         helper.setTo(email)
         helper.setSubject("Please confirm your email")
-        val link = "http://localhost:5173/confirm?token=$token"
-        helper.setText("<h1>Confirm your email</h1><p>Click the link below to confirm your email:</p><a href=\"$link\">Confirm Email</a>", true)
+        val link = "$frontendUrl/confirm?token=$token"
+        helper.setText("<h1>Confirm your email</h1><p>Click the link below to confirm your email:</p>" +
+                "<a href=\"$link\">Confirm Email</a>", true)
         javaMailSender.send(message)
     }
 
@@ -89,8 +91,9 @@ class EmailNotificationSender(
 
         helper.setTo(email)
         helper.setSubject("Password Reset Request")
-        val link = "http://localhost:5173/reset-password?token=$token"
-        helper.setText("<h1>Reset Your Password</h1><p>Click the link below to reset your password:</p><a href=\"$link\">Reset Password</a>", true)
+        val link = "$frontendUrl/reset-password?token=$token"
+        helper.setText("<h1>Reset Your Password</h1><p>Click the link below to reset your password:</p>" +
+                "<a href=\"$link\">Reset Password</a>", true)
         javaMailSender.send(message)
     }
 }

@@ -158,7 +158,8 @@ class UserService(
                     eventId = eventId,
                     userId = requireNotNull(user.id),
                     channel = Channel.EMAIL,
-                    payload = "RESTORE_PASSWORD ${user.email} $token",
+                    messageType = "RESTORE_PASSWORD",
+                    payload = "${user.email} $token",
                 )
             )
         }

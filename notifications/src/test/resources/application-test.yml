@@ -39,6 +39,9 @@ spring:
           starttls:
             enable: false
 
+app:
+  frontend-url: http://test-localhost:3000
+
 logging:
   level:
     root: WARN
