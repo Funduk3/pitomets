@@ -84,7 +84,7 @@ export const Chat = () => {
     if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
     // Когда WS подключён — синхронизируем редко (страховка).
     // Когда WS отключён — синхронизируем чаще, но только если вкладка видима.
-    const intervalMs = wsConnected ? 60000 : 10000;
+    const intervalMs = wsConnected ? 600000 : 10000;
     if (!isTabVisible && !wsConnected) {
       // вкладка скрыта, а WS нет — не долбим сервер; догонит при фокусе/переподключении
       return;
