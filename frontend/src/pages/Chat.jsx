@@ -116,6 +116,20 @@ export const Chat = () => {
     };
   }, [chatId, wsConnected, isTabVisible]);
 
+  // При восстановлении WS или возврате на вкладку обновляем статусы прочтения
+  useEffect(() => {
+    if (!isAuthenticated() || !chatId) return;
+    if (!wsConnected && !isTabVisible) return;
+    (async () => {
+      try {
+        const data = await messengerAPI.getChatMessages(parseInt(chatId));
+        setMessages((prev) => mergeMessagesById(prev, data));
+      } catch (_) {
+        // ignore
+      }
+    })();
+  }, [chatId, wsConnected, isTabVisible]);
+
   useEffect(() => {
     if (shouldAutoScrollRef.current) {
       scrollToBottom();
