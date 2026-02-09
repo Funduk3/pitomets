@@ -550,7 +550,7 @@ export const ListingDetail = () => {
             ))}
           </div>
         )}
-        {isAuthenticated() && (
+        {isAuthenticated() && user?.id !== listing.sellerId && (
           <Link
             to={`/listings/${id}/review`}
             style={{

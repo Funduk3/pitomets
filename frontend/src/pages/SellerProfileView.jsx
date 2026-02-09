@@ -144,7 +144,17 @@ export const SellerProfileView = () => {
       return;
     }
 
-    alert('Напишите продавцу из конкретного объявления.');
+    if (!profile?.userId) {
+      alert('Seller information not available');
+      return;
+    }
+
+    try {
+      const chat = await messengerAPI.createOrGetChat(profile.userId, null, null);
+      navigate(`/chats/${chat.id}`);
+    } catch (err) {
+      alert('Failed to create chat');
+    }
   };
 
   if (loading) return <div>Грузим...</div>;
@@ -333,7 +343,7 @@ export const SellerProfileView = () => {
                         </p>
                         <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#27ae60' }}>
-                            ${listing.price}
+                            {listing.price} ₽
                           </span>
                           {listing.species && (
                             <span style={{ fontSize: '0.85rem', color: '#666' }}>

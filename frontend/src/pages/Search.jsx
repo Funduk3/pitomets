@@ -2,12 +2,13 @@ import {useState, useEffect} from 'react';
 import {searchAPI} from '../api/search';
 import {photosAPI} from '../api/photos';
 import { resolveApiUrl } from '../api/axios';
-import {Link} from 'react-router-dom';
+import {Link, useLocation} from 'react-router-dom';
 import { citiesAPI } from '../api/cities';
 import { metroAPI } from '../api/metro';
 import { useRef } from 'react';
 
 export const Search = () => {
+    const location = useLocation();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [listingsPhotos, setListingsPhotos] = useState({});
@@ -109,10 +110,21 @@ export const Search = () => {
         }
     }, [selectedCity, metroId, priceFromInput, priceToInput]);
 
-    const handleSearch = async (e) => {
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const q = params.get('q');
+        if (q && q !== query) {
+            setQuery(q);
+            setHasSearched(true);
+            handleSearch(null, q);
+        }
+    }, [location.search]);
+
+    const handleSearch = async (e, overrideQuery) => {
         if (e?.preventDefault) e.preventDefault();
 
-        if (!query.trim()) return;
+        const searchText = (overrideQuery ?? query).trim();
+        if (!searchText) return;
 
         // форматируем цену: заменяем запятую на точку
         const normalize = (s) => {
@@ -146,7 +158,7 @@ export const Search = () => {
             const metroParam = (selectedCity?.hasMetro && metroId != null) ? metroId : null;
 
             const data = await searchAPI.searchListings(
-                query,
+                searchText,
                 0,
                 10,
                 {

@@ -9,6 +9,8 @@ import com.pitomets.monolit.model.EventType
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.CityDto
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.pitomets.monolit.model.dto.response.ListingsCursorResponse
 import com.pitomets.monolit.model.dto.response.ListingsResponse
 import com.pitomets.monolit.model.dto.response.MetroDto
 import com.pitomets.monolit.model.dto.response.MetroLineDto
@@ -25,8 +27,12 @@ import com.pitomets.monolit.repository.SellerProfileRepo
 import jakarta.transaction.Transactional
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
+import org.springframework.data.redis.core.RedisTemplate
+import java.time.Duration
 import java.nio.file.AccessDeniedException
 
 @Service
@@ -38,6 +44,7 @@ class ListingsService(
     private val outboxRepo: ListingOutboxRepository,
     private val cityRepo: CitiesRepository,
     private val metroRepo: MetroStationRepo,
+    private val redisTemplate: RedisTemplate<String, String>,
 ) {
     // Controller functions
 
@@ -99,6 +106,44 @@ class ListingsService(
                 listing.mother
             )
         }
+    }
+
+    fun getHomeListings(cursor: Long?): ListingsCursorResponse {
+        val cacheKey = homeCacheKey(cursor)
+        redisTemplate.opsForValue().get(cacheKey)?.let { cached ->
+            return mapper.readValue(cached, ListingsCursorResponse::class.java)
+        }
+
+        val pageable = PageRequest.of(
+            0,
+            HOME_PAGE_SIZE + 1,
+            Sort.by(Sort.Direction.DESC, "id")
+        )
+
+        val result = if (cursor == null) {
+            listingsRepo.findByIsArchivedFalseOrderByIdDesc(pageable)
+        } else {
+            listingsRepo.findByIsArchivedFalseAndIdLessThanOrderByIdDesc(cursor, pageable)
+        }
+
+        val slice = result.take(HOME_PAGE_SIZE)
+        val hasMore = result.size > HOME_PAGE_SIZE
+        val nextCursor = slice.lastOrNull()?.id?.takeIf { hasMore }
+
+        val response = ListingsCursorResponse(
+            items = slice.map { listing ->
+                buildListingsResponse(
+                    listing,
+                    listing.father,
+                    listing.mother
+                )
+            },
+            nextCursor = nextCursor,
+            hasMore = hasMore
+        )
+
+        redisTemplate.opsForValue().set(cacheKey, mapper.writeValueAsString(response), CACHE_TTL)
+        return response
     }
 
     @Transactional
@@ -168,6 +213,7 @@ class ListingsService(
             sellerId = requireNotNull(saved.sellerProfile.seller?.id),
             sellerRating = saved.sellerProfile.rating,
             sellerReviewsCount = saved.sellerProfile.countReviews,
+            coverPhotoId = saved.coverPhotoId,
             mother = saved.mother?.id,
             father = saved.father?.id,
             city = CityDto(
@@ -294,6 +340,7 @@ class ListingsService(
         sellerId = requireNotNull(savedListing.sellerProfile.seller?.id),
         sellerRating = savedListing.sellerProfile.rating,
         sellerReviewsCount = savedListing.sellerProfile.countReviews,
+        coverPhotoId = savedListing.coverPhotoId,
         species = savedListing.species,
         breed = savedListing.breed,
         ageMonths = savedListing.ageMonths,
@@ -322,4 +369,17 @@ class ListingsService(
     )
 
     private val log = LoggerFactory.getLogger(ListingsService::class.java)
+    private val mapper = jacksonObjectMapper()
+
+    private fun homeCacheKey(cursor: Long?): String =
+        if (cursor == null) {
+            "home:listings:cursor:none:size:$HOME_PAGE_SIZE"
+        } else {
+            "home:listings:cursor:$cursor:size:$HOME_PAGE_SIZE"
+        }
+
+    companion object {
+        private const val HOME_PAGE_SIZE = 10
+        private val CACHE_TTL = Duration.ofSeconds(30)
+    }
 }

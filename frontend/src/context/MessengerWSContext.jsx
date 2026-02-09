@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from './AuthContext';
+import { messengerAPI } from '../api/messenger';
 
 const MessengerWSContext = createContext(null);
 
@@ -21,6 +22,7 @@ export const MessengerWSProvider = ({ children }) => {
   const lastSeenMessagesRef = useRef(new Map());
   // Дебаунсинг для синхронизации - защита от частых запросов
   const syncDebounceRef = useRef(null);
+  const unreadSyncRef = useRef(null);
 
   const subscribe = (handler) => {
     listenersRef.current.add(handler);
@@ -60,6 +62,7 @@ export const MessengerWSProvider = ({ children }) => {
 
     ws.onopen = () => {
       setConnected(true);
+      refreshUnreadFromServer();
       // При восстановлении вебсокета отправляем запрос синхронизации
       requestSync();
     };
@@ -126,6 +129,7 @@ export const MessengerWSProvider = ({ children }) => {
   useEffect(() => {
     if (!isAuthenticated() || !user?.id) return;
     shouldReconnectRef.current = true;
+    refreshUnreadFromServer();
     // connect();
     return () => {
       shouldReconnectRef.current = false;
@@ -136,6 +140,10 @@ export const MessengerWSProvider = ({ children }) => {
       if (syncDebounceRef.current) {
         clearTimeout(syncDebounceRef.current);
         syncDebounceRef.current = null;
+      }
+      if (unreadSyncRef.current) {
+        clearTimeout(unreadSyncRef.current);
+        unreadSyncRef.current = null;
       }
       if (wsRef.current) {
         try { wsRef.current.close(); } catch (_) {}
@@ -168,6 +176,7 @@ export const MessengerWSProvider = ({ children }) => {
       } else {
         // Вкладка видима — разрешаем реконнекты и пробуем подключиться (с небольшой задержкой)
         shouldReconnectRef.current = true;
+        refreshUnreadFromServer();
 
         if (reconnectTimeoutRef.current) {
           clearTimeout(reconnectTimeoutRef.current);
@@ -202,6 +211,10 @@ export const MessengerWSProvider = ({ children }) => {
       if (syncDebounceRef.current) {
         clearTimeout(syncDebounceRef.current);
         syncDebounceRef.current = null;
+      }
+      if (unreadSyncRef.current) {
+        clearTimeout(unreadSyncRef.current);
+        unreadSyncRef.current = null;
       }
     };
   }, [user?.id]);
@@ -262,6 +275,22 @@ export const MessengerWSProvider = ({ children }) => {
     }, 500);
   };
 
+  const refreshUnreadFromServer = () => {
+    if (unreadSyncRef.current) {
+      clearTimeout(unreadSyncRef.current);
+    }
+    unreadSyncRef.current = setTimeout(async () => {
+      try {
+        const chats = await messengerAPI.getUserChats();
+        setUnreadFromChats(chats);
+      } catch (_) {
+        // ignore
+      } finally {
+        unreadSyncRef.current = null;
+      }
+    }, 300);
+  };
+
   const markChatUnread = (chatId) => {
     const id = Number(chatId);
     if (!Number.isFinite(id)) return;
@@ -306,8 +335,8 @@ export const MessengerWSProvider = ({ children }) => {
     // синхронизация
     updateLastSeenMessage,
     requestSync,
+    refreshUnreadFromServer,
   }), [connected, unreadChatIds]);
 
   return <MessengerWSContext.Provider value={value}>{children}</MessengerWSContext.Provider>;
 };
-

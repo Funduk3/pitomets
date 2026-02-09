@@ -20,6 +20,13 @@ export const listingsAPI = {
     return response.data;
   },
 
+  getHomeListings: async (cursor = null) => {
+    const response = await api.get('/listings/home', {
+      params: cursor == null ? {} : { cursor },
+    });
+    return response.data;
+  },
+
   createListing: async (listingData) => {
     const response = await api.post('/listings/', listingData);
     return response.data;

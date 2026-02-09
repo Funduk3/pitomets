@@ -54,6 +54,9 @@ class Listing(
     @JoinColumn(name = "seller_profile_id")
     var sellerProfile: SellerProfile,
 
+    @Column(name = "cover_photo_id")
+    var coverPhotoId: Long? = null,
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "city_id", nullable = false)
     var city: CityEntity,

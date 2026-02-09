@@ -5,6 +5,7 @@ import com.pitomets.messenger.models.ChatEntity
 import kotlinx.datetime.Clock
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.isNull
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.or
@@ -12,14 +13,20 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 
 class ChatService {
-    fun createOrGetChat(user1Id: Long, user2Id: Long, listingId: Long, listingTitle: String?): ChatEntity {
+    fun createOrGetChat(user1Id: Long, user2Id: Long, listingId: Long?, listingTitle: String?): ChatEntity {
         return transaction {
             // Проверяем, существует ли уже чат между этими пользователями
             val existingChat = Chat.select {
                 (
                     ((Chat.user1Id eq user1Id) and (Chat.user2Id eq user2Id)) or
                         ((Chat.user1Id eq user2Id) and (Chat.user2Id eq user1Id))
-                    ) and (Chat.listingId eq listingId)
+                    ) and (
+                    if (listingId == null) {
+                        Chat.listingId.isNull()
+                    } else {
+                        Chat.listingId eq listingId
+                    }
+                    )
             }.singleOrNull()
 
             if (existingChat != null) {

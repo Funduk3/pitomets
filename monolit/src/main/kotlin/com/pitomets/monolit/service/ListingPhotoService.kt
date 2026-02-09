@@ -24,7 +24,7 @@ class ListingPhotoService(
         listingId: Long,
         userId: Long
     ): ListingPhoto {
-        listingsService.requireOwnerAndReturnListing(listingId, userId)
+        val listing = listingsService.requireOwnerAndReturnListing(listingId, userId)
 
         validateImage(file)
 
@@ -47,7 +47,12 @@ class ListingPhotoService(
             position = position
         )
 
-        return listingPhotoRepo.save(photo)
+        val saved = listingPhotoRepo.save(photo)
+        if (position == 0) {
+            listing.coverPhotoId = saved.id
+            listingsRepo.save(listing)
+        }
+        return saved
     }
 
     @Transactional
@@ -78,7 +83,7 @@ class ListingPhotoService(
         photoId: Long,
         userId: Long
     ) {
-        listingsService.requireOwnerAndReturnListing(listingId, userId)
+        val listing = listingsService.requireOwnerAndReturnListing(listingId, userId)
 
         val photo = listingPhotoRepo.findById(photoId)
             .orElseThrow { NoSuchElementException("Photo with id $photoId not found") }
@@ -91,6 +96,11 @@ class ListingPhotoService(
         minioService.delete(photo.objectKey)
 
         reindexPhotos(listingId)
+        if (listing.coverPhotoId == photoId) {
+            val first = listingPhotoRepo.findByListingIdOrderByPosition(listingId).firstOrNull()
+            listing.coverPhotoId = first?.id
+            listingsRepo.save(listing)
+        }
     }
 
     // не используется ???
