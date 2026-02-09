@@ -162,205 +162,90 @@ export const SellerProfileView = () => {
   if (!profile) return <div>Seller profile not found</div>;
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ 
-        padding: '2rem',
-        border: '1px solid #ddd',
-        borderRadius: '8px',
-        backgroundColor: '#f9f9f9',
-        marginBottom: '2rem'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+    <div className="container">
+      <div className="card" style={{ marginBottom: '1.5rem' }}>
+        <div className="card-body" style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
           {avatarUrl && (
-            <img 
-              src={avatarUrl} 
-              alt="Seller avatar" 
-              style={{ 
-                width: '120px', 
-                height: '120px', 
-                borderRadius: '50%', 
-                objectFit: 'cover',
-                border: '3px solid #ddd'
-              }} 
-            />
+            <img src={avatarUrl} alt="Seller avatar" className="avatar-md" />
           )}
           <div style={{ flex: 1 }}>
-            <h1 style={{ margin: '0 0 0.5rem 0' }}>{profile.shopName}</h1>
-            {profile.description && (
-              <p style={{ color: '#666', marginBottom: '0.5rem' }}>{profile.description}</p>
-            )}
+            <h1 style={{ margin: '0 0 0.25rem 0' }}>{profile.shopName}</h1>
+            {profile.description && <p className="small-muted" style={{ marginBottom: '0.5rem' }}>{profile.description}</p>}
+
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
               {profile.rating != null && (
-                <p style={{ margin: 0 }}>
+                <div className="small-muted" style={{ margin: 0 }}>
                   <strong>Рейтинг:</strong> {profile.rating.toFixed(2)} / 5
-                </p>
+                </div>
               )}
               {profile.isVerified && (
-                <span style={{ 
-                  padding: '0.25rem 0.5rem',
-                  backgroundColor: '#27ae60',
-                  color: 'white',
-                  borderRadius: '4px',
-                  fontSize: '0.9rem'
-                }}>
+                <span className="btn btn-primary" style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.9rem' }}>
                   ✓ Проверен
                 </span>
               )}
             </div>
+
             {isAuthenticated() && user?.id !== profile.userId && (
-              <button
-                onClick={handleMessageSeller}
-                style={{
-                  marginTop: '1rem',
-                  padding: '0.75rem 1.5rem',
-                  backgroundColor: '#27ae60',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '1rem'
-                }}
-              >
-                Написать продавцу
-              </button>
+              <div style={{ marginTop: '1rem' }}>
+                <button onClick={handleMessageSeller} className="btn btn-primary">Написать продавцу</button>
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      <div style={{ marginTop: '2rem' }}>
-        <div style={{ 
-          display: 'flex', 
-          gap: '1rem', 
-          borderBottom: '2px solid #ddd',
-          marginBottom: '1rem'
-        }}>
+      <div>
+        <div className="tabs" role="tablist" aria-label="Seller sections">
           <button
+            role="tab"
+            aria-selected={activeTab === 'listings'}
+            aria-controls="tab-listings"
+            id="tab-button-listings"
+            className={`tab ${activeTab === 'listings' ? 'active' : ''}`}
             onClick={() => setActiveTab('listings')}
-            style={{
-              padding: '0.75rem 1.5rem',
-              border: 'none',
-              backgroundColor: activeTab === 'listings' ? '#3498db' : 'transparent',
-              color: activeTab === 'listings' ? 'white' : '#666',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              fontWeight: activeTab === 'listings' ? 'bold' : 'normal',
-              borderBottom: activeTab === 'listings' ? '2px solid #3498db' : '2px solid transparent',
-              marginBottom: '-2px'
-            }}
           >
             Объявления ({listings.length})
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'reviews'}
+            aria-controls="tab-reviews"
+            id="tab-button-reviews"
+            className={`tab ${activeTab === 'reviews' ? 'active' : ''}`}
             onClick={() => setActiveTab('reviews')}
-            style={{
-              padding: '0.75rem 1.5rem',
-              border: 'none',
-              backgroundColor: activeTab === 'reviews' ? '#3498db' : 'transparent',
-              color: activeTab === 'reviews' ? 'white' : '#666',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              fontWeight: activeTab === 'reviews' ? 'bold' : 'normal',
-              borderBottom: activeTab === 'reviews' ? '2px solid #3498db' : '2px solid transparent',
-              marginBottom: '-2px'
-            }}
           >
             Отзывы ({reviews.length})
           </button>
         </div>
 
         {activeTab === 'listings' && (
-          <div>
+          <div id="tab-listings" role="tabpanel" aria-labelledby="tab-button-listings">
             {loadingListings ? (
               <p>Загрузка объявлений...</p>
             ) : listings.length === 0 ? (
               <p>У продавца пока нет объявлений</p>
             ) : (
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', 
-                gap: '1rem',
-                marginTop: '1rem'
-              }}>
+              <div className="profile-listings-grid">
                 {listings.map((listing) => {
                   const listingPhotos = listingsPhotos[listing.listingsId] || [];
                   const firstPhoto = listingPhotos[0];
-                  
+
                   return (
-                    <Link
-                      key={listing.listingsId}
-                      to={`/listings/${listing.listingsId}`}
-                      style={{
-                        textDecoration: 'none',
-                        color: 'inherit',
-                        border: '1px solid #ddd',
-                        borderRadius: '8px',
-                        overflow: 'hidden',
-                        display: 'block',
-                        transition: 'transform 0.2s, box-shadow 0.2s',
-                        backgroundColor: 'white'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-4px)';
-                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }}
-                    >
+                    <Link key={listing.listingsId} to={`/listings/${listing.listingsId}`} className="link-card">
                       {firstPhoto ? (
-                        <img
-                          src={resolveApiUrl(firstPhoto)}
-                          alt={listing.title}
-                          style={{
-                            width: '100%',
-                            height: '200px',
-                            objectFit: 'cover',
-                            display: 'block'
-                          }}
-                        />
+                        <img src={resolveApiUrl(firstPhoto)} alt={listing.title} style={{ height: '200px', objectFit: 'cover', display: 'block' }} />
                       ) : (
-                        <div style={{
-                          width: '100%',
-                          height: '200px',
-                          backgroundColor: '#f0f0f0',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#999'
-                        }}>
-                          Нет фото
-                        </div>
+                        <div className="listing-placeholder">Нет фото</div>
                       )}
-                      <div style={{ padding: '1rem' }}>
-                        <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: '#3498db' }}>
-                          {listing.title}
-                        </h3>
-                        <p style={{ margin: '0.5rem 0', color: '#666', fontSize: '0.9rem' }}>
-                          {listing.description?.substring(0, 100)}
-                          {listing.description && listing.description.length > 100 ? '...' : ''}
-                        </p>
+                      <div className="card-body">
+                        <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: 'var(--color-text)' }}>{listing.title}</h3>
+                        <p className="small-muted" style={{ margin: '0.5rem 0', fontSize: '0.9rem' }}>{listing.description?.substring(0, 100)}{listing.description && listing.description.length > 100 ? '...' : ''}</p>
                         <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#27ae60' }}>
-                            {listing.price} ₽
-                          </span>
-                          {listing.species && (
-                            <span style={{ fontSize: '0.85rem', color: '#666' }}>
-                              {listing.species}
-                            </span>
-                          )}
+                          <span className="tag-price">{listing.price} ₽</span>
+                          {listing.species && <span className="small-muted" style={{ fontSize: '0.85rem' }}>{listing.species}</span>}
                         </div>
-                        {listing.ageMonths != null && (
-                          <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: '#666' }}>
-                            Возраст: {AGE_LABELS[listing.ageMonths] || 'Не указан'}
-                          </p>
-                        )}
-                        {listing.gender && (
-                          <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: '#666' }}>
-                            Пол: {GENDER_LABELS[listing.gender] || 'Любой'}
-                          </p>
-                        )}
+                        {listing.ageMonths != null && <p className="small-muted" style={{ margin: '0.25rem 0 0 0' }}>Возраст: {AGE_LABELS[listing.ageMonths] || 'Не указан'}</p>}
+                        {listing.gender && <p className="small-muted" style={{ margin: '0.25rem 0 0 0' }}>Пол: {GENDER_LABELS[listing.gender] || 'Любой'}</p>}
                       </div>
                     </Link>
                   );
@@ -371,23 +256,18 @@ export const SellerProfileView = () => {
         )}
 
         {activeTab === 'reviews' && (
-          <div>
+          <div id="tab-reviews" role="tabpanel" aria-labelledby="tab-button-reviews">
             {reviews.length === 0 ? (
               <p>Пока нет отзывов</p>
             ) : (
               <div>
                 {reviews.map((review) => (
-                  <div key={review.id} style={{ 
-                    border: '1px solid #ddd', 
-                    borderRadius: '8px', 
-                    padding: '1rem', 
-                    marginBottom: '1rem' 
-                  }}>
-                    <p><strong>Рейтинг:</strong> {'⭐'.repeat(review.rating)}</p>
-                    {review.text && <p>{review.text}</p>}
-                    <p style={{ fontSize: '0.9rem', color: '#666' }}>
-                      {new Date(review.createdAt).toLocaleDateString()}
-                    </p>
+                  <div key={review.id} className="card" style={{ marginBottom: '1rem' }}>
+                    <div className="card-body">
+                      <p><strong>Рейтинг:</strong> {'⭐'.repeat(review.rating)}</p>
+                      {review.text && <p>{review.text}</p>}
+                      <p className="small-muted">{new Date(review.createdAt).toLocaleDateString()}</p>
+                    </div>
                   </div>
                 ))}
               </div>

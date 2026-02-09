@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { userAPI } from '../api/user';
 import { photosAPI } from '../api/photos';
-import { messengerAPI } from '../api/messenger';
 import { sellerAPI } from '../api/seller';
 import { resolveApiUrl } from '../api/axios';
 import { listingsAPI } from '../api/listings';
 import { useAuth } from '../context/AuthContext';
+import { messengerAPI } from '../api/messenger';
 import { GENDER_LABELS } from '../util/gender';
 import { AGE_LABELS } from '../util/age';
 
 export const UserProfileView = () => {
   const { userId } = useParams();
-  const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [listings, setListings] = useState([]);
@@ -137,7 +137,17 @@ export const UserProfileView = () => {
       return;
     }
 
-    alert('Напишите пользователю из конкретного объявления.');
+    if (!profile?.id) {
+      alert('User information not available');
+      return;
+    }
+
+    try {
+      const chat = await messengerAPI.createOrGetChat(profile.id, null, null);
+      navigate(`/chats/${chat.id}`);
+    } catch (err) {
+      alert('Failed to create chat');
+    }
   };
 
   if (loading) return <div>Грузим...</div>;
@@ -147,112 +157,63 @@ export const UserProfileView = () => {
   const displayName = profile.isSeller ? profile.shopName : profile.fullName;
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ 
-        padding: '2rem',
-        border: '1px solid #ddd',
-        borderRadius: '8px',
-        backgroundColor: '#f9f9f9',
-        marginBottom: '2rem'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-          {avatarUrl && (
-            <img 
-              src={avatarUrl} 
-              alt="User avatar" 
-              style={{ 
-                width: '120px', 
-                height: '120px', 
-                borderRadius: '50%', 
-                objectFit: 'cover',
-                border: '3px solid #ddd'
-              }} 
-            />
-          )}
-          <div style={{ flex: 1 }}>
-            <h1 style={{ margin: '0 0 0.5rem 0' }}>{displayName}</h1>
-            {profile.isSeller && profile.description && (
-              <p style={{ color: '#666', marginBottom: '0.5rem' }}>{profile.description}</p>
+    <div className="container">
+      <div className="card" style={{ padding: 0, marginBottom: '2rem' }}>
+        <div style={{ padding: '2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+            {avatarUrl && (
+              <img
+                src={avatarUrl}
+                alt="User avatar"
+                className="avatar-md"
+              />
             )}
-            {!profile.isSeller && (
-              <p style={{ color: '#666', marginBottom: '0.5rem' }}>{profile.email}</p>
-            )}
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              {profile.isSeller && profile.rating != null && (
-                <p style={{ margin: 0 }}>
-                  <strong>Рейтинг:</strong> {profile.rating.toFixed(2)} / 5
-                </p>
+            <div style={{ flex: 1 }}>
+              <h1 style={{ margin: '0 0 0.5rem 0' }}>{displayName}</h1>
+              {profile.isSeller && profile.description && (
+                <p className="small-muted" style={{ marginBottom: '0.5rem' }}>{profile.description}</p>
               )}
-              {profile.isSeller && profile.isVerified && (
-                <span style={{ 
-                  padding: '0.25rem 0.5rem',
-                  backgroundColor: '#27ae60',
-                  color: 'white',
-                  borderRadius: '4px',
-                  fontSize: '0.9rem'
-                }}>
-                  ✓ Проверен
-                </span>
+              {!profile.isSeller && (
+                <p className="small-muted" style={{ marginBottom: '0.5rem' }}>{profile.email}</p>
+              )}
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                {profile.isSeller && profile.rating != null && (
+                  <p style={{ margin: 0 }}>
+                    <strong>Рейтинг:</strong> {profile.rating.toFixed(2)} / 5
+                  </p>
+                )}
+                {profile.isSeller && profile.isVerified && (
+                  <span className="btn btn-primary" style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', backgroundColor: '#FF6B5A' }}>
+                    ✓ Проверен
+                  </span>
+                )}
+              </div>
+              {isAuthenticated() && user?.id !== profile.id && (
+                <button
+                  onClick={handleMessageUser}
+                  className="btn btn-primary"
+                  style={{ marginTop: '1rem' }}
+                >
+                  Написать
+                </button>
               )}
             </div>
-            {isAuthenticated() && user?.id !== profile.id && (
-              <button
-                onClick={handleMessageUser}
-                style={{
-                  marginTop: '1rem',
-                  padding: '0.75rem 1.5rem',
-                  backgroundColor: '#27ae60',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '1rem'
-                }}
-              >
-                Написать
-              </button>
-            )}
           </div>
         </div>
       </div>
 
       {profile.isSeller && (
         <div style={{ marginTop: '2rem' }}>
-          <div style={{ 
-            display: 'flex', 
-            gap: '1rem', 
-            borderBottom: '2px solid #ddd',
-            marginBottom: '1rem'
-          }}>
+          <div className="tabs">
             <button
               onClick={() => setActiveTab('listings')}
-              style={{
-                padding: '0.75rem 1.5rem',
-                border: 'none',
-                backgroundColor: activeTab === 'listings' ? '#3498db' : 'transparent',
-                color: activeTab === 'listings' ? 'white' : '#666',
-                cursor: 'pointer',
-                fontSize: '1rem',
-                fontWeight: activeTab === 'listings' ? 'bold' : 'normal',
-                borderBottom: activeTab === 'listings' ? '2px solid #3498db' : '2px solid transparent',
-                marginBottom: '-2px'
-              }}
+              className={`tab ${activeTab === 'listings' ? 'active' : ''}`}
             >
               Объявления ({listings.length})
             </button>
             <button
               onClick={() => setActiveTab('reviews')}
-              style={{
-                padding: '0.75rem 1.5rem',
-                border: 'none',
-                backgroundColor: activeTab === 'reviews' ? '#3498db' : 'transparent',
-                color: activeTab === 'reviews' ? 'white' : '#666',
-                cursor: 'pointer',
-                fontSize: '1rem',
-                fontWeight: activeTab === 'reviews' ? 'bold' : 'normal',
-                borderBottom: activeTab === 'reviews' ? '2px solid #3498db' : '2px solid transparent',
-                marginBottom: '-2px'
-              }}
+              className={`tab ${activeTab === 'reviews' ? 'active' : ''}`}
             >
               Отзывы ({reviews.length})
             </button>
@@ -265,88 +226,53 @@ export const UserProfileView = () => {
               ) : listings.length === 0 ? (
                 <p>У пользователя пока нет объявлений</p>
               ) : (
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', 
-                  gap: '1rem',
-                  marginTop: '1rem'
-                }}>
+                <div className="profile-listings-grid">
                   {listings.map((listing) => {
                     const listingPhotos = listingsPhotos[listing.listingsId] || [];
                     const firstPhoto = listingPhotos[0];
-                    
+
                     return (
                       <Link
                         key={listing.listingsId}
                         to={`/listings/${listing.listingsId}`}
-                        style={{
-                          textDecoration: 'none',
-                          color: 'inherit',
-                          border: '1px solid #ddd',
-                          borderRadius: '8px',
-                          overflow: 'hidden',
-                          display: 'block',
-                          transition: 'transform 0.2s, box-shadow 0.2s',
-                          backgroundColor: 'white'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-4px)';
-                          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = 'none';
-                        }}
+                        className="link-card"
                       >
                         {firstPhoto ? (
                           <img
                             src={resolveApiUrl(firstPhoto)}
                             alt={listing.title}
-                            style={{
-                              width: '100%',
-                              height: '200px',
-                              objectFit: 'cover',
-                              display: 'block'
-                            }}
+                            style={{ height: '200px', objectFit: 'cover', display: 'block' }}
                           />
                         ) : (
-                          <div style={{
-                            width: '100%',
-                            height: '200px',
-                            backgroundColor: '#f0f0f0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#999'
-                          }}>
+                          <div className="listing-placeholder">
                             Нет фото
                           </div>
                         )}
-                        <div style={{ padding: '1rem' }}>
+                        <div className="card-body">
                           <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: '#3498db' }}>
                             {listing.title}
                           </h3>
-                          <p style={{ margin: '0.5rem 0', color: '#666', fontSize: '0.9rem' }}>
+                          <p className="small-muted" style={{ margin: '0.5rem 0', fontSize: '0.9rem' }}>
                             {listing.description?.substring(0, 100)}
                             {listing.description && listing.description.length > 100 ? '...' : ''}
                           </p>
                           <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#27ae60' }}>
+                            <span className="tag-price">
                               {listing.price} ₽
                             </span>
                             {listing.species && (
-                              <span style={{ fontSize: '0.85rem', color: '#666' }}>
+                              <span className="small-muted">
                                 {listing.species}
                               </span>
                             )}
                           </div>
                           {listing.ageMonths != null && (
-                            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: '#666' }}>
+                            <p className="small-muted" style={{ margin: '0.25rem 0 0 0' }}>
                               Возраст: {AGE_LABELS[listing.ageMonths] || 'Не указан'}
                             </p>
                           )}
                           {listing.gender && (
-                            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: '#666' }}>
+                            <p className="small-muted" style={{ margin: '0.25rem 0 0 0' }}>
                               Пол: {GENDER_LABELS[listing.gender] || 'Любой'}
                             </p>
                           )}
@@ -366,15 +292,10 @@ export const UserProfileView = () => {
               ) : (
                 <div>
                   {reviews.map((review) => (
-                    <div key={review.id} style={{ 
-                      border: '1px solid #ddd', 
-                      borderRadius: '8px', 
-                      padding: '1rem', 
-                      marginBottom: '1rem' 
-                    }}>
+                    <div key={review.id} className="card" style={{ padding: '1rem', marginBottom: '1rem' }}>
                       <p><strong>Рейтинг:</strong> {'⭐'.repeat(review.rating)}</p>
                       {review.text && <p>{review.text}</p>}
-                      <p style={{ fontSize: '0.9rem', color: '#666' }}>
+                      <p className="small-muted">
                         {new Date(review.createdAt).toLocaleDateString()}
                       </p>
                     </div>
@@ -387,7 +308,7 @@ export const UserProfileView = () => {
       )}
 
       {!profile.isSeller && (
-        <div style={{ marginTop: '2rem', padding: '2rem', border: '1px solid #ddd', borderRadius: '8px', textAlign: 'center' }}>
+        <div className="card" style={{ marginTop: '2rem', padding: '2rem', textAlign: 'center' }}>
           <p>Этот пользователь не является продавцом</p>
         </div>
       )}

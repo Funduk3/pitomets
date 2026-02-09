@@ -30,7 +30,7 @@ export const Chats = () => {
   useEffect(() => {
     if (!isAuthenticated()) return;
 
-    const unsubscribe = subscribe((msg) => {
+    return subscribe((msg) => {
       // read_receipt не влияет на список чатов
       if (msg?.type === 'read_receipt') return;
 
@@ -114,8 +114,6 @@ export const Chats = () => {
         return next;
       });
     });
-
-    return unsubscribe;
   }, [user?.id, subscribe]);
 
   const loadChats = async () => {
@@ -258,7 +256,7 @@ export const Chats = () => {
       {chats.length === 0 ? (
         <p>У вас пока нет чатов</p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+        <div className="flex-column-gap" style={{ marginTop: '1rem' }}>
           {sortedChats.map((chat) => {
             const otherUserId = chat.user1Id === user?.id ? chat.user2Id : chat.user1Id;
             const profile = profilesByUserId[otherUserId];
@@ -269,7 +267,7 @@ export const Chats = () => {
             const isListingChat = chat.listingId != null;
             const titleText = isListingChat ? listingTitle : displayName;
             const last = chat.lastMessage;
-            const lastTime = last?.createdAt ? new Date(last.createdAt).toLocaleTimeString() : null;
+            const lastTime = last?.createdAt ? new Date(last.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false }) : null;
             const lastText = last?.content ? formatPreview(last.content) : 'Нет сообщений';
             const unreadCount = Number(chat?.unreadCount || 0);
             const isUnread = unreadCount > 0;
@@ -277,15 +275,8 @@ export const Chats = () => {
               <Link
                 key={chat.id}
                 to={`/chats/${chat.id}`}
-                style={{
-                  display: 'block',
-                  padding: '1rem',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  textDecoration: 'none',
-                  color: 'inherit',
-                  backgroundColor: '#f9f9f9'
-                }}
+                className="link-card"
+                style={{ padding: '1rem' }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
                   {isListingChat ? (
@@ -293,74 +284,29 @@ export const Chats = () => {
                       <img 
                         src={listingPhoto} 
                         alt="Listing" 
-                        style={{ 
-                          width: '60px', 
-                          height: '60px', 
-                          borderRadius: '8px', 
-                          objectFit: 'cover',
-                          border: '2px solid #ddd',
-                          flexShrink: 0
-                        }} 
+                        className="avatar-sm"
                       />
                     ) : (
-                      <div
-                        style={{
-                          width: '60px',
-                          height: '60px',
-                          borderRadius: '8px',
-                          backgroundColor: '#e9ecef',
-                          border: '2px solid #ddd',
-                          flexShrink: 0
-                        }}
-                      />
+                      <div className="avatar-sm" />
                     )
                   ) : avatarUrl ? (
                     <img 
                       src={avatarUrl} 
                       alt="User avatar" 
-                      style={{ 
-                        width: '60px', 
-                        height: '60px', 
-                        borderRadius: '50%', 
-                        objectFit: 'cover',
-                        border: '2px solid #ddd',
-                        flexShrink: 0
-                      }} 
+                      className="avatar-sm"
                     />
                   ) : (
-                    <div
-                      style={{
-                        width: '60px',
-                        height: '60px',
-                        borderRadius: '50%',
-                        backgroundColor: '#e9ecef',
-                        border: '2px solid #ddd',
-                        flexShrink: 0
-                      }}
-                    />
+                    <div className="avatar-sm" />
                   )}
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'baseline' }}>
                       <strong>{titleText}</strong>
                       {unreadCount > 0 && (
-                        <span
-                          style={{
-                            marginLeft: '0.25rem',
-                            backgroundColor: '#e74c3c',
-                            color: 'white',
-                            borderRadius: '999px',
-                            padding: '0.1rem 0.5rem',
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            lineHeight: 1.4,
-                          }}
-                        >
-                          {unreadCount}
-                        </span>
+                        <span className="badge-unread">{unreadCount}</span>
                       )}
                     </div>
                     {isListingChat && (
-                      <div style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: '#888' }}>
+                      <div className="small-muted" style={{ marginTop: '0.25rem' }}>
                         {displayName} • #{otherUserId}
                       </div>
                     )}
@@ -370,8 +316,8 @@ export const Chats = () => {
                       </span>
                     </div>
 
-                    <div style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: '#666' }}>
-                      {lastTime ? lastTime : new Date(chat.updatedAt).toLocaleString()}
+                    <div className="small-muted" style={{ marginTop: '0.25rem' }}>
+                      {lastTime ? lastTime : new Date(chat.updatedAt).toLocaleString('ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false })}
                       {isUnread ? ' • новые' : ''}
                     </div>
                   </div>
