@@ -70,6 +70,7 @@ class KafkaIntegrationTest : BaseContainers() {
                 eventId = 99999L,
                 userId = 555L,
                 payload = "integration@test.com",
+                messageType = "default",
                 channel = Channel.EMAIL
             )
         )
@@ -91,6 +92,7 @@ class KafkaIntegrationTest : BaseContainers() {
                 eventId = 1001L,
                 userId = 100L,
                 channel = Channel.EMAIL,
+                messageType = "default",
                 payload = "19292"
             )
         )
@@ -100,6 +102,7 @@ class KafkaIntegrationTest : BaseContainers() {
                 eventId = 1002L,
                 userId = 200L,
                 payload = "+7 909 999 99 99",
+                messageType = "default",
                 channel = Channel.SMS
             )
         )
@@ -109,6 +112,7 @@ class KafkaIntegrationTest : BaseContainers() {
                 eventId = 1003L,
                 userId = 300L,
                 channel = Channel.PUSH,
+                messageType = "default",
                 payload = "bla bla bla",
             )
         )
@@ -140,6 +144,7 @@ class KafkaIntegrationTest : BaseContainers() {
                     eventId = eventId,
                     userId = eventId * 100,
                     channel = Channel.EMAIL,
+                    messageType = "default",
                     payload = "bla bla bla",
                 )
             )
