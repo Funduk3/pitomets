@@ -63,6 +63,7 @@ class UserService(
                 eventId = eventId,
                 userId = requireNotNull(savedUser.id) { "User with this user doesn't have a id" },
                 channel = Channel.EMAIL,
+                messageType = "CONFIRM",
                 payload = "confirm ${savedUser.email} $token",
             )
         )
