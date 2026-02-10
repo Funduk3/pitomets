@@ -16,7 +16,9 @@ import org.springframework.stereotype.Component
 class EmailNotificationSender(
     private val javaMailSender: JavaMailSender,
     @Value("\${app.frontend-url}")
-    private val frontendUrl: String
+    private val frontendUrl: String,
+    @Value("\${app.mail.from:}")
+    private val mailFrom: String
 ) : NotificationSender {
 
     private val logger = LoggerFactory.getLogger(EmailNotificationSender::class.java)
@@ -59,6 +61,9 @@ class EmailNotificationSender(
         val message = javaMailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, true, "UTF-8")
 
+        if (mailFrom.isNotBlank()) {
+            helper.setFrom(mailFrom)
+        }
         helper.setTo(email)
         helper.setSubject("Thank you for registration!")
         helper.setText("Welcome to pitomets", true)
@@ -73,6 +78,9 @@ class EmailNotificationSender(
         val message = javaMailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, true, "UTF-8")
 
+        if (mailFrom.isNotBlank()) {
+            helper.setFrom(mailFrom)
+        }
         helper.setTo(email)
         helper.setSubject("Please confirm your email")
         val link = "$frontendUrl/confirm?token=$token"
@@ -89,6 +97,9 @@ class EmailNotificationSender(
         val message = javaMailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, true, "UTF-8")
 
+        if (mailFrom.isNotBlank()) {
+            helper.setFrom(mailFrom)
+        }
         helper.setTo(email)
         helper.setSubject("Password Reset Request")
         val link = "$frontendUrl/reset-password?token=$token"

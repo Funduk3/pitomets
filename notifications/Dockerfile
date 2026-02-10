@@ -2,7 +2,8 @@
 FROM eclipse-temurin:23-jdk AS build
 WORKDIR /app
 
-COPY settings.gradle* build.gradle* build.gradle.kts* gradlew gradle/ ./
+COPY settings.gradle* build.gradle* build.gradle.kts* gradlew ./
+COPY gradle ./gradle
 RUN ["chmod", "+x", "./gradlew"]
 
 # Запускаем зависимостную фазу (без сборки приложения)
