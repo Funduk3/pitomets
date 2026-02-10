@@ -148,6 +148,7 @@ class UserService(
             ?: throw IllegalPasswordException("Problem with password")
     }
 
+    @Transactional
     fun confirmEmail(token: String) {
         log.info("Confirm email requested with token={}", token)
         val user = repo.findByConfirmationToken(token)
@@ -161,6 +162,7 @@ class UserService(
         repo.save(user)
         log.info("Confirm email success for user id={}", user.id)
     }
+
 
     fun forgotPassword(email: String) {
         val user = repo.findByEmail(email)
@@ -182,6 +184,7 @@ class UserService(
         }
     }
 
+    @Transactional
     fun resetPassword(token: String, newPassword: String) {
         val user = repo.findByPasswordResetToken(token)
             ?: throw InvalidTokenException("Invalid reset token")
