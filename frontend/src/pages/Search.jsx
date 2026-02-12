@@ -1,11 +1,10 @@
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import {searchAPI} from '../api/search';
 import {photosAPI} from '../api/photos';
 import { resolveApiUrl } from '../api/axios';
 import {Link, useLocation} from 'react-router-dom';
 import { citiesAPI } from '../api/cities';
 import { metroAPI } from '../api/metro';
-import { useRef } from 'react';
 
 export const Search = () => {
     const location = useLocation();
@@ -26,12 +25,16 @@ export const Search = () => {
     const [metroId, setMetroId] = useState(null);
     const [metroLoading, setMetroLoading] = useState(false);
     const metroRef = useRef(null);
+    const cityDropdownRef = useRef(null);
+    const queryDropdownRef = useRef(null);
+    const rootRef = useRef(null);
     const [priceFromInput, setPriceFromInput] = useState('');
     const [priceToInput, setPriceToInput] = useState('');
 
     useEffect(() => {
         if (!query.trim()) {
             setSuggestions([]);
+            setShowSuggestions(false);
             return;
         }
 
@@ -45,6 +48,34 @@ export const Search = () => {
 
         return () => clearTimeout(timeout);
     }, [query]);
+
+    // Close dropdowns on outside click or Escape
+    useEffect(() => {
+        const onKey = (e) => {
+            if (e.key === 'Escape') {
+                setShowSuggestions(false);
+                setShowCitySuggestions(false);
+                setMetroStations([]);
+            }
+        };
+
+        const onClick = (e) => {
+            const root = rootRef.current;
+            if (!root) return;
+            if (!root.contains(e.target)) {
+                setShowSuggestions(false);
+                setShowCitySuggestions(false);
+                setMetroStations([]);
+            }
+        };
+
+        document.addEventListener('keydown', onKey);
+        document.addEventListener('mousedown', onClick);
+        return () => {
+            document.removeEventListener('keydown', onKey);
+            document.removeEventListener('mousedown', onClick);
+        };
+    }, []);
 
     useEffect(() => {
         if (hasSearched) {
@@ -206,7 +237,7 @@ export const Search = () => {
     return (
         <div>
             <h2>Поиск по объявлениям</h2>
-            <form onSubmit={handleSearch} style={{marginBottom: '2rem', display: 'flex', gap: '1rem'}}>
+            <form onSubmit={handleSearch} className="flex-column-gap" style={{marginBottom: '2rem', display: 'flex', gap: '1rem'}} ref={rootRef}>
                 <div style={{ position: 'relative', width: '220px' }}>
                     <input
                         type="text"
@@ -217,20 +248,13 @@ export const Search = () => {
                             setSelectedCity(null);
                         }}
                         onFocus={() => citySuggestions.length && setShowCitySuggestions(true)}
-                        onBlur={() => setTimeout(() => setShowCitySuggestions(false), 150)}
-                        style={{ padding: '0.75rem', width: '100%' }}
+                        onBlur={() => setShowCitySuggestions(false)}
+                        className="form-input"
+                        style={{ width: '100%' }}
                     />
 
                     {showCitySuggestions && citySuggestions.length > 0 && (
-                        <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            background: 'white',
-                            border: '1px solid #ddd',
-                            zIndex: 10
-                        }}>
+                        <div ref={cityDropdownRef} className="autocomplete-dropdown" style={{ position: 'absolute' }}>
                             {citySuggestions.map(city => (
                                 <div
                                     key={city.id}
@@ -242,11 +266,7 @@ export const Search = () => {
                                         setMetroStations([]);
                                         setShowCitySuggestions(false);
                                     }}
-
-                                    style={{
-                                        padding: '0.5rem',
-                                        cursor: 'pointer'
-                                    }}
+                                    style={{ padding: '0.5rem', cursor: 'pointer' }}
                                 >
                                     {city.title}
                                 </div>
@@ -256,7 +276,7 @@ export const Search = () => {
 
                 </div>
                 {selectedCity && (
-                    <div style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#555' }}>
+                    <div className="small-muted" style={{ marginBottom: '1rem' }}>
                         Фильтр: {selectedCity.title}
                         <span
                             onClick={() => {
@@ -280,24 +300,15 @@ export const Search = () => {
                                 setMetroQuery(e.target.value);
                                 setMetroId(null);
                             }}
-                            style={{ padding: '0.75rem', width: '100%' }}
+                            className="form-input"
+                            style={{ width: '100%' }}
                         />
 
                         {metroLoading && <div>Загрузка...</div>}
 
                         {metroStations.length > 0 && (
-                            <div style={{
-                                position: 'absolute',
-                                top: '100%',
-                                left: 0,
-                                right: 0,
-                                background: 'white',
-                                border: '1px solid #ddd',
-                                zIndex: 10,
-                                maxHeight: '200px',
-                                overflowY: 'auto'
-                            }}>
-                                {metroStations.map(s => (
+                            <div className="autocomplete-dropdown" style={{ position: 'absolute', maxHeight: '200px' }}>
+                                 {metroStations.map(s => (
                                     <div
                                         key={s.id}
                                         onMouseDown={() => {
@@ -305,12 +316,8 @@ export const Search = () => {
                                             setMetroId(s.id);
                                             setMetroStations([]);
                                         }}
-                                        style={{
-                                            padding: '0.5rem',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            gap: '8px'
-                                        }}
+                                        className="flex-column-gap"
+                                        style={{ padding: '0.5rem', cursor: 'pointer', display: 'flex', gap: '8px' }}
                                     >
                                         {s.line?.color && (
                                             <span
@@ -324,7 +331,7 @@ export const Search = () => {
                                         )}
                                         <div>
                                             <div>{s.title}</div>
-                                            <div style={{ fontSize: 12, color: '#666' }}>
+                                            <div className="small-muted">
                                                 {s.line?.title}
                                             </div>
                                         </div>
@@ -342,7 +349,8 @@ export const Search = () => {
                         placeholder="Цена от"
                         value={priceFromInput}
                         onChange={(e) => setPriceFromInput(e.target.value)}
-                        style={{ padding: '0.5rem', width: '110px' }}
+                        className="form-input"
+                        style={{ width: '110px' }}
                     />
                     <input
                         type="number"
@@ -350,7 +358,8 @@ export const Search = () => {
                         placeholder="до"
                         value={priceToInput}
                         onChange={(e) => setPriceToInput(e.target.value)}
-                        style={{ padding: '0.5rem', width: '110px' }}
+                        className="form-input"
+                        style={{ width: '110px' }}
                     />
                 </div>
 
@@ -363,67 +372,41 @@ export const Search = () => {
                             setHasSearched(false);
                         }}
                         onFocus={() => suggestions.length && setShowSuggestions(true)}
-                        onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                        onBlur={() => setShowSuggestions(false)}
                         placeholder="Ищем питомца..."
-                        style={{width: "100%", padding: "0.75rem", fontSize: "1rem"}}
+                        className="form-input"
+                        style={{ fontSize: '1rem' }}
                     />
 
                     {showSuggestions && suggestions.length > 0 && (
-                        <div style={{
-                            position: "absolute",
-                            top: "100%",
-                            left: 0,
-                            right: 0,
-                            background: "white",
-                            border: "1px solid #ddd",
-                            borderRadius: "4px",
-                            zIndex: 10
-                        }}>
-                            {suggestions.map((s, idx) => (
+                        <div ref={queryDropdownRef} className="autocomplete-dropdown">
+                             {suggestions.map((s, idx) => (
                                 <div
                                     key={idx}
                                     onMouseDown={() => {
                                         setQuery(s.title);
                                         setShowSuggestions(false);
                                     }}
-                                    style={{
-                                        padding: "0.5rem 0.75rem",
-                                        cursor: "pointer",
-                                        borderBottom: "1px solid #eee"
-                                    }}
+                                    style={{ padding: "0.5rem 0.75rem", cursor: "pointer", borderBottom: "1px solid #eee" }}
                                 >
                                     {s.title}
                                 </div>
-                            ))}
-                        </div>
-                    )}
+                             ))}
+                         </div>
+                     )}
                 </div>
                 <button
                     type="submit"
                     disabled={loading}
-                    style={{
-                        padding: '0.75rem 2rem',
-                        backgroundColor: '#3498db',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        fontSize: '1rem',
-                        cursor: loading ? 'not-allowed' : 'pointer'
-                    }}
+                    className="btn btn-primary"
+                    style={{ padding: '0.75rem 2rem' }}
                 >
                     {loading ? 'Ищем...' : 'Найти'}
                 </button>
             </form>
 
             {error && (
-                <div style={{
-                    color: 'red',
-                    marginBottom: '1rem',
-                    padding: '1rem',
-                    backgroundColor: '#ffe6e6',
-                    borderRadius: '4px',
-                    border: '1px solid #ff9999'
-                }}>
+                <div className="error-box">
                     {error}
                 </div>
             )}
@@ -433,11 +416,7 @@ export const Search = () => {
             )}
 
             {results.length > 0 && (
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                    gap: '1.5rem'
-                }}>
+                <div className="listings-grid">
                     {results.map((listing) => {
                         const listingPhotos = listingsPhotos[listing.id] || [];
                         const firstPhoto = listingPhotos[0];
@@ -446,58 +425,29 @@ export const Search = () => {
                             <Link
                                 key={listing.id}
                                 to={`/listings/${listing.id}`}
-                                style={{
-                                    border: '1px solid #ddd',
-                                    borderRadius: '8px',
-                                    overflow: 'hidden',
-                                    textDecoration: 'none',
-                                    color: 'inherit',
-                                    display: 'block',
-                                    transition: 'transform 0.2s, box-shadow 0.2s',
-                                    backgroundColor: 'white'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(-4px)';
-                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
+                                className="link-card"
                             >
                                 {firstPhoto ? (
                                     <img
                                         src={resolveApiUrl(firstPhoto)}
                                         alt={listing.title}
-                                        style={{
-                                            width: '100%',
-                                            height: '200px',
-                                            objectFit: 'cover',
-                                            display: 'block'
-                                        }}
+                                        style={{ height: '200px', objectFit: 'cover', display: 'block' }}
                                     />
                                 ) : (
-                                    <div style={{
-                                        width: '100%',
-                                        height: '200px',
-                                        backgroundColor: '#f0f0f0',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        color: '#999'
-                                    }}>
+                                    <div className="listing-placeholder">
                                         Нет фото
                                     </div>
                                 )}
-                                <div style={{padding: '1rem'}}>
-                                    <h3 style={{margin: '0 0 0.5rem 0'}}>{listing.title}</h3>
-                                    <p style={{margin: '0.5rem 0', color: '#666', fontSize: '0.9rem'}}>
+                                <div className="card-body">
+                                    <h3 style={{ margin: '0 0 0.5rem 0' }}>{listing.title}</h3>
+                                    <p className="small-muted" style={{ margin: '0.5rem 0', fontSize: '0.9rem' }}>
                                         {listing.description?.substring(0, 100)}
                                         {listing.description && listing.description.length > 100 ? '...' : ''}
                                     </p>
                                 </div>
                             </Link>
                         );
+
                     })}
                 </div>
             )}

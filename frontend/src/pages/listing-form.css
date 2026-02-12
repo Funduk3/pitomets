@@ -1,0 +1,133 @@
+:root {
+  /* Supplementary form-specific tokens can rely on global variables */
+}
+
+.lf-form {
+  max-width: 720px;
+  margin: 1.5rem auto;
+  padding: 0 1rem;
+}
+
+.lf-card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 6px 18px rgba(17,17,17,0.04);
+}
+
+/* reuse existing utilities where possible */
+.lf-card h2 {
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.form-input, input.form-input, textarea.form-input, select.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.form-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* full-width submit button using project palette */
+.lf-submit {
+  width: 100%;
+  padding: 0.9rem;
+  font-size: 1rem;
+  border-radius: 8px;
+}
+
+.lf-submit.btn-primary {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border-color: var(--color-accent);
+}
+
+.lf-submit:disabled {
+  background: #95a5a6;
+  border-color: #95a5a6;
+}
+
+/* Autocomplete dropdown tweak to match project styles */
+.autocomplete-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  z-index: 40;
+  max-height: 260px;
+  overflow-y: auto;
+  box-shadow: 0 10px 24px rgba(17,17,17,0.06);
+}
+
+.autocomplete-item {
+  padding: 0.6rem;
+  cursor: pointer;
+}
+
+.autocomplete-item:hover, .autocomplete-item:focus {
+  background: var(--color-accent-light);
+}
+
+/* Photo grid (small util) */
+.lf-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.lf-photo-item {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #F7F7F7;
+}
+
+.lf-photo-item img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  display: block;
+}
+
+.lf-photo-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+
+/* small responsive tweaks */
+@media (max-width: 540px) {
+  .lf-form { padding: 0 0.5rem; }
+  .lf-card { padding: 1rem; }
+}
+

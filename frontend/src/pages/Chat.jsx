@@ -47,7 +47,7 @@ export const Chat = () => {
   }, [chatId]);
 
   useEffect(() => {
-    // при переходе в другой чат хотим снова автоскроллиться вниз
+    // при переходе в другой чат хотим снова автоскролиться вниз
     didInitialScrollRef.current = false;
     shouldAutoScrollRef.current = true;
     setUnreadBoundaryId(null);
@@ -75,33 +75,24 @@ export const Chat = () => {
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
 
-  // Надёжность: периодически синхронизируем последние сообщения по HTTP.
-  // Это компенсирует любые краткие разрывы WS/пропуски событий: сообщение может не прийти в моменте,
-  // но гарантированно появится через несколько секунд без F5.
+  // периодическая синхронизация сообщений (на случай разрывов WS)
   useEffect(() => {
     if (!isAuthenticated() || !chatId) return;
 
     if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
-    // Когда WS подключён — синхронизируем редко (страховка).
-    // Когда WS отключён — синхронизируем чаще, но только если вкладка видима.
     const intervalMs = wsConnected ? 600000 : 10000;
-    if (!isTabVisible && !wsConnected) {
-      // вкладка скрыта, а WS нет — не долбим сервер; догонит при фокусе/переподключении
-      return;
-    }
+    if (!isTabVisible && !wsConnected) return;
 
     syncIntervalRef.current = setInterval(async () => {
       try {
         const data = await messengerAPI.getChatMessages(parseInt(chatId));
         setMessages((prev) => mergeMessagesById(prev, data));
-        // Регистрируем последнее видимое сообщение
         if (data && data.length > 0) {
           const lastMessage = data[data.length - 1];
           if (lastMessage?.id != null) {
             updateLastSeenMessage(parseInt(chatId), lastMessage.id);
           }
         }
-        // Если пользователь находится в чате, считаем всё полученное прочитанным
         scheduleMarkRead();
       } catch (_) {
         // ignore
@@ -116,7 +107,6 @@ export const Chat = () => {
     };
   }, [chatId, wsConnected, isTabVisible]);
 
-  // При восстановлении WS или возврате на вкладку обновляем статусы прочтения
   useEffect(() => {
     if (!isAuthenticated() || !chatId) return;
     if (!wsConnected && !isTabVisible) return;
@@ -131,24 +121,18 @@ export const Chat = () => {
   }, [chatId, wsConnected, isTabVisible]);
 
   useEffect(() => {
-    if (shouldAutoScrollRef.current) {
-      scrollToBottom();
-    }
+    if (shouldAutoScrollRef.current) scrollToBottom();
   }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const scrollToBottomInstant = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-  };
-
   const updateAutoScrollState = () => {
     const el = messagesContainerRef.current;
     if (!el) return;
     const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    shouldAutoScrollRef.current = distanceToBottom < 200; // px
+    shouldAutoScrollRef.current = distanceToBottom < 200;
   };
 
   const loadChat = async () => {
@@ -165,130 +149,76 @@ export const Chat = () => {
     const otherUserId = chat?.user1Id === user?.id ? chat?.user2Id : chat?.user1Id;
     if (!otherUserId) return;
     let cancelled = false;
-
     (async () => {
       try {
         const profile = await userAPI.getUserProfile(otherUserId);
-        if (!cancelled) {
-          setOtherProfile(profile);
-        }
+        if (!cancelled) setOtherProfile(profile);
       } catch (e) {
         if (!cancelled) setOtherProfile(null);
       }
     })();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [chat?.id, chat?.user1Id, chat?.user2Id, user?.id]);
 
   useEffect(() => {
     const otherUserId = chat?.user1Id === user?.id ? chat?.user2Id : chat?.user1Id;
-    if (!otherUserId) {
-      setOtherAvatarUrl(null);
-      return;
-    }
+    if (!otherUserId) { setOtherAvatarUrl(null); return; }
     let cancelled = false;
     (async () => {
       try {
         const token = localStorage.getItem('accessToken');
         if (!token) return;
-        const response = await fetch(photosAPI.getAvatarByUserId(otherUserId), {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!response.ok) {
-          if (!cancelled) setOtherAvatarUrl(null);
-          return;
-        }
+        const response = await fetch(photosAPI.getAvatarByUserId(otherUserId), { headers: { Authorization: `Bearer ${token}` } });
+        if (!response.ok) { if (!cancelled) setOtherAvatarUrl(null); return; }
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
         if (!cancelled) setOtherAvatarUrl(url);
-      } catch (_) {
-        if (!cancelled) setOtherAvatarUrl(null);
-      }
+      } catch (_) { if (!cancelled) setOtherAvatarUrl(null); }
     })();
-    return () => {
-      cancelled = true;
-      if (otherAvatarUrl && otherAvatarUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(otherAvatarUrl);
-      }
-    };
+    return () => { cancelled = true; if (otherAvatarUrl && otherAvatarUrl.startsWith('blob:')) URL.revokeObjectURL(otherAvatarUrl); };
   }, [chat?.id, chat?.user1Id, chat?.user2Id, user?.id]);
 
   useEffect(() => {
     const otherUserId = chat?.user1Id === user?.id ? chat?.user2Id : chat?.user1Id;
     if (!otherUserId) return;
-    if (otherProfile?.sellerProfileId) {
-      setOtherSellerProfileId(otherProfile.sellerProfileId);
-      return;
-    }
+    if (otherProfile?.sellerProfileId) { setOtherSellerProfileId(otherProfile.sellerProfileId); return; }
     let cancelled = false;
     (async () => {
       try {
         const sellerProfile = await sellerAPI.getSellerProfile(otherUserId);
-        if (!cancelled) {
-          setOtherSellerProfileId(sellerProfile?.id ?? null);
-        }
-      } catch (_) {
-        if (!cancelled) setOtherSellerProfileId(null);
-      }
+        if (!cancelled) setOtherSellerProfileId(sellerProfile?.id ?? null);
+      } catch (_) { if (!cancelled) setOtherSellerProfileId(null); }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [chat?.id, chat?.user1Id, chat?.user2Id, user?.id, otherProfile?.sellerProfileId]);
 
   useEffect(() => {
-    if (!chat?.listingId) {
-      setListingPhotoUrl(null);
-      return;
-    }
+    if (!chat?.listingId) { setListingPhotoUrl(null); return; }
     let cancelled = false;
     (async () => {
       try {
         const data = await photosAPI.getListingPhotos(chat.listingId);
         const first = data?.photos?.[0];
         if (!cancelled) {
-          if (first) {
-            const url = resolveApiUrl(first);
-            setListingPhotoUrl(url);
-          } else {
-            setListingPhotoUrl(null);
-          }
+          if (first) setListingPhotoUrl(resolveApiUrl(first)); else setListingPhotoUrl(null);
         }
-      } catch (err) {
-        if (!cancelled) setListingPhotoUrl(null);
-      }
+      } catch (err) { if (!cancelled) setListingPhotoUrl(null); }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [chat?.listingId]);
 
   const loadMessages = async () => {
     try {
       const data = await messengerAPI.getChatMessages(parseInt(chatId));
       setMessages((prev) => mergeMessagesById(prev, data));
-
-      // Запоминаем "с какого места" были непрочитанные на момент входа в чат
       const me = Number(user?.id);
-      const firstUnread = (data || []).find(
-        (m) => m?.id != null && Number(m.senderId) !== me && m.isRead === false
-      );
+      const firstUnread = (data || []).find((m) => m?.id != null && Number(m.senderId) !== me && m.isRead === false);
       setUnreadBoundaryId(firstUnread?.id != null ? String(firstUnread.id) : null);
-
-      // Регистрируем последнее видимое сообщение для синхронизации
       if (data && data.length > 0) {
         const lastMessage = data[data.length - 1];
-        if (lastMessage?.id != null) {
-          updateLastSeenMessage(parseInt(chatId), lastMessage.id);
-        }
+        if (lastMessage?.id != null) updateLastSeenMessage(parseInt(chatId), lastMessage.id);
       }
-
-      // Скролл вниз делаем через useLayoutEffect (без видимого "прыжка"), тут ничего не делаем
-
       await messengerAPI.markMessagesAsRead(parseInt(chatId));
-      // гасим глобальный индикатор непрочитанных для этого чата сразу, без refresh
       markChatRead(parseInt(chatId));
     } catch (err) {
       console.error('Failed to load messages:', err);
@@ -298,13 +228,10 @@ export const Chat = () => {
     }
   };
 
-  // При первом открытии чата (или смене chatId) показываем НИЗ без видимого скролла.
-  // useLayoutEffect выполняется до paint, поэтому пользователь не увидит "прыжок".
   useLayoutEffect(() => {
     if (!messagesContainerRef.current) return;
     if (loading) return;
     if (didInitialScrollRef.current) return;
-
     const el = messagesContainerRef.current;
     el.scrollTop = el.scrollHeight;
     didInitialScrollRef.current = true;
@@ -314,62 +241,36 @@ export const Chat = () => {
     if (!chatId) return;
     if (markReadTimeoutRef.current) clearTimeout(markReadTimeoutRef.current);
     markReadTimeoutRef.current = setTimeout(async () => {
-      try {
-        await messengerAPI.markMessagesAsRead(parseInt(chatId));
-        markChatRead(parseInt(chatId));
-      } catch (_) {
-        // ignore
-      }
+      try { await messengerAPI.markMessagesAsRead(parseInt(chatId)); markChatRead(parseInt(chatId)); } catch (_) {}
     }, 250);
   };
 
-  // Realtime: слушаем общие WS-сообщения и добавляем в текущий чат
   useEffect(() => {
     if (!isAuthenticated() || !chatId) return;
-
-    const unsubscribe = subscribe((message) => {
-      // read receipt: помечаем мои сообщения как прочитанные
+    return subscribe((message) => {
       if (message?.type === 'read_receipt') {
         const currentChatId = parseInt(chatId);
         if (Number(message.chatId) !== currentChatId) return;
-        // если я не отправитель — мне не надо ничего менять
-        setMessages((prev) =>
-          prev.map((m) => (Number(m.senderId) === Number(user?.id) ? { ...m, isRead: true } : m))
-        );
+        setMessages((prev) => prev.map((m) => (Number(m.senderId) === Number(user?.id) ? { ...m, isRead: true } : m)));
         return;
       }
-
-      // обычное сообщение
       if (!message?.id || !message?.chatId) return;
       const currentChatId = parseInt(chatId);
       if (Number(message.chatId) !== currentChatId) return;
-
       setMessages((prev) => mergeMessagesById(prev, [message]));
-      // Регистрируем последнее видимое сообщение
       updateLastSeenMessage(currentChatId, message.id);
-      if (message?.senderId != null && Number(message.senderId) !== Number(user?.id)) {
-        scheduleMarkRead();
-      }
+      if (message?.senderId != null && Number(message.senderId) !== Number(user?.id)) scheduleMarkRead();
       scrollToBottom();
     });
-
-    return unsubscribe;
   }, [chatId, user?.id, subscribe]);
 
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
-
     try {
-      const message = {
-        type: 'send_message',
-        chatId: parseInt(chatId),
-        content: newMessage.trim(),
-      };
-
+      const message = { type: 'send_message', chatId: parseInt(chatId), content: newMessage.trim() };
       if (send(message)) {
         setNewMessage('');
       } else {
-        // Fallback: отправка через HTTP
         await messengerAPI.createMessage(parseInt(chatId), newMessage.trim());
         setNewMessage('');
         loadMessages();
@@ -387,10 +288,7 @@ export const Chat = () => {
     }
   };
 
-  if (!isAuthenticated()) {
-    return <div>Войдите, чтобы увидеть чаты</div>;
-  }
-
+  if (!isAuthenticated()) return <div>Войдите, чтобы увидеть чаты</div>;
   if (loading) return <div>Грузим...</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
   if (!chat) return <div>Chat not found</div>;
@@ -399,211 +297,76 @@ export const Chat = () => {
   const otherName = otherProfile?.shopName || otherProfile?.fullName || `Пользователь #${otherUserId}`;
   const isSeller = Boolean(user?.isSeller);
   const resolvedSellerProfileId = otherProfile?.sellerProfileId ?? otherSellerProfileId;
-  const profileLink = resolvedSellerProfileId
-    ? `/seller/profile/view/${resolvedSellerProfileId}`
-    : `/user/profile/${otherUserId}`;
+  const profileLink = resolvedSellerProfileId ? `/seller/profile/view/${resolvedSellerProfileId}` : `/user/profile/${otherUserId}`;
   const isListingChat = chat?.listingId != null;
   const listingTitle = isListingChat ? (chat?.listingTitle || 'Объявление') : otherName;
   const listingLink = isListingChat ? `/listings/${chat.listingId}` : null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }}>
-      <div style={{ padding: '1rem', borderBottom: '1px solid #ddd', backgroundColor: '#f9f9f9', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+    <div className="chat-shell">
+      <div className="chat-header">
         {isListingChat ? (
           listingPhotoUrl ? (
-          <img 
-            src={listingPhotoUrl} 
-            alt="Listing" 
-            style={{ 
-              width: '56px', 
-              height: '56px', 
-              borderRadius: '8px', 
-              objectFit: 'cover',
-              border: '2px solid #ddd'
-            }} 
-          />
+            <img src={listingPhotoUrl} alt="Listing" className="chat-avatar-lg" />
           ) : (
-            <div
-              style={{
-                width: '56px',
-                height: '56px',
-                borderRadius: '8px',
-                backgroundColor: '#e9ecef',
-                border: '2px solid #ddd'
-              }}
-            />
+            <div className="chat-avatar-lg" />
           )
         ) : otherAvatarUrl ? (
-          <img 
-            src={otherAvatarUrl} 
-            alt="User avatar" 
-            style={{ 
-              width: '56px', 
-              height: '56px', 
-              borderRadius: '50%', 
-              objectFit: 'cover',
-              border: '2px solid #ddd'
-            }} 
-          />
+          <img src={otherAvatarUrl} alt="User avatar" className="chat-avatar-round" />
         ) : (
-          <div
-            style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: '50%',
-              backgroundColor: '#e9ecef',
-              border: '2px solid #ddd'
-            }}
-          />
+          <div className="chat-avatar-round" />
         )}
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
             {isSeller ? (
               <>
-                <Link
-                  to={profileLink}
-                  style={{
-                    textDecoration: 'none',
-                    color: '#3498db',
-                    fontSize: '1.2rem',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {otherName}
-                </Link>
+                <Link to={profileLink} style={{ textDecoration: 'none', color: '#3498db', fontSize: '1.2rem', fontWeight: 'bold' }}>{otherName}</Link>
                 {isListingChat && (
-                  <Link
-                    to={listingLink}
-                    style={{
-                      textDecoration: 'none',
-                      color: '#666',
-                      fontSize: '0.95rem'
-                    }}
-                  >
-                    {listingTitle}
-                  </Link>
+                  <Link to={listingLink} style={{ textDecoration: 'none', color: '#666', fontSize: '0.95rem' }}>{listingTitle}</Link>
                 )}
               </>
             ) : (
               <>
                 {listingLink ? (
-                  <Link
-                    to={listingLink}
-                    style={{
-                      textDecoration: 'none',
-                      color: '#3498db',
-                      fontSize: '1.2rem',
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    {listingTitle}
-                  </Link>
+                  <Link to={listingLink} style={{ textDecoration: 'none', color: '#3498db', fontSize: '1.2rem', fontWeight: 'bold' }}>{listingTitle}</Link>
                 ) : (
-                  <Link
-                    to={profileLink}
-                    style={{
-                      textDecoration: 'none',
-                      color: '#3498db',
-                      fontSize: '1.2rem',
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    {listingTitle}
-                  </Link>
+                  <Link to={profileLink} style={{ textDecoration: 'none', color: '#3498db', fontSize: '1.2rem', fontWeight: 'bold' }}>{listingTitle}</Link>
                 )}
                 {isListingChat && (
-                  <Link
-                    to={profileLink}
-                    style={{
-                      textDecoration: 'none',
-                      color: '#666',
-                      fontSize: '0.95rem'
-                    }}
-                  >
-                    {otherName}
-                  </Link>
+                  <Link to={profileLink} style={{ textDecoration: 'none', color: '#666', fontSize: '0.95rem' }}>{otherName}</Link>
                 )}
               </>
             )}
           </div>
-          <div style={{ fontSize: '0.9rem', color: '#666' }}>
-            {wsConnected ? '🟢 Подключено' : '🔴 Отключено'}
-          </div>
+          <div className="small-muted">{wsConnected ? '🟢 Подключено' : '🔴 Отключено'}</div>
         </div>
       </div>
 
-      <div
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '1rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-        }}
-        ref={messagesContainerRef}
-        onScroll={updateAutoScrollState}
-      >
+      <div className="chat-body" ref={messagesContainerRef} onScroll={updateAutoScrollState}>
         {messages.map((msg) => {
-          const isOwn = msg.senderId === user?.id;
+          const isOwn = Number(msg.senderId) === Number(user?.id);
           const statusMark = isOwn ? (msg.isRead ? '✓✓' : '✓') : null;
           const isBoundary = unreadBoundaryId != null && String(msg.id) === String(unreadBoundaryId);
           return (
-            <div
-              key={msg.id}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: isOwn ? 'flex-end' : 'flex-start',
-              }}
-            >
+            <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isOwn ? 'flex-end' : 'flex-start' }}>
               {isBoundary && (
-                <div
-                  style={{
-                    textAlign: 'center',
-                    margin: '0.5rem 0',
-                    color: '#666',
-                    fontSize: '0.85rem',
-                    alignSelf: 'center',
-                  }}
-                >
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      padding: '0.25rem 0.75rem',
-                      borderRadius: '999px',
-                      backgroundColor: '#f0f0f0',
-                      border: '1px solid #e0e0e0',
-                    }}
-                  >
-                    Непрочитанные с {new Date(msg.createdAt).toLocaleString()}
+                <div className="small-muted" style={{ textAlign: 'center', margin: '0.5rem 0' }}>
+                  <span className="card-body" style={{ display: 'inline-block', padding: '0.25rem 0.75rem', borderRadius: '999px', backgroundColor: '#f0f0f0', border: '1px solid #e0e0e0' }}>
+                    Непрочитанные с {new Date(msg.createdAt).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
                   </span>
                 </div>
               )}
 
-              <div
-                style={{
-                  maxWidth: '70%',
-                  width: 'fit-content',
-                  padding: '0.75rem',
-                  borderRadius: '8px',
-                  backgroundColor: isOwn ? '#3498db' : '#ecf0f1',
-                  color: isOwn ? 'white' : 'black',
-                }}
-              >
+              <div className={`chat-message ${isOwn ? 'own' : 'other'}`}>
                 <div>{msg.content}</div>
-                <div
-                  style={{
-                    fontSize: '0.75rem',
-                    marginTop: '0.25rem',
-                    opacity: 0.7,
-                    display: 'flex',
-                    gap: '0.5rem',
-                    justifyContent: 'flex-end',
-                  }}
-                >
-                  {statusMark && <span>{statusMark}</span>}
-                  <span>{new Date(msg.createdAt).toLocaleTimeString()}</span>
+                <div className="small-muted" style={{ fontSize: '0.75rem', marginTop: '0.25rem', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                  {statusMark && <span className="read-mark">{statusMark}</span>}
+                  <span
+                    className={isOwn ? 'msg-time-own' : ''}
+                    style={isOwn ? { color: 'var(--color-bg)', fontWeight: 600 } : undefined}
+                  >
+                    {new Date(msg.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                  </span>
                 </div>
               </div>
             </div>
@@ -612,37 +375,13 @@ export const Chat = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div style={{ padding: '1rem', borderTop: '1px solid #ddd', backgroundColor: '#f9f9f9' }}>
+      <div className="chat-input-row">
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Введите сообщение..."
-            style={{
-              flex: 1,
-              padding: '0.75rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-            }}
-          />
-          <button
-            onClick={sendMessage}
-            disabled={!newMessage.trim()}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#27ae60',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            Отправить
-          </button>
+          <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyPress={handleKeyPress} placeholder="Введите сообщение..." className="chat-input" />
+          <button onClick={sendMessage} disabled={!newMessage.trim()} className="btn btn-primary" style={{ padding: '0.75rem 1.5rem' }}>Отправить</button>
         </div>
       </div>
     </div>
   );
 };
+
