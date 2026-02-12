@@ -41,6 +41,8 @@ services:
   notifications-service:
     build: ./notifications
     container_name: notifications-service
+    env_file:
+      - .env.dev
     ports:
       - "8082:8080"  # ✅ Исправлено: хост:8082 → контейнер:8080
     depends_on:
