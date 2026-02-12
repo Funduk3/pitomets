@@ -38,3 +38,6 @@ docker stop $(docker ps -aq) docker rm $(docker ps -aq) docker volume rm $(docke
 1860
 763
 9628
+
+
+локи логи {container=~".+"}
