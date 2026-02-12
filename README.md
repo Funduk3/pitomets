@@ -32,3 +32,9 @@ docker buildx build \
 ```
 docker stop $(docker ps -aq) docker rm $(docker ps -aq) docker volume rm $(docker volume ls -q)
 ```
+
+Дашборды графаны
+
+1860
+763
+9628
