@@ -7,6 +7,7 @@ data class NotificationRequestedEvent(
     val eventId: Long,
     val userId: Long,
     val channel: Channel,
+    val messageType: String,
     val payload: String,
     val timestamp: Instant = Instant.now()
 )

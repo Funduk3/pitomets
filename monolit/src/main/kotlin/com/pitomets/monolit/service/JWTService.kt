@@ -52,6 +52,7 @@ class JWTService(
         return Jwts.builder()
             .claims()
             .subject(subject)
+            .id(UUID.randomUUID().toString())
             .issuedAt(now)
             .expiration(expiry)
             .and()

@@ -5,6 +5,9 @@ import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { ConfirmEmail } from './pages/ConfirmEmail';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { ResetPassword } from './pages/ResetPassword';
 import { Profile } from './pages/Profile';
 import { SellerProfile } from './pages/SellerProfile';
 import { SellerProfileView } from './pages/SellerProfileView';
@@ -29,6 +32,9 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/confirm" element={<ConfirmEmail />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/seller/profile" element={<SellerProfile />} />
               <Route path="/seller/profile/view/:sellerId" element={<SellerProfileView />} />
@@ -52,4 +58,3 @@ function App() {
 }
 
 export default App;
-

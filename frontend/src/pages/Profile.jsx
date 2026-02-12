@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { userAPI } from '../api/user';
 import { photosAPI } from '../api/photos';
+import { authAPI } from '../api/auth';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { Link } from 'react-router-dom';
 
@@ -12,6 +13,13 @@ export const Profile = () => {
   const [fullName, setFullName] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -106,6 +114,41 @@ export const Profile = () => {
     }
   };
 
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Пароли не совпадают');
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+      await authAPI.changePassword(currentPassword, newPassword, confirmPassword);
+      setPasswordSuccess('Пароль изменен');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      setPasswordError('Не удалось изменить пароль');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const toggleChangePassword = () => {
+    setIsChangingPassword((prev) => !prev);
+    setPasswordError('');
+    setPasswordSuccess('');
+    if (isChangingPassword) {
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    }
+  };
+
   if (loading) return <div>Грузим...</div>;
   if (!profile) return <div>Профиль не найден</div>;
 
@@ -170,6 +213,59 @@ export const Profile = () => {
         </div>
 
         <div style={{ marginTop: '1rem' }}>
+          <div className="card">
+            <div className="card-body">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                <h3 style={{ margin: 0 }}>Смена пароля</h3>
+                <button type="button" className="btn btn-secondary" onClick={toggleChangePassword}>
+                  {isChangingPassword ? 'Скрыть форму' : 'Сменить пароль'}
+                </button>
+              </div>
+
+              {isChangingPassword && (
+                <form onSubmit={handleChangePassword} style={{ maxWidth: 420, marginTop: '1rem' }}>
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <label className="form-label">Текущий пароль</label>
+                    <input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <label className="form-label">Новый пароль</label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <label className="form-label">Повторите пароль</label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+
+                  {passwordError && <div className="error-box" style={{ marginBottom: '0.75rem' }}>{passwordError}</div>}
+                  {passwordSuccess && <div className="success-box" style={{ marginBottom: '0.75rem' }}>{passwordSuccess}</div>}
+
+                  <button type="submit" className="btn btn-primary" disabled={changingPassword}>
+                    {changingPassword ? 'Сохраняем...' : 'Изменить пароль'}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+
           {profile.shopName ? (
             <div className="card">
               <div className="card-body">

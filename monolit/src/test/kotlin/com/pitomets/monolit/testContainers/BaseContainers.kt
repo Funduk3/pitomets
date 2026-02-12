@@ -11,6 +11,7 @@ import com.pitomets.monolit.model.dto.request.RegisterRequest
 import com.pitomets.monolit.model.dto.response.TokenResponse
 import com.pitomets.monolit.model.dto.response.UserResponse
 import com.pitomets.monolit.repository.ListingsRepo
+import com.pitomets.monolit.repository.UserRepo
 import com.pitomets.monolit.service.SearchService
 import io.minio.BucketExistsArgs
 import io.minio.MakeBucketArgs
@@ -58,6 +59,9 @@ abstract class BaseContainers {
     lateinit var listingsRepo: ListingsRepo
 
     @Autowired
+    lateinit var userRepo: UserRepo
+
+    @Autowired
     lateinit var searchService: SearchService
 
     @Autowired
@@ -95,8 +99,18 @@ abstract class BaseContainers {
             withEnv("xpack.security.enabled", "false")
             withEnv("xpack.security.transport.ssl.enabled", "false")
             withEnv("xpack.security.http.ssl.enabled", "false")
-            withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m")
+            withEnv("xpack.ml.enabled", "false")
+            withEnv("ingest.geoip.downloader.enabled", "false")
+            withEnv("ES_JAVA_OPTS", "-Xms256m -Xmx256m")
             withExposedPorts(9200)
+            waitingFor(
+                HttpWaitStrategy()
+                    .forPath("/_cluster/health")
+                    .forPort(9200)
+                    .forStatusCode(200)
+                    .withStartupTimeout(Duration.ofMinutes(3))
+            )
+            withStartupAttempts(3)
         }
 
         @JvmStatic
@@ -225,7 +239,7 @@ abstract class BaseContainers {
             passwordHash = password,
             fullName = faker.name().fullName()
         )
-        return RestAssured.given()
+        val response = RestAssured.given()
             .contentType(ContentType.JSON)
             .body(registerReq)
             .post("/register")
@@ -233,6 +247,16 @@ abstract class BaseContainers {
             .statusCode(201)
             .extract()
             .`as`(UserResponse::class.java)
+        confirmUser(email)
+        return response
+    }
+
+    fun confirmUser(email: String) {
+        val user = userRepo.findByEmail(email)
+            ?: error("User not found for email=$email")
+        user.isConfirmed = true
+        user.confirmationToken = null
+        userRepo.save(user)
     }
 
     fun login(email: String, password: String): TokenResponse {

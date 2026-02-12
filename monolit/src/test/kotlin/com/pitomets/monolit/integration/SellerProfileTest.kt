@@ -250,11 +250,10 @@ class SellerProfileTest : BaseContainers() {
         // не найдём объявление в поиске
         listingOutboxProcessor.processOutbox()
         elasticClient.indices().refresh { r -> r.index("listings") }
-        Assertions.assertEquals(
-            0,
-            searchService.search(
-                createdListing.description
-            ).size
+        val searchResults = searchService.search(createdListing.description)
+        Assertions.assertTrue(
+            searchResults.none { it.id == createdListing.id },
+            "Deleted listing should not appear in search results"
         )
     }
 

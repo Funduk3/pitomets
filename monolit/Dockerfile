@@ -3,7 +3,8 @@ FROM eclipse-temurin:25-jdk AS build
 WORKDIR /app
 
 # Копируем только файлы, нужные для разрешения зависимостей — это ускоряет кеширование Docker-слоёв
-COPY settings.gradle* build.gradle* build.gradle.kts* gradlew gradle/ ./
+COPY settings.gradle* build.gradle* build.gradle.kts* gradlew ./
+COPY gradle ./gradle
 # Сделаем скрипт gradlew исполняемым
 RUN ["chmod", "+x", "./gradlew"]
 

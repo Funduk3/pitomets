@@ -20,7 +20,7 @@ import org.springframework.test.context.ActiveProfiles
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class AuthFlowIntegrationTest : BaseContainers() {
-
+     // временно, в гитхаб падает
     @Test
     fun `full auth flow - register login refresh logout`() {
         val username = faker.name().username()
@@ -36,6 +36,7 @@ class AuthFlowIntegrationTest : BaseContainers() {
             .post("/register")
             .then()
             .statusCode(201)
+        confirmUser(email)
 
         // 2) Login
         val loginReq = LoginRequest(email = email, passwordHash = password)
@@ -74,7 +75,7 @@ class AuthFlowIntegrationTest : BaseContainers() {
         RestAssured.given()
             .contentType(ContentType.JSON)
             .auth().oauth2(newTokens.accessToken)
-            .body(RefreshTokenRequest(newTokens.refreshToken))
+            .queryParam("refreshToken", newTokens.refreshToken)
             .`when`()
             .post("/logout")
             .then()
@@ -84,7 +85,7 @@ class AuthFlowIntegrationTest : BaseContainers() {
         RestAssured.given()
             .contentType(ContentType.JSON)
             .auth().oauth2(newTokens.accessToken + "tampered") // подменяем токен
-            .body(RefreshTokenRequest(newTokens.refreshToken))
+            .queryParam("refreshToken", newTokens.refreshToken)
             .`when`()
             .post("/logout")
             .then()
@@ -93,7 +94,7 @@ class AuthFlowIntegrationTest : BaseContainers() {
         // 4b) Попытка logout без access token должна вернуть 4xx (тест токена)
         RestAssured.given()
             .contentType(ContentType.JSON)
-            .body(RefreshTokenRequest(newTokens.refreshToken))
+            .queryParam("refreshToken", newTokens.refreshToken)
             .`when`()
             .post("/logout")
             .then()
@@ -147,6 +148,7 @@ class AuthFlowIntegrationTest : BaseContainers() {
             .post("/register")
             .then()
             .statusCode(201)
+        confirmUser(email)
 
         val loginRequest = LoginRequest(email = email, passwordHash = password)
         val sellerTokens = RestAssured.given()
@@ -192,6 +194,7 @@ class AuthFlowIntegrationTest : BaseContainers() {
             .post("/register")
             .then()
             .statusCode(201)
+        confirmUser(email)
 
         // 2. Первый логин (роль должна быть USER)
         val loginReq = LoginRequest(email = email, passwordHash = password)

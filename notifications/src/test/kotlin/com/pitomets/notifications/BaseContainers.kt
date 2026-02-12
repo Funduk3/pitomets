@@ -38,10 +38,6 @@ abstract class BaseContainers {
                 withPassword("test")
             }
 
-        @Container
-        @JvmStatic
-        val kafka = KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"))
-
         @JvmStatic
         @DynamicPropertySource
         fun props(registry: DynamicPropertyRegistry) {
@@ -50,7 +46,6 @@ abstract class BaseContainers {
             registry.add("spring.datasource.password") { postgres.password }
             registry.add("spring.datasource.driver-class-name") { "org.postgresql.Driver" }
             registry.add("spring.jpa.hibernate.ddl-auto") { "create-drop" }
-            registry.add("spring.kafka.bootstrap-servers") { kafka.bootstrapServers }
         }
     }
 }

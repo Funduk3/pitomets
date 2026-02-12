@@ -1,8 +1,11 @@
 package com.pitomets.monolit.controller
 
+import com.pitomets.monolit.model.UserPrincipal
+import com.pitomets.monolit.model.dto.request.ChangePasswordRequest
 import com.pitomets.monolit.model.dto.request.LoginRequest
 import com.pitomets.monolit.model.dto.request.RefreshTokenRequest
 import com.pitomets.monolit.model.dto.request.RegisterRequest
+import com.pitomets.monolit.model.dto.request.ResetPasswordRequest
 import com.pitomets.monolit.model.dto.response.TokenResponse
 import com.pitomets.monolit.model.dto.response.UserResponse
 import com.pitomets.monolit.model.entity.User
@@ -11,8 +14,10 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 
 @RestController
 class UserController(
@@ -47,14 +52,35 @@ class UserController(
         service.refreshAccessToken(request.refreshToken)
 
     @PostMapping("/logout")
-    @ResponseStatus(HttpStatus.OK)
     fun logout(
-        @RequestBody request: RefreshTokenRequest
-    ) =
-        service.logout(request.refreshToken)
+        @RequestParam refreshToken: String
+    ) = service.logout(refreshToken)
 
-    // todo delete
-    @GetMapping("/all")
-    fun getAll(): List<UserResponse> =
-        service.getAll()
+    @GetMapping("/confirm")
+    fun confirm(@RequestParam token: String) {
+        service.confirmEmail(token)
+    }
+
+    @PostMapping("/forgot-password")
+    fun forgotPassword(@RequestBody request: com.pitomets.monolit.model.dto.request.ForgotPasswordRequest) {
+        service.forgotPassword(request.email)
+    }
+
+    @PostMapping("/reset-password")
+    fun resetPassword(@RequestBody request: ResetPasswordRequest) {
+        service.resetPassword(request.token, request.newPassword, request.confirmPassword)
+    }
+
+    @PostMapping("/change-password")
+    fun changePassword(
+        @AuthenticationPrincipal userPrincipal: UserPrincipal,
+        @RequestBody request: ChangePasswordRequest
+    ) {
+        service.changePassword(
+            userId = userPrincipal.id,
+            currentPassword = request.currentPassword,
+            newPassword = request.newPassword,
+            confirmPassword = request.confirmPassword
+        )
+    }
 }
