@@ -157,6 +157,20 @@ img {
   color: var(--color-bg);
 }
 
+/* Utility: full-width block button */
+.btn-block {
+  display: block;
+  width: 100%;
+}
+
+/* Ensure auth-card primary buttons visually match site palette */
+.auth-card .btn-primary,
+.auth-card button.btn-primary {
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-size: 1rem;
+}
+
 /* Cards */
 .card {
   background: var(--color-surface);

@@ -55,16 +55,7 @@ export const Login = () => {
         <button
           type="submit"
           disabled={loading}
-          style={{
-            width: '100%',
-            padding: '0.75rem',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            fontSize: '1rem',
-            cursor: loading ? 'not-allowed' : 'pointer'
-          }}
+          className="btn btn-primary btn-block"
         >
           {loading ? 'Входим...' : 'Войти'}
         </button>

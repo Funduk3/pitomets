@@ -1,0 +1,12 @@
+[sources.docker_logs]
+type = "docker_logs"
+include_containers = ["monolit", "messenger", "notifications", "frontend"]
+exclude_containers = ["vector", "loki"]
+
+[sinks.loki]
+type = "loki"
+inputs = ["docker_logs"]
+endpoint = "http://loki:3100"
+encoding.codec = "json"
+labels.container = "{{ container_name }}"
+labels.image = "{{ image }}"

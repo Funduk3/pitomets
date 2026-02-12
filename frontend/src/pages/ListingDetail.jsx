@@ -358,7 +358,13 @@ export const ListingDetail = () => {
           {isAuthenticated() && user?.id === listing.sellerId && (
             <div className="link-actions">
               <Link to={`/listings/${id}/edit`} className="btn btn-secondary">Изменить объявление</Link>
+
               <Link to={`/listings/${id}/photos`} className="btn btn-ghost">Изменить фотографии</Link>
+
+              {/* allow owner to add own listing to favourites as well */}
+              <button onClick={handleToggleFavourite} className={isFavourite ? 'btn btn-ghost' : 'btn btn-secondary'}>
+                {isFavourite ? 'Удалить из избранных' : 'Добавить в избранное'}
+              </button>
             </div>
           )}
           {isAuthenticated() && user?.id !== listing.sellerId && (
