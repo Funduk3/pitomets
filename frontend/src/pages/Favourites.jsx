@@ -104,33 +104,8 @@ export const Favourites = () => {
                       {listing.description && listing.description.length > 100 ? '...' : ''}
                     </p>
                     <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-                      <Link
-                        to={`/listings/${listing.id}`}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          backgroundColor: '#3498db',
-                          color: 'white',
-                          textDecoration: 'none',
-                          borderRadius: '4px',
-                          fontSize: '0.9rem'
-                        }}
-                      >
-                        View
-                      </Link>
-                      <button
-                        onClick={() => handleRemove(listing.id)}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          backgroundColor: '#e74c3c',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '0.9rem'
-                        }}
-                      >
-                        Remove
-                      </button>
+                      <Link to={`/listings/${listing.id}`} className="btn btn-secondary" style={{ fontSize: '0.9rem' }}>Посмотреть</Link>
+                      <button onClick={() => handleRemove(listing.id)} className="btn btn-danger" style={{ fontSize: '0.9rem' }}>Удалить</button>
                     </div>
                   </div>
                 </div>

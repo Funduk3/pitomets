@@ -32,54 +32,46 @@ export const Register = () => {
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '2rem auto', padding: '2rem', border: '1px solid #ddd', borderRadius: '8px' }}>
+    <div className="auth-card">
       <h2>Регистрация</h2>
       {success && <div style={{ color: 'green', marginBottom: '1rem' }}>{success}</div>}
       {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
       <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Ваше имя:</label>
+        <div className="form-group">
+          <label className="form-label">Ваше имя:</label>
           <input
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             required
-            style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
+            className="form-input"
           />
         </div>
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Почта:</label>
+        <div className="form-group">
+          <label className="form-label">Почта:</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
+            className="form-input"
           />
         </div>
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Пароль:</label>
+        <div className="form-group">
+          <label className="form-label">Пароль:</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
+            className="form-input"
           />
         </div>
         <button
           type="submit"
           disabled={loading}
-          style={{
-            width: '100%',
-            padding: '0.75rem',
-            backgroundColor: '#27ae60',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            fontSize: '1rem',
-            cursor: loading ? 'not-allowed' : 'pointer'
-          }}
+          className="btn btn-primary"
+          style={{ width: '100%' }}
         >
           {loading ? 'Регистрируем...' : 'Регистрация'}
         </button>

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { userAPI } from '../api/user';
-import { sellerAPI } from '../api/seller';
 import { photosAPI } from '../api/photos';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { Link } from 'react-router-dom';
@@ -111,132 +110,89 @@ export const Profile = () => {
   if (!profile) return <div>Профиль не найден</div>;
 
   return (
-      <ProtectedRoute>
-        <div>
-          <h2>Мой профиль</h2>
+    <ProtectedRoute>
+      <div className="container">
+        <h2 style={{ marginBottom: '1rem' }}>Мой профиль</h2>
 
-          {error && (
-              <div style={{ color: 'red', marginBottom: '1rem' }}>
-                {error}
-              </div>
-          )}
+        {error && (
+          <div className="error-box">{error}</div>
+        )}
 
-          <div style={{ display: 'flex', gap: '2rem', marginTop: '2rem' }}>
-            <div>
-              <h3>Информация о пользователе</h3>
-              <form onSubmit={handleSaveProfile}>
-                <div style={{ marginBottom: '0.75rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>Имя:</label>
+        <div className="card">
+          <div className="card-body">
+            <div className="two-col">
+              <div style={{ flex: 1 }}>
+                <h3 style={{ marginTop: 0 }}>Информация о пользователе</h3>
+                <form onSubmit={handleSaveProfile}>
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <label className="form-label">Имя:</label>
 
-                  {!isEditing ? (
+                    {!isEditing ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <span style={{ fontSize: '1rem' }}>
-                      {profile.fullName || '—'}
-                    </span>
-                        <button
-                            type="button"
-                            onClick={() => setIsEditing(true)}
-                            style={{
-                              padding: '0.3rem 0.75rem',
-                              backgroundColor: '#eee',
-                              border: '1px solid #ccc',
-                              borderRadius: '4px',
-                              cursor: 'pointer'
-                            }}
-                            disabled={savingProfile}
-                        >
-                          Изменить
-                        </button>
+                        <span style={{ fontSize: '1rem' }}>{profile.fullName || '—'}</span>
+                        <button type="button" onClick={() => setIsEditing(true)} className="btn btn-secondary" disabled={savingProfile}>Изменить</button>
                       </div>
-                  ) : (
-                      <input
-                          type="text"
-                          value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
-                          autoFocus
-                          style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
-                          required
-                      />
-                  )}
-                </div>
+                    ) : (
+                      <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} autoFocus className="form-input" required />
+                    )}
+                  </div>
 
-                {/* Показать кнопки только в режиме редактирования */}
-                {isEditing && (
-                    <div style={{ marginTop: '0.75rem' }}>
-                      <button
-                          type="submit"
-                          disabled={savingProfile}
-                          style={{
-                            padding: '0.5rem 1rem',
-                            backgroundColor: '#3498db',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: savingProfile ? 'not-allowed' : 'pointer'
-                          }}
-                      >
-                        {savingProfile ? 'Сохраняем...' : 'Сохранить'}
-                      </button>
-
-                      <button
-                          type="button"
-                          onClick={() => {
-                            setFullName(profile.fullName || '');
-                            setIsEditing(false);
-                            setError('');
-                          }}
-                          style={{
-                            marginLeft: '0.5rem',
-                            padding: '0.5rem 1rem'
-                          }}
-                          disabled={savingProfile}
-                      >
-                        Отмена
-                      </button>
+                  {isEditing && (
+                    <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                      <button type="submit" className="btn btn-primary" disabled={savingProfile}>{savingProfile ? 'Сохраняем...' : 'Сохранить'}</button>
+                      <button type="button" className="btn btn-ghost" onClick={() => { setFullName(profile.fullName || ''); setIsEditing(false); setError(''); }} disabled={savingProfile}>Отмена</button>
                     </div>
-                )}
+                  )}
 
-                <p style={{ marginTop: '1rem' }}><strong>Почта:</strong> {profile.email}</p>
-              </form>
-            </div>
+                  <p style={{ marginTop: '1rem' }}><strong>Почта:</strong> <span className="small-muted">{profile.email}</span></p>
+                </form>
+              </div>
 
-            <div>
-              <h3>Аватар</h3>
-              {avatarUrl ? (
+              <div style={{ width: 220 }}>
+                <h3 style={{ marginTop: 0 }}>Аватар</h3>
+                {avatarUrl ? (
                   <div>
-                    <img src={avatarUrl} alt="Avatar" style={{ width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover' }} />
-                    <div style={{ marginTop: '1rem' }}>
-                      <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ marginRight: '1rem' }} />
-                      <button onClick={handleDeleteAvatar} style={{ backgroundColor: '#e74c3c', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>
-                        Удалить аватар
-                      </button>
+                    <img src={avatarUrl} alt="Avatar" className="avatar-md" />
+                    <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <input type="file" accept="image/*" onChange={handleAvatarUpload} />
+                      <button onClick={handleDeleteAvatar} className="btn btn-danger">Удалить</button>
                     </div>
                   </div>
-              ) : (
+                ) : (
                   <div>
-                    <p>Аватар не загружен</p>
+                    <p className="small-muted">Аватар не загружен</p>
                     <input type="file" accept="image/*" onChange={handleAvatarUpload} />
                   </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
+        </div>
 
+        <div style={{ marginTop: '1rem' }}>
           {profile.shopName ? (
-              <div style={{ marginTop: '2rem' }}>
+            <div className="card">
+              <div className="card-body">
                 <h3>Профиль продавца</h3>
                 <p><strong>Название магазина:</strong> {profile.shopName}</p>
-                <p><strong>Описание:</strong> {profile.description || 'Описание пустое'}</p>
-                <p><strong>Рейтинг:</strong> {profile.rating ? profile.rating.toFixed(2) : 'Пока нет отзывов'}</p>
-                <p><strong>Верификация:</strong> {profile.isVerified ? 'Есть' : 'Нет'}</p>
-                <Link to="/seller/profile" style={{ color: '#3498db' }}>Изменить профиль продавца</Link>
+                <p className="small-muted"><strong>Описание:</strong> {profile.description || 'Описание пустое'}</p>
+                <p className="small-muted"><strong>Рейтинг:</strong> {profile.rating ? profile.rating.toFixed(2) : 'Пока нет отзывов'}</p>
+                <p className="small-muted"><strong>Верификация:</strong> {profile.isVerified ? 'Есть' : 'Нет'}</p>
+                <div style={{ marginTop: '0.5rem' }}>
+                  <Link to="/seller/profile" className="btn btn-secondary">Изменить профиль продавца</Link>
+                </div>
               </div>
+            </div>
           ) : (
-              <div style={{ marginTop: '2rem' }}>
+            <div className="card">
+              <div className="card-body">
                 <p>Вы пока что не продавец.</p>
-                <Link to="/seller/profile" style={{ color: '#3498db' }}>Стать продавцом</Link>
+                <Link to="/seller/profile" className="btn btn-primary">Стать продавцом</Link>
               </div>
+            </div>
           )}
         </div>
-      </ProtectedRoute>
+      </div>
+    </ProtectedRoute>
   );
 };

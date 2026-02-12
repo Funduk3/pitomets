@@ -51,24 +51,24 @@ export const ListingDetail = () => {
     };
   }, [listing]);
 
-    const loadListing = async () => {
-        try {
-            const data = await listingsAPI.getListing(parseInt(id));
-            console.log('Listing data:', data);
-            setListing(data);
-            setCityTitle(data.city?.title || '');
-            if (data.metro) {
-                console.log('Metro found:', data.metro);
-                setMetroStation(data.metro);
-            }
-        } catch (err) {
-            setError('Failed to load listing');
-        } finally {
-            setLoading(false);
-        }
-    };
+  const loadListing = async () => {
+    try {
+      const data = await listingsAPI.getListing(parseInt(id));
+      console.log('Listing data:', data);
+      setListing(data);
+      setCityTitle(data.city?.title || '');
+      if (data.metro) {
+        console.log('Metro found:', data.metro);
+        setMetroStation(data.metro);
+      }
+    } catch (err) {
+      setError('Failed to load listing');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const loadPhotos = async () => {
+  const loadPhotos = async () => {
     try {
       const data = await photosAPI.getListingPhotos(parseInt(id));
       setPhotos(data.photos || []);
@@ -276,57 +276,38 @@ export const ListingDetail = () => {
     <div>
       <h2>{listing.title || 'Untitled'}</h2>
       {sellerProfile && (
-        <div style={{
-          marginTop: '1rem',
-          marginBottom: '1rem',
-          padding: '1rem',
-          border: '1px solid #ddd',
-          borderRadius: '8px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1rem',
-          backgroundColor: '#f9f9f9'
-        }}>
-          {avatarUrl && (
-            <img
-              src={avatarUrl}
-              alt="Seller avatar"
-              style={{
-                width: '60px',
-                height: '60px',
-                borderRadius: '50%',
-                objectFit: 'cover',
-                border: '2px solid #ddd'
-              }}
-            />
-          )}
-          <div style={{ flex: 1 }}>
-            <Link
-              to={`/seller/profile/view/${sellerProfile.id}`}
-              style={{
-                textDecoration: 'none',
-                color: '#3498db',
-                fontSize: '1.1rem',
-                fontWeight: 'bold'
-              }}
-            >
-              {sellerProfile.shopName}
-            </Link>
-            {sellerProfile.rating != null && (
-              <p style={{ margin: '0.25rem 0 0 0', color: '#666', fontSize: '0.9rem' }}>
-                Рейтинг: {sellerProfile.rating.toFixed(2)} / 5
-                {sellerProfile.isVerified && ' ✓ Проверен'}
-              </p>
+        <div className="card" style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+          <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'transparent' }}>
+            {avatarUrl && (
+              <img
+                src={avatarUrl}
+                alt="Seller avatar"
+                className="avatar-sm"
+              />
             )}
+            <div style={{ flex: 1 }}>
+              <Link
+                to={`/seller/profile/view/${sellerProfile.id}`}
+                style={{ textDecoration: 'none', color: '#3498db', fontSize: '1.1rem', fontWeight: 'bold' }}
+              >
+                {sellerProfile.shopName}
+              </Link>
+              {sellerProfile.rating != null && (
+                <p className="small-muted" style={{ margin: '0.25rem 0 0 0' }}>
+                  Рейтинг: {sellerProfile.rating.toFixed(2)} / 5
+                  {sellerProfile.isVerified && ' ✓ Проверен'}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}
-      <p style={{ marginTop: '0.25rem', color: '#555' }}>
+      <p className="small-muted">
         <strong>Рейтинг:</strong>{' '}
         {listing.sellerRating != null ? `${listing.sellerRating.toFixed(2)} / 5` : 'No ratings yet'}
         {listing.sellerReviewsCount != null && ` (${listing.sellerReviewsCount} отзывов)`}
       </p>
-      <div style={{ display: 'flex', gap: '2rem', marginTop: '2rem' }}>
+      <div className="two-col">
         <div style={{ flex: 1 }}>
           {photos.length > 0 ? (
             <div>
@@ -335,35 +316,35 @@ export const ListingDetail = () => {
                   key={index}
                   src={resolveApiUrl(photoUrl)}
                   alt={`Photo ${index + 1}`}
-                  style={{ width: '100%', maxWidth: '500px', marginBottom: '1rem', borderRadius: '8px' }}
+                  className="detail-image"
                 />
               ))}
             </div>
           ) : (
-            <div style={{ width: '100%', height: '300px', backgroundColor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px' }}>
-              No photos available
+            <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="card-body">Нет фото</div>
             </div>
           )}
         </div>
         <div style={{ flex: 1 }}>
           <p><strong>Описание:</strong> {listing.description}</p>
-          <p style={{ marginTop: '0.25rem', color: '#000' }}>
+          <p className="small-muted">
             <strong>Город:</strong> {cityTitle || 'Не указан'}
             {metroStation && (
-                <span style={{ marginLeft: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-        • {metroStation.title}
-                  <span
-                      style={{
-                        width: '12px',
-                        height: '12px',
-                        borderRadius: '50%',
-                        backgroundColor: metroStation.line?.color || '#000'
-                      }}
-                  />
-      </span>
+              <span style={{ marginLeft: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                • {metroStation.title}
+                <span
+                  style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    backgroundColor: metroStation.line?.color || '#000'
+                  }}
+                />
+              </span>
             )}
           </p>
-          <p><strong>Цена:</strong> {listing.price} ₽</p>
+          <p><strong>Цена:</strong> <span className="tag-price">{listing.price} ₽</span></p>
           <p><strong>Вид:</strong> {listing.species || 'N/A'}</p>
           {listing.breed && <p><strong>Breed:</strong> {listing.breed}</p>}
           <p>
@@ -375,67 +356,20 @@ export const ListingDetail = () => {
             {listing.gender ? (GENDER_LABELS[listing.gender] || 'Любой') : 'Любой'}
           </p>
           {isAuthenticated() && user?.id === listing.sellerId && (
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
-              <Link
-                to={`/listings/${id}/edit`}
-                style={{
-                  display: 'inline-block',
-                  padding: '0.5rem 1rem',
-                  backgroundColor: '#3498db',
-                  color: 'white',
-                  textDecoration: 'none',
-                  borderRadius: '4px'
-                }}
-              >
-                Изменить объявление
-              </Link>
-              <Link
-                to={`/listings/${id}/photos`}
-                style={{
-                  display: 'inline-block',
-                  padding: '0.5rem 1rem',
-                  backgroundColor: '#f39c12',
-                  color: 'white',
-                  textDecoration: 'none',
-                  borderRadius: '4px'
-                }}
-              >
-                Изменить фотографии
-              </Link>
+            <div className="link-actions">
+              <Link to={`/listings/${id}/edit`} className="btn btn-secondary">Изменить объявление</Link>
+              <Link to={`/listings/${id}/photos`} className="btn btn-ghost">Изменить фотографии</Link>
             </div>
           )}
           {isAuthenticated() && user?.id !== listing.sellerId && (
-            <button
-              onClick={handleMessageSeller}
-              style={{
-                marginTop: '1rem',
-                marginRight: '1rem',
-                padding: '0.75rem 1.5rem',
-                backgroundColor: '#27ae60',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Написать продавцу
-            </button>
-          )}
-          {isAuthenticated() && (
-            <button
-              onClick={handleToggleFavourite}
-              style={{
-                marginTop: '1rem',
-                padding: '0.75rem 1.5rem',
-                backgroundColor: isFavourite ? '#95a5a6' : '#e74c3c',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              {isFavourite ? 'Удалить из избранных' : 'Добавить в избранное'}
-            </button>
+            <div className="link-actions">
+              <button onClick={handleMessageSeller} className="btn btn-primary">Написать продавцу</button>
+              {isAuthenticated() && (
+                <button onClick={handleToggleFavourite} className={isFavourite ? 'btn btn-ghost' : 'btn btn-secondary'}>
+                  {isFavourite ? 'Удалить из избранных' : 'Добавить в избранное'}
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -553,15 +487,8 @@ export const ListingDetail = () => {
         {isAuthenticated() && user?.id !== listing.sellerId && (
           <Link
             to={`/listings/${id}/review`}
-            style={{
-              display: 'inline-block',
-              marginTop: '1rem',
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#3498db',
-              color: 'white',
-              textDecoration: 'none',
-              borderRadius: '4px'
-            }}
+            className="btn btn-primary"
+            style={{ display: 'inline-block', marginTop: '1rem' }}
           >
             Написать отзыв
           </Link>
@@ -573,74 +500,74 @@ export const ListingDetail = () => {
         {similarLoading && <p>Грузим...</p>}
 
         {!similarLoading && similarListings.length === 0 && (
-            <p>Похожие объявления не найдены</p>
+          <p>Похожие объявления не найдены</p>
         )}
 
         <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-              gap: '1.5rem',
-              marginTop: '1rem',
-            }}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+            gap: '1.5rem',
+            marginTop: '1rem',
+          }}
         >
           {similarListings.map((listing) => {
             const photos = similarPhotos[listing.id] || [];
             const firstPhoto = photos[0];
 
             return (
-                <Link
-                    key={listing.id}
-                    to={`/listings/${listing.id}`}
+              <Link
+                key={listing.id}
+                to={`/listings/${listing.id}`}
+                style={{
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  backgroundColor: '#fff',
+                }}
+              >
+                {firstPhoto ? (
+                  <img
+                    src={firstPhoto.startsWith('http')
+                      ? firstPhoto
+                      : resolveApiUrl(firstPhoto)}
+                    alt={listing.title || 'Untitled'}
                     style={{
-                      textDecoration: 'none',
-                      color: 'inherit',
-                      border: '1px solid #ddd',
-                      borderRadius: '8px',
-                      overflow: 'hidden',
-                      backgroundColor: '#fff',
+                      width: '100%',
+                      height: '160px',
+                      objectFit: 'cover',
+                      display: 'block',
                     }}
-                >
-                  {firstPhoto ? (
-                      <img
-                          src={firstPhoto.startsWith('http')
-                              ? firstPhoto
-                              : resolveApiUrl(firstPhoto)}
-                          alt={listing.title || 'Untitled'}
-                          style={{
-                            width: '100%',
-                            height: '160px',
-                            objectFit: 'cover',
-                            display: 'block',
-                          }}
-                      />
-                  ) : (
-                      <div
-                          style={{
-                            height: '160px',
-                            backgroundColor: '#f0f0f0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#999',
-                          }}
-                      >
-                        Нет фото
-                      </div>
-                  )}
-
-                  <div style={{ padding: '0.75rem' }}>
-                    <h4 style={{ margin: '0 0 0.25rem 0' }}>
-                      {listing.title || 'Untitled'}
-                    </h4>
-                    <p style={{ margin: 0, fontWeight: 'bold' }}>
-                      {listing.price} ₽ {/* TODO: currently we don’t have price */}
-                    </p>
-                    <p style={{ margin: '0.25rem 0', fontSize: '0.85rem', color: '#666' }}>
-                      {listing.description} {listing.breed && `• ${listing.breed}`}
-                    </p>
+                  />
+                ) : (
+                  <div
+                    style={{
+                      height: '160px',
+                      backgroundColor: '#f0f0f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#999',
+                    }}
+                  >
+                    Нет фото
                   </div>
-                </Link>
+                )}
+
+                <div style={{ padding: '0.75rem' }}>
+                  <h4 style={{ margin: '0 0 0.25rem 0' }}>
+                    {listing.title || 'Untitled'}
+                  </h4>
+                  <p style={{ margin: 0, fontWeight: 'bold' }}>
+                    {listing.price} ₽ {/* TODO: currently we don’t have price */}
+                  </p>
+                  <p style={{ margin: '0.25rem 0', fontSize: '0.85rem', color: '#666' }}>
+                    {listing.description} {listing.breed && `• ${listing.breed}`}
+                  </p>
+                </div>
+              </Link>
             );
           })}
         </div>

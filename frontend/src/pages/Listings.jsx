@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { listingsAPI } from '../api/listings';
 import { resolveApiUrl } from '../api/axios';
 import { photosAPI } from '../api/photos';
 import { ProtectedRoute } from '../components/ProtectedRoute';
-import { Link } from 'react-router-dom';
 
 export const Listings = () => {
   const [listings, setListings] = useState([]);
@@ -65,18 +64,6 @@ export const Listings = () => {
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <h2>Мои объявления</h2>
-          <Link
-            to="/listings/create"
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#27ae60',
-              color: 'white',
-              textDecoration: 'none',
-              borderRadius: '4px'
-            }}
-          >
-            Создать объявление
-          </Link>
         </div>
         {error && (
           <div style={{ color: 'red', marginBottom: '1rem', padding: '1rem', backgroundColor: '#ffe6e6', borderRadius: '4px' }}>
@@ -121,8 +108,8 @@ export const Listings = () => {
                       Нет фото
                     </div>
                   )}
-                  <div style={{ padding: '1rem' }}>
-                    <h3 style={{ margin: '0 0 0.5rem 0' }}>{listing.title || 'Untitled'}</h3>
+                   <div style={{ padding: '1rem' }}>
+                     <h3 style={{ margin: '0 0 0.5rem 0' }}>{listing.title || 'Untitled'}</h3>
                     <p style={{ margin: '0.5rem 0', color: '#666', fontSize: '0.9rem' }}>
                       {listing.description?.substring(0, 100)}
                       {listing.description && listing.description.length > 100 ? '...' : ''}
@@ -131,54 +118,17 @@ export const Listings = () => {
                     <p><strong>Вид:</strong> {listing.species}</p>
                     {listing.breed && <p><strong>Порода:</strong> {listing.breed}</p>}
                     <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <Link
-                        to={`/listings/${listing.listingsId}`}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          backgroundColor: '#3498db',
-                          color: 'white',
-                          textDecoration: 'none',
-                          borderRadius: '4px',
-                          fontSize: '0.9rem'
-                        }}
-                      >
-                        Посмотреть
-                      </Link>
-                      <Link
-                        to={`/listings/${listing.listingsId}/edit`}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          backgroundColor: '#f39c12',
-                          color: 'white',
-                          textDecoration: 'none',
-                          borderRadius: '4px',
-                          fontSize: '0.9rem'
-                        }}
-                      >
-                        Изменить
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(listing.listingsId)}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          backgroundColor: '#e74c3c',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '0.9rem'
-                        }}
-                      >
-                        Удалить
-                      </button>
+                      <Link to={`/listings/${listing.listingsId}`} className="btn btn-secondary" style={{ fontSize: '0.9rem' }}>Посмотреть</Link>
+                      <Link to={`/listings/${listing.listingsId}/edit`} className="btn" style={{ backgroundColor: '#f39c12', color: '#fff', fontSize: '0.9rem' }}>Изменить</Link>
+                      <button onClick={() => handleDelete(listing.listingsId)} className="btn btn-danger" style={{ fontSize: '0.9rem' }}>Удалить</button>
                     </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </ProtectedRoute>
-  );
-};
+                   </div>
+                 </div>
+               );
+             })}
+           </div>
+         )}
+       </div>
+     </ProtectedRoute>
+   );
+ };

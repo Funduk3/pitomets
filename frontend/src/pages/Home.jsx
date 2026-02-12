@@ -40,31 +40,17 @@ export const Home = () => {
       <h1>Питомец</h1>
       <p>Объявления тут!</p>
       {!isAuthenticated() && (
-        <div style={{ marginTop: '2rem' }}>
+        <div className="hero" style={{ marginTop: '2rem' }}>
           <Link
             to="/register"
-            style={{
-              display: 'inline-block',
-              padding: '1rem 2rem',
-              backgroundColor: '#3498db',
-              color: 'white',
-              textDecoration: 'none',
-              borderRadius: '4px',
-              marginRight: '1rem'
-            }}
+            className="btn btn-primary"
+            style={{ marginRight: '1rem' }}
           >
             Начать
           </Link>
           <Link
             to="/search"
-            style={{
-              display: 'inline-block',
-              padding: '1rem 2rem',
-              backgroundColor: '#27ae60',
-              color: 'white',
-              textDecoration: 'none',
-              borderRadius: '4px'
-            }}
+            className="btn btn-secondary"
           >
             Поиск по объявлениям
           </Link>
@@ -90,77 +76,40 @@ export const Home = () => {
         )}
         {!loading && !error && items.length > 0 && (
           <div>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-                gap: '1.25rem',
-                marginTop: '1rem'
-              }}
-            >
+            <div className="listings-grid">
               {items.map((listing) => (
-                <div
-                  key={listing.listingsId}
-                  style={{
-                    border: '1px solid #ddd',
-                    borderRadius: '8px',
-                    overflow: 'hidden'
-                  }}
-                >
+                <div key={listing.listingsId} className="listing-card">
                   {listing.coverPhotoId ? (
                     <img
                       src={resolveApiUrl(`/listings/${listing.listingsId}/photos/${listing.coverPhotoId}`)}
                       alt="Listing cover"
-                      style={{
-                        width: '100%',
-                        height: '180px',
-                        objectFit: 'cover',
-                        display: 'block'
-                      }}
+                      className="listing-image"
                     />
                   ) : (
-                    <div
-                      style={{
-                        width: '100%',
-                        height: '180px',
-                        backgroundColor: '#f0f0f0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#999'
-                      }}
-                    >
+                    <div className="listing-placeholder">
                       Нет фото
                     </div>
                   )}
-                  <div style={{ padding: '1rem' }}>
-                    <h3 style={{ margin: '0 0 0.5rem 0' }}>
+                  <div className="listing-content">
+                    <h3>
                       {listing.title || 'Без названия'}
                     </h3>
-                  <p style={{ margin: '0.5rem 0', color: '#666' }}>
+                  <p>
                     {listing.description?.substring(0, 90)}
                     {listing.description && listing.description.length > 90
                       ? '...'
                       : ''}
                   </p>
-                  <p style={{ margin: '0.25rem 0' }}>
-                    <strong>Цена:</strong> {listing.price} ₽
+                  <p>
+                    <strong>Цена:</strong> <span className="tag-price">{listing.price} ₽</span>
                   </p>
-                  <p style={{ margin: '0.25rem 0' }}>
+                  <p>
                     <strong>Город:</strong> {listing.city?.title || '—'}
                   </p>
                   <Link
                     to={`/listings/${listing.listingsId}`}
-                    style={{
-                      display: 'inline-block',
-                      marginTop: '0.5rem',
-                      padding: '0.5rem 0.75rem',
-                      backgroundColor: '#3498db',
-                      color: 'white',
-                      textDecoration: 'none',
-                      borderRadius: '4px',
-                      fontSize: '0.9rem'
-                    }}
+                    className="btn btn-secondary"
+                    style={{ display: 'inline-block', marginTop: '0.5rem', fontSize: '0.9rem' }}
                   >
                     Посмотреть
                   </Link>
@@ -168,7 +117,7 @@ export const Home = () => {
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
+            <div className="pager-controls">
               <button
                 onClick={() => {
                   if (history.length === 0) return;
@@ -177,6 +126,7 @@ export const Home = () => {
                   loadPage(prev);
                 }}
                 disabled={history.length === 0 || loading}
+                className="btn"
               >
                 Назад
               </button>
@@ -187,6 +137,7 @@ export const Home = () => {
                   loadPage(nextCursor);
                 }}
                 disabled={loading || !hasMore || !nextCursor}
+                className="btn"
               >
                 Вперед
               </button>

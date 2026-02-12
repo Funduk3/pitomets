@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { listingsAPI } from '../api/listings';
 import { ProtectedRoute } from '../components/ProtectedRoute';
+import './listing-form.css';
 
 export const ReviewForm = () => {
   const { id } = useParams();
@@ -37,52 +38,47 @@ export const ReviewForm = () => {
 
   return (
     <ProtectedRoute>
-      <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-        <h2>Write a Review</h2>
-        {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Rating:</label>
-            <select
-              value={rating}
-              onChange={(e) => setRating(parseInt(e.target.value))}
-              style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
+      <div className="lf-form">
+        <div className="lf-card">
+          <h2>Написать отзыв</h2>
+          {error && <div className="error-box" role="alert" aria-live="assertive">{error}</div>}
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="review-rating" className="form-label">Оценка:</label>
+              <select
+                id="review-rating"
+                className="form-input"
+                value={rating}
+                onChange={(e) => setRating(parseInt(e.target.value))}
+              >
+                <option value={1}>1 ⭐</option>
+                <option value={2}>2 ⭐⭐</option>
+                <option value={3}>3 ⭐⭐⭐</option>
+                <option value={4}>4 ⭐⭐⭐⭐</option>
+                <option value={5}>5 ⭐⭐⭐⭐⭐</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label htmlFor="review-text" className="form-label">Текст отзыва (опционально):</label>
+              <textarea
+                id="review-text"
+                className="form-input"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                rows="5"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="lf-submit btn-primary"
+              aria-disabled={loading}
             >
-              <option value={1}>1 ⭐</option>
-              <option value={2}>2 ⭐⭐</option>
-              <option value={3}>3 ⭐⭐⭐</option>
-              <option value={4}>4 ⭐⭐⭐⭐</option>
-              <option value={5}>5 ⭐⭐⭐⭐⭐</option>
-            </select>
-          </div>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Review Text (optional):</label>
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows="5"
-              style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              backgroundColor: '#3498db',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '1rem',
-              cursor: loading ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {loading ? 'Submitting...' : 'Submit Review'}
-          </button>
-        </form>
+              {loading ? 'Отправляем...' : 'Отправить отзыв'}
+            </button>
+          </form>
+        </div>
       </div>
     </ProtectedRoute>
   );
 };
-
