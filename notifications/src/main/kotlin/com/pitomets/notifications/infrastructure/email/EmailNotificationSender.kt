@@ -11,6 +11,8 @@ import org.springframework.mail.MailException
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.stereotype.Component
+import org.thymeleaf.spring6.SpringTemplateEngine
+import org.thymeleaf.context.Context
 
 @Component
 class EmailNotificationSender(
@@ -18,7 +20,9 @@ class EmailNotificationSender(
     @Value("\${app.frontend-url}")
     private val frontendUrl: String,
     @Value("\${app.mail.from:}")
-    private val mailFrom: String
+    private val mailFrom: String,
+    private val templateEngine: SpringTemplateEngine
+
 ) : NotificationSender {
 
     private val logger = LoggerFactory.getLogger(EmailNotificationSender::class.java)
@@ -29,10 +33,6 @@ class EmailNotificationSender(
     override fun send(notification: Notification) {
         try {
             val parts = notification.payload.trim().split(" ")
-
-            // Payload structure depends on message type now, but usually it is "email token" or just "email"
-            // Previous implementations put "confirm email token", so we need to be careful.
-            // In UserService I changed payload to be "email token" for CONFIRM and RESTORE_PASSWORD.
 
             val email = parts[0]
             val token = parts.getOrNull(1)
@@ -75,17 +75,27 @@ class EmailNotificationSender(
             logger.warn("No token provided for confirmation email to $email")
             return
         }
+
+        val link = "$frontendUrl/confirm?token=$token"
+
+        val context = Context().apply {
+            setVariable("link", link)
+            setVariable("year", java.time.Year.now().value)
+        }
+
+        val htmlContent = templateEngine.process("email-confirmation", context)
+
         val message = javaMailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, true, "UTF-8")
 
         if (mailFrom.isNotBlank()) {
             helper.setFrom(mailFrom)
         }
+
         helper.setTo(email)
-        helper.setSubject("Please confirm your email")
-        val link = "$frontendUrl/confirm?token=$token"
-        helper.setText("<h1>Confirm your email</h1><p>Click the link below to confirm your email:</p>" +
-                "<a href=\"$link\">Confirm Email</a>", true)
+        helper.setSubject("Confirm your email address")
+        helper.setText(htmlContent, true)
+
         javaMailSender.send(message)
     }
 
