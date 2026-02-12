@@ -11,6 +11,7 @@ import org.springframework.mail.MailException
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.stereotype.Component
+import org.springframework.web.util.UriComponentsBuilder
 import org.thymeleaf.spring6.SpringTemplateEngine
 import org.thymeleaf.context.Context
 
@@ -32,13 +33,9 @@ class EmailNotificationSender(
     @Suppress("TooGenericExceptionCaught", "ThrowsCount")
     override fun send(notification: Notification) {
         try {
-            val parts = notification.payload.trim().split(" ")
-
-            val email = parts[0]
-            val token = parts.getOrNull(1)
+            val (email, token) = parsePayload(notification.payload)
 
             when (notification.messageType) {
-                MessageType.REGISTRATION -> sendAfterRegistration(email)
                 MessageType.CONFIRM -> sendToConfirm(email, token)
                 MessageType.RESTORE_PASSWORD -> sendRestorePassword(email, token)
                 else -> throw FailedToSendNotificationException("Something went wrong", cause = null)
@@ -57,26 +54,13 @@ class EmailNotificationSender(
         }
     }
 
-    fun sendAfterRegistration(email: String) {
-        val message = javaMailSender.createMimeMessage()
-        val helper = MimeMessageHelper(message, true, "UTF-8")
-
-        if (mailFrom.isNotBlank()) {
-            helper.setFrom(mailFrom)
-        }
-        helper.setTo(email)
-        helper.setSubject("Thank you for registration!")
-        helper.setText("Welcome to pitomets", true)
-        javaMailSender.send(message)
-    }
-
     fun sendToConfirm(email: String, token: String?) {
         if (token == null) {
             logger.warn("No token provided for confirmation email to $email")
             return
         }
 
-        val link = "$frontendUrl/confirm?token=$token"
+        val link = buildFrontendLink("/confirm", "token", token)
 
         val context = Context().apply {
             setVariable("link", link)
@@ -104,6 +88,12 @@ class EmailNotificationSender(
             logger.warn("No token provided for password reset email to $email")
             return
         }
+        val context = Context()
+        val link = buildFrontendLink("/reset-password", "token", token)
+        context.setVariable("link", link)
+        context.setVariable("year", java.time.Year.now().value)
+        val htmlContent = templateEngine.process("reset-password", context)
+
         val message = javaMailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, true, "UTF-8")
 
@@ -111,10 +101,24 @@ class EmailNotificationSender(
             helper.setFrom(mailFrom)
         }
         helper.setTo(email)
-        helper.setSubject("Password Reset Request")
-        val link = "$frontendUrl/reset-password?token=$token"
-        helper.setText("<h1>Reset Your Password</h1><p>Click the link below to reset your password:</p>" +
-                "<a href=\"$link\">Reset Password</a>", true)
+        helper.setSubject("Сброс пароля")
+        helper.setText(htmlContent, true)
+
         javaMailSender.send(message)
     }
+
+    private fun parsePayload(payload: String): Pair<String, String?> {
+        val parts = payload.trim().split(Regex("\\s+"), limit = 2)
+        val email = parts.firstOrNull()?.takeIf { it.isNotBlank() }
+            ?: throw IllegalArgumentException("Payload must start with email")
+        val token = parts.getOrNull(1)?.takeIf { it.isNotBlank() }
+        return email to token
+    }
+
+    private fun buildFrontendLink(path: String, param: String, value: String): String =
+        UriComponentsBuilder.fromUriString(frontendUrl)
+            .path(path)
+            .queryParam(param, value)
+            .build()
+            .toUriString()
 }

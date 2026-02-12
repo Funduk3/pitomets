@@ -16,6 +16,7 @@ import com.pitomets.monolit.model.kafka.NotificationRequestedEvent
 import com.pitomets.monolit.model.kafka.event.Channel
 import com.pitomets.monolit.repository.BuyerProfileRepo
 import com.pitomets.monolit.repository.UserRepo
+import com.pitomets.monolit.repository.findUserOrThrow
 import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.BadCredentialsException
@@ -75,7 +76,7 @@ class UserService(
             fullName = savedUser.fullName,
             hasBuyerProfile = true,
             hasSellerProfile = false,
-            message = "на вашу почту отправлено письмо с подтверждением," +
+            message = "На вашу почту отправлено письмо с подтверждением," +
                     " проверьте свой почтовый ящик и перейдите по ссылке, чтобы подтвердить почту"
         )
     }
@@ -142,12 +143,6 @@ class UserService(
         }
     }
 
-    fun changePassword(email: String, newPassword: String) {
-        val user: User = repo.findByEmail(email) ?: throw UserNotFoundException("User not found")
-        user.passwordHash = encoder.encode(newPassword)
-            ?: throw IllegalPasswordException("Problem with password")
-    }
-
     @Transactional
     fun confirmEmail(token: String) {
         log.info("Confirm email requested with token={}", token)
@@ -181,17 +176,38 @@ class UserService(
                     payload = "${user.email} $token",
                 )
             )
+            log.info("KAFKA restore password message sent")
+
         }
     }
 
     @Transactional
-    fun resetPassword(token: String, newPassword: String) {
+    fun resetPassword(token: String, newPassword: String, confirmPassword: String) {
+        if (newPassword != confirmPassword) {
+            throw IllegalArgumentException("Passwords do not match")
+        }
         val user = repo.findByPasswordResetToken(token)
             ?: throw InvalidTokenException("Invalid reset token")
 
         user.passwordHash = encoder.encode(newPassword)
             ?: throw IllegalPasswordException("Problem with password")
         user.passwordResetToken = null
+        repo.save(user)
+    }
+
+    @Transactional
+    fun changePassword(userId: Long, currentPassword: String, newPassword: String, confirmPassword: String) {
+        if (newPassword != confirmPassword) {
+            throw IllegalArgumentException("Passwords do not match")
+        }
+
+        val user = repo.findUserOrThrow(userId)
+        if (!encoder.matches(currentPassword, user.passwordHash)) {
+            throw InvalidCredentialsException("Invalid current password")
+        }
+
+        user.passwordHash = encoder.encode(newPassword)
+            ?: throw IllegalPasswordException("Problem with password")
         repo.save(user)
     }
 }

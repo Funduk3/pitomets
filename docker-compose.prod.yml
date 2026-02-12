@@ -5,7 +5,6 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-      - .env.prod
     networks:
       - web
     labels:
@@ -24,7 +23,6 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-      - .env.prod
     networks:
       - web
     labels:

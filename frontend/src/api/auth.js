@@ -39,7 +39,11 @@ export const authAPI = {
     await api.post('/forgot-password', { email });
   },
 
-  resetPassword: async (token, newPassword) => {
-    await api.post('/reset-password', { token, newPassword });
+  resetPassword: async (token, newPassword, confirmPassword) => {
+    await api.post('/reset-password', { token, newPassword, confirmPassword });
+  },
+
+  changePassword: async (currentPassword, newPassword, confirmPassword) => {
+    await api.post('/change-password', { currentPassword, newPassword, confirmPassword });
   },
 };

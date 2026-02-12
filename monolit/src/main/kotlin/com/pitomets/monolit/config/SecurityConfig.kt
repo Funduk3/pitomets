@@ -87,6 +87,10 @@ class SecurityConfig(
                     "/api/refresh",
                     "/confirm",
                     "/api/confirm",
+                    "/forgot-password",
+                    "/api/forgot-password",
+                    "/reset-password",
+                    "/api/reset-password",
                     "/search/listings/**",
                     "/search/deleteALL", // todo delete
                     "/actuator/prometheus", // todo put in admin

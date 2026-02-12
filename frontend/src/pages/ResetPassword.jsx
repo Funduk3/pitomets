@@ -7,11 +7,18 @@ export const ResetPassword = () => {
     const token = searchParams.get('token');
     const navigate = useNavigate();
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [error, setError] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
+        if (password !== confirmPassword) {
+            setError('Пароли не совпадают');
+            return;
+        }
         try {
-            await authAPI.resetPassword(token, password);
+            await authAPI.resetPassword(token, password, confirmPassword);
             alert('Пароль успешно изменен');
             navigate('/login');
         } catch (e) {
@@ -34,6 +41,15 @@ export const ResetPassword = () => {
                     required
                     className="border p-2 rounded"
                 />
+                <input
+                    type="password"
+                    placeholder="Повторите пароль"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    required
+                    className="border p-2 rounded"
+                />
+                {error && <div className="text-red-600 text-sm">{error}</div>}
                 <button type="submit" className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
                     Сохранить
                 </button>

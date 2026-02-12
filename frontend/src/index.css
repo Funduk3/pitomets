@@ -272,6 +272,15 @@ img {
   border: 1px solid #ffcccc;
 }
 
+.success-box {
+  color: #0f6d1f;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: #eef8f0;
+  border-radius: 8px;
+  border: 1px solid #c9e9d1;
+}
+
 /* Link cards (listings in search/profile) */
 .link-card {
   display: block;

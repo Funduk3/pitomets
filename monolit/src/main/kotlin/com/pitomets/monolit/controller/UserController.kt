@@ -1,5 +1,7 @@
 package com.pitomets.monolit.controller
 
+import com.pitomets.monolit.model.UserPrincipal
+import com.pitomets.monolit.model.dto.request.ChangePasswordRequest
 import com.pitomets.monolit.model.dto.request.LoginRequest
 import com.pitomets.monolit.model.dto.request.RefreshTokenRequest
 import com.pitomets.monolit.model.dto.request.RegisterRequest
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 
 @RestController
 class UserController(
@@ -65,6 +68,19 @@ class UserController(
 
     @PostMapping("/reset-password")
     fun resetPassword(@RequestBody request: ResetPasswordRequest) {
-        service.resetPassword(request.token, request.newPassword)
+        service.resetPassword(request.token, request.newPassword, request.confirmPassword)
+    }
+
+    @PostMapping("/change-password")
+    fun changePassword(
+        @AuthenticationPrincipal userPrincipal: UserPrincipal,
+        @RequestBody request: ChangePasswordRequest
+    ) {
+        service.changePassword(
+            userId = userPrincipal.id,
+            currentPassword = request.currentPassword,
+            newPassword = request.newPassword,
+            confirmPassword = request.confirmPassword
+        )
     }
 }
