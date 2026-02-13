@@ -41,6 +41,7 @@ export const Search = () => {
     const [selectedBreeds, setSelectedBreeds] = useState([]);
     const [selectedGenders, setSelectedGenders] = useState([]);
     const [selectedAges, setSelectedAges] = useState([]);
+    const [sortOrder, setSortOrder] = useState('NEWEST');
     const [showTypeBar, setShowTypeBar] = useState(false);
     const [showAgeBar, setShowAgeBar] = useState(false);
     const breedDropdownRef = useRef(null);
@@ -82,6 +83,14 @@ export const Search = () => {
                 setShowCitySuggestions(false);
                 setMetroStations([]);
                 setShowBreedSuggestions(false);
+            } else {
+                const target = e.target;
+                if (target.closest?.('.autocomplete-dropdown')) {
+                    setShowSuggestions(false);
+                    setShowCitySuggestions(false);
+                    setMetroStations([]);
+                    setShowBreedSuggestions(false);
+                }
             }
         };
 
@@ -180,7 +189,7 @@ export const Search = () => {
         if (hasSearched) {
             handleSearch();
         }
-    }, [selectedCity, metroId, priceFromInput, priceToInput, selectedTypeIds, selectedBreeds, selectedGenders, selectedAges]);
+    }, [selectedCity, metroId, priceFromInput, priceToInput, selectedTypeIds, selectedBreeds, selectedGenders, selectedAges, sortOrder]);
 
     useEffect(() => {
         const nextId = activeBreedType?.id ?? null;
@@ -281,7 +290,8 @@ export const Search = () => {
                     types: typesParam.length ? typesParam : null,
                     breeds: selectedBreeds.length ? selectedBreeds : null,
                     genders: selectedGenders.length ? selectedGenders : null,
-                    ages: selectedAges.length ? selectedAges : null
+                    ages: selectedAges.length ? selectedAges : null,
+                    sort: sortOrder
                 }
             );
 
@@ -369,55 +379,12 @@ export const Search = () => {
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" ref={rootRef}>
                 <form onSubmit={handleSearch} className="space-y-6">
-                    <div className="search-top">
-                        <div className="search-bar-row">
-                            <div className="search-bar-input autocomplete-root">
-                                <input
-                                    type="text"
-                                    value={query}
-                                    onChange={(e) => {
-                                        setQuery(e.target.value);
-                                        setHasSearched(false);
-                                    }}
-                                    onFocus={() => suggestions.length && setShowSuggestions(true)}
-                                    onBlur={() => setShowSuggestions(false)}
-                                    placeholder="Ищем питомца..."
-                                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-                                />
-
-                                {showSuggestions && suggestions.length > 0 && (
-                                    <div ref={queryDropdownRef} className="autocomplete-dropdown">
-                                        {suggestions.map((s, idx) => (
-                                            <div
-                                                key={idx}
-                                                onMouseDown={() => {
-                                                    setQuery(s.title);
-                                                    setShowSuggestions(false);
-                                                }}
-                                                className="autocomplete-item"
-                                            >
-                                                {s.title}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
-                            >
-                                {loading ? 'Ищем...' : 'Найти'}
-                            </button>
-                        </div>
-                    </div>
-
                     <div className="search-layout">
                         <aside className="search-sidebar">
                             <div className="filters-card">
                                  <div className="search-filters">
-                                     <div className="relative">
-                                         <label className="block text-sm font-medium text-slate-700 mb-2">Город</label>
+                                     <div className="autocomplete-root" style={{ position: 'relative', zIndex: 30 }}>
+                                         <label className="filter-label">Город</label>
                                          <input
                                              type="text"
                                              placeholder="Выберите город"
@@ -432,30 +399,34 @@ export const Search = () => {
                                          />
 
                                         {showCitySuggestions && citySuggestions.length > 0 && (
-                                            <div ref={cityDropdownRef} className="autocomplete-dropdown">
+                                            <div
+                                                ref={cityDropdownRef}
+                                                className="autocomplete-dropdown inline"
+                                            >
                                                 {citySuggestions.map(city => (
                                                     <div
                                                         key={city.id}
-                                                         onMouseDown={() => {
-                                                             setSelectedCity(city);
-                                                             setCityQuery(city.title);
-                                                             setMetroQuery('');
-                                                             setMetroId(null);
-                                                             setMetroStations([]);
-                                                             setShowCitySuggestions(false);
-                                                         }}
+                                                        onMouseDown={() => {
+                                                            setSelectedCity(city);
+                                                            setCityQuery(city.title);
+                                                            setMetroQuery('');
+                                                            setMetroId(null);
+                                                            setMetroStations([]);
+                                                            setShowCitySuggestions(false);
+                                                        }}
+                                                        onClick={() => setShowCitySuggestions(false)}
                                                         className="autocomplete-item"
                                                     >
                                                         {city.title}
                                                     </div>
-                                                 ))}
-                                             </div>
-                                         )}
+                                                ))}
+                                            </div>
+                                        )}
                                      </div>
 
                                      {selectedCity?.hasMetro && (
-                                         <div className="relative">
-                                             <label className="block text-sm font-medium text-slate-700 mb-2">Метро</label>
+                                         <div className="autocomplete-root" style={{ position: 'relative', zIndex: 20 }}>
+                                         <label className="filter-label">Метро</label>
                                              <input
                                                  type="text"
                                                  placeholder="Выберите станцию"
@@ -474,7 +445,9 @@ export const Search = () => {
                                              )}
 
                                             {metroStations.length > 0 && (
-                                                <div className="autocomplete-dropdown">
+                                                <div
+                                                    className="autocomplete-dropdown inline"
+                                                >
                                                     {metroStations.map(s => (
                                                         <div
                                                             key={s.id}
@@ -483,6 +456,7 @@ export const Search = () => {
                                                                 setMetroId(s.id);
                                                                 setMetroStations([]);
                                                             }}
+                                                            onClick={() => setMetroStations([])}
                                                             className="autocomplete-item autocomplete-metro"
                                                         >
                                                             {s.line?.color && (
@@ -497,13 +471,13 @@ export const Search = () => {
                                                             </div>
                                                         </div>
                                                     ))}
-                                                 </div>
-                                             )}
+                                                </div>
+                                            )}
                                          </div>
                                      )}
 
                                      <div>
-                                         <label className="block text-sm font-medium text-slate-700 mb-2">Цена от</label>
+                                        <label className="filter-label">Цена от</label>
                                          <input
                                              type="number"
                                              step="0.01"
@@ -515,7 +489,7 @@ export const Search = () => {
                                      </div>
 
                                      <div>
-                                         <label className="block text-sm font-medium text-slate-700 mb-2">Цена до</label>
+                                        <label className="filter-label">Цена до</label>
                                          <input
                                              type="number"
                                              step="0.01"
@@ -542,7 +516,7 @@ export const Search = () => {
                                                     <div className="text-sm text-slate-500">Типы не найдены</div>
                                                 )}
                                                  {animalTypes.map((type) => (
-                                                     <label key={type.id} className="flex items-center gap-2 cursor-pointer">
+                                                     <label key={type.id} className="filter-option">
                                                          <input
                                                              type="checkbox"
                                                              checked={selectedTypeIds.includes(type.id)}
@@ -558,10 +532,10 @@ export const Search = () => {
 
                                      {activeBreedType && (
                                          <div>
-                                             <label className="block text-sm font-medium text-slate-700 mb-2">
-                                                 Породы ({activeBreedType.title})
-                                             </label>
-                                             <div className="relative">
+                                            <label className="filter-label">
+                                                Породы ({activeBreedType.title})
+                                            </label>
+                                            <div className="autocomplete-root" style={{ position: 'relative' }}>
                                                  <input
                                                      type="text"
                                                      value={breedQuery}
@@ -574,12 +548,13 @@ export const Search = () => {
                                                 {showBreedSuggestions && breedSuggestions.length > 0 && (
                                                     <div
                                                         ref={breedDropdownRef}
-                                                        className="autocomplete-dropdown"
+                                                        className="autocomplete-dropdown inline"
                                                     >
                                                         {breedSuggestions.map((breed) => (
                                                             <div
                                                                 key={breed.id}
                                                                 onMouseDown={() => addBreed(breed.title)}
+                                                                onClick={() => setShowBreedSuggestions(false)}
                                                                 className="autocomplete-item"
                                                             >
                                                                 {breed.title}
@@ -611,10 +586,10 @@ export const Search = () => {
                                      )}
 
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-3">Пол</label>
+                                        <label className="filter-label">Пол</label>
                                         <div className="gender-options">
                                             {Object.values(GenderEnum).filter((g) => g !== GenderEnum.ANY).map((gender) => (
-                                                <label key={gender} className="flex items-center gap-2 cursor-pointer">
+                                                <label key={gender} className="filter-option">
                                                      <input
                                                          type="checkbox"
                                                          checked={selectedGenders.includes(gender)}
@@ -639,7 +614,7 @@ export const Search = () => {
                                         {showAgeBar && (
                                             <div className="filter-panel">
                                                 {Object.entries(AgeEnum).map(([key, value]) => (
-                                                    <label key={key} className="flex items-center gap-2 cursor-pointer">
+                                                    <label key={key} className="filter-option">
                                                          <input
                                                              type="checkbox"
                                                              checked={selectedAges.includes(key)}
@@ -681,6 +656,48 @@ export const Search = () => {
                          </aside>
 
                         <div className="search-results">
+                            <div className="search-top">
+                                <div className="search-bar-row search-bar-row-stacked">
+                                    <div className="search-bar-input autocomplete-root">
+                                        <input
+                                            type="text"
+                                            value={query}
+                                            onChange={(e) => {
+                                                setQuery(e.target.value);
+                                                setHasSearched(false);
+                                            }}
+                                            onFocus={() => suggestions.length && setShowSuggestions(true)}
+                                            onBlur={() => setShowSuggestions(false)}
+                                            placeholder="Ищем питомца..."
+                                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                                        />
+
+                                        {showSuggestions && suggestions.length > 0 && (
+                                            <div ref={queryDropdownRef} className="autocomplete-dropdown">
+                                                {suggestions.map((s, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        onMouseDown={() => {
+                                                            setQuery(s.title);
+                                                            setShowSuggestions(false);
+                                                        }}
+                                                        className="autocomplete-item"
+                                                    >
+                                                        {s.title}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="btn btn-primary search-bar-action"
+                                    >
+                                        {loading ? 'Ищем...' : 'Найти'}
+                                    </button>
+                                </div>
+                            </div>
                              {error && (
                                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
                                      <div className="text-red-600 font-semibold">Ошибка</div>
@@ -704,12 +721,26 @@ export const Search = () => {
                                  </div>
                              )}
 
-                             {results.length > 0 && (
-                                 <div>
-                                     <div className="flex items-center justify-between mb-6">
-                                         <h2 className="text-2xl font-bold text-slate-800">Результаты поиска</h2>
-                                         <span className="text-sm text-slate-600">Найдено: <span className="font-semibold text-slate-800">{results.length}</span></span>
-                                     </div>
+                            {results.length > 0 && (
+                                <div>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h2 className="text-2xl font-bold text-slate-800">Результаты поиска</h2>
+                                        <div className="sort-bar">
+                                            <label className="sort-label">
+                                                Сортировка
+                                                <select
+                                                    value={sortOrder}
+                                                    onChange={(e) => setSortOrder(e.target.value)}
+                                                    className="sort-select"
+                                                >
+                                                    <option value="NEWEST">Сначала новые</option>
+                                                    <option value="PRICE_ASC">Цена по возрастанию</option>
+                                                    <option value="PRICE_DESC">Цена по убыванию</option>
+                                                </select>
+                                            </label>
+                                            <span className="sort-count">Найдено: <span className="sort-count-strong">{results.length}</span></span>
+                                        </div>
+                                    </div>
 
                                      <div className="listings-grid">
                                          {results.map((listing) => {

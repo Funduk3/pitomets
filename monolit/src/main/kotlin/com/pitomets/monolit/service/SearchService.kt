@@ -4,6 +4,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient
 import co.elastic.clients.elasticsearch._types.FieldValue
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType
 import co.elastic.clients.elasticsearch.core.IndexResponse
+import com.pitomets.monolit.model.SearchSort
 import com.pitomets.monolit.model.dto.elastic.AutocompleteDoc
 import com.pitomets.monolit.model.dto.elastic.SearchListingDocument
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
@@ -17,7 +18,7 @@ import java.math.BigDecimal
 class SearchService(
     private val client: ElasticsearchClient
 ) {
-    @Suppress("ExplicitItLambdaParameter", "LongMethod")
+    @Suppress("ExplicitItLambdaParameter", "LongMethod", "CyclomaticComplexMethod")
     fun search(
         query: String,
         page: Int = 0,
@@ -29,7 +30,8 @@ class SearchService(
         types: List<String>? = null,
         breeds: List<String>? = null,
         genders: List<Gender>? = null,
-        ages: List<AgeEnum>? = null
+        ages: List<AgeEnum>? = null,
+        sort: SearchSort = SearchSort.NEWEST
     ): List<SearchListingsResponse> {
         val from = page * size
         val response = client.search(
@@ -37,6 +39,19 @@ class SearchService(
                 s.index(INDEX)
                     .from(from)
                     .size(size)
+                    .sort { sortBuilder ->
+                        when (sort) {
+                            SearchSort.PRICE_ASC -> sortBuilder.field {
+                                f -> f.field("price").order(co.elastic.clients.elasticsearch._types.SortOrder.Asc)
+                            }
+                            SearchSort.PRICE_DESC -> sortBuilder.field {
+                                f -> f.field("price").order(co.elastic.clients.elasticsearch._types.SortOrder.Desc)
+                            }
+                            SearchSort.NEWEST -> sortBuilder.field {
+                                f -> f.field("id").order(co.elastic.clients.elasticsearch._types.SortOrder.Desc)
+                            }
+                        }
+                    }
                     .query { q ->
                         q.bool { b ->
                             // search

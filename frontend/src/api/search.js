@@ -13,7 +13,8 @@ export const searchAPI = {
             types = null,
             breeds = null,
             genders = null,
-            ages = null
+            ages = null,
+            sort = null
         } = {}
     ) => {
         try {
@@ -31,6 +32,7 @@ export const searchAPI = {
             if (Array.isArray(breeds) && breeds.length) params.breeds = breeds.join(',');
             if (Array.isArray(genders) && genders.length) params.genders = genders.join(',');
             if (Array.isArray(ages) && ages.length) params.ages = ages.join(',');
+            if (sort) params.sort = sort;
 
             const response = await api.get('/search/listings', { params });
 

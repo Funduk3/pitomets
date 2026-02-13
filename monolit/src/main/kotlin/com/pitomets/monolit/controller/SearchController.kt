@@ -5,6 +5,7 @@ import com.pitomets.monolit.model.dto.response.SearchListingsResponse
 import com.pitomets.monolit.service.SearchService
 import com.pitomets.monolit.model.Gender
 import com.pitomets.monolit.model.AgeEnum
+import com.pitomets.monolit.model.SearchSort
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -30,6 +31,7 @@ class SearchController(
         @RequestParam("breeds", required = false) breeds: List<String>?,
         @RequestParam("genders", required = false) genders: List<Gender>?,
         @RequestParam("ages", required = false) ages: List<AgeEnum>?,
+        @RequestParam("sort", required = false, defaultValue = "NEWEST") sort: SearchSort = SearchSort.NEWEST,
     ): List<SearchListingsResponse> =
         searchService.search(
             query,
@@ -43,6 +45,7 @@ class SearchController(
             breeds,
             genders,
             ages,
+            sort,
         )
 
     @GetMapping("/listings/{id}/similar")
