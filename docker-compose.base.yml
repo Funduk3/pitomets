@@ -81,8 +81,13 @@ services:
     image: prom/prometheus:v3.9.1
     ports:
       - "9090:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=90d"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
     networks:
       - web
 
@@ -93,7 +98,8 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
-
+    volumes:
+      - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
     networks:
@@ -201,9 +207,12 @@ services:
     image: gcr.io/cadvisor/cadvisor:v0.55.1
     container_name: cadvisor
     restart: unless-stopped
+    command:
+      - "--port=4040"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
+      - /var/lib/docker:/var/lib/docker:ro
       - /sys:/sys:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
@@ -270,6 +279,7 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
       - ./loki-config.yaml:/etc/loki/local-config.yaml
+      - loki_data:/loki
     networks:
       - web
 
@@ -291,6 +301,9 @@ volumes:
   postgres_messenger_data:
   es_data:
   minio-data:
+  grafana_data:
+  prometheus_data:
+  loki_data:
 
 networks:
   web:
