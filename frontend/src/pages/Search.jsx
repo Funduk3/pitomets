@@ -27,7 +27,6 @@ export const Search = () => {
     const [metroStations, setMetroStations] = useState([]);
     const [metroId, setMetroId] = useState(null);
     const [metroLoading, setMetroLoading] = useState(false);
-    const metroRef = useRef(null);
     const cityDropdownRef = useRef(null);
     const queryDropdownRef = useRef(null);
     const rootRef = useRef(null);
@@ -360,10 +359,10 @@ export const Search = () => {
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" ref={rootRef}>
-                <form onSubmit={handleSearch} className="space-y-6 mb-8">
-                    <div className="bg-white rounded-lg shadow-sm p-6 border border-slate-200">
-                        <div className="flex gap-3 mb-6">
-                            <div className="flex-1 relative">
+                <form onSubmit={handleSearch} className="space-y-6">
+                    <div className="search-top">
+                        <div className="search-bar-row">
+                            <div className="search-bar-input">
                                 <input
                                     type="text"
                                     value={query}
@@ -378,7 +377,7 @@ export const Search = () => {
                                 />
 
                                 {showSuggestions && suggestions.length > 0 && (
-                                    <div ref={queryDropdownRef} className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-300 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+                                    <div ref={queryDropdownRef} className="autocomplete-dropdown">
                                         {suggestions.map((s, idx) => (
                                             <div
                                                 key={idx}
@@ -386,7 +385,7 @@ export const Search = () => {
                                                     setQuery(s.title);
                                                     setShowSuggestions(false);
                                                 }}
-                                                className="px-4 py-3 hover:bg-slate-100 cursor-pointer border-b border-slate-100 last:border-0 transition-colors"
+                                                className="autocomplete-item"
                                             >
                                                 {s.title}
                                             </div>
@@ -402,354 +401,358 @@ export const Search = () => {
                                 {loading ? 'Ищем...' : 'Найти'}
                             </button>
                         </div>
+                    </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                            <div className="relative">
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Город</label>
-                                <input
-                                    type="text"
-                                    placeholder="Выберите город"
-                                    value={cityQuery}
-                                    onChange={(e) => {
-                                        setCityQuery(e.target.value);
-                                        setSelectedCity(null);
-                                    }}
-                                    onFocus={() => citySuggestions.length && setShowCitySuggestions(true)}
-                                    onBlur={() => setShowCitySuggestions(false)}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                />
+                    <div className="search-layout">
+                        <aside className="search-sidebar">
+                            <div className="filters-card">
+                                 <div className="search-filters">
+                                     <div className="relative">
+                                         <label className="block text-sm font-medium text-slate-700 mb-2">Город</label>
+                                         <input
+                                             type="text"
+                                             placeholder="Выберите город"
+                                             value={cityQuery}
+                                             onChange={(e) => {
+                                                 setCityQuery(e.target.value);
+                                                 setSelectedCity(null);
+                                             }}
+                                             onFocus={() => citySuggestions.length && setShowCitySuggestions(true)}
+                                             onBlur={() => setShowCitySuggestions(false)}
+                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                         />
 
-                                {showCitySuggestions && citySuggestions.length > 0 && (
-                                    <div ref={cityDropdownRef} className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-                                        {citySuggestions.map(city => (
-                                            <div
-                                                key={city.id}
-                                                onMouseDown={() => {
-                                                    setSelectedCity(city);
-                                                    setCityQuery(city.title);
-                                                    setMetroQuery('');
-                                                    setMetroId(null);
-                                                    setMetroStations([]);
-                                                    setShowCitySuggestions(false);
-                                                }}
-                                                className="px-3 py-2 hover:bg-slate-100 cursor-pointer border-b border-slate-100 last:border-0 transition-colors text-sm"
-                                            >
-                                                {city.title}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {selectedCity?.hasMetro && (
-                                <div className="relative">
-                                    <label className="block text-sm font-medium text-slate-700 mb-2">Метро</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Выберите станцию"
-                                        value={metroQuery}
-                                        onChange={(e) => {
-                                            setMetroQuery(e.target.value);
-                                            setMetroId(null);
-                                        }}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
-
-                                    {metroLoading && (
-                                        <div className="absolute right-3 top-9 text-xs text-slate-400">
-                                            ...
-                                        </div>
-                                    )}
-
-                                    {metroStations.length > 0 && (
-                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-                                            {metroStations.map(s => (
-                                                <div
-                                                    key={s.id}
-                                                    onMouseDown={() => {
-                                                        setMetroQuery(s.title);
-                                                        setMetroId(s.id);
-                                                        setMetroStations([]);
-                                                    }}
-                                                    className="px-3 py-2 hover:bg-slate-100 cursor-pointer border-b border-slate-100 last:border-0 transition-colors text-sm flex items-center gap-2"
-                                                >
-                                                    {s.line?.color && (
-                                                        <span
-                                                            className="w-3 h-3 rounded-full flex-shrink-0"
-                                                            style={{backgroundColor: s.line.color}}
-                                                        />
-                                                    )}
-                                                    <div>
-                                                        <div>{s.title}</div>
-                                                        <div className="text-xs text-slate-500">{s.line?.title}</div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Цена от</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="мин"
-                                    value={priceFromInput}
-                                    onChange={(e) => setPriceFromInput(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Цена до</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="макс"
-                                    value={priceToInput}
-                                    onChange={(e) => setPriceToInput(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                />
-                            </div>
-
-                        </div>
-
-                        <div className="flex flex-wrap gap-6 justify-between">
-                            <div className="min-w-[220px]">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowTypeBar(!showTypeBar)}
-                                    className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors"
-                                >
-                                    Типы животных {selectedTypeIds.length > 0 && <span className="ml-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-semibold">{selectedTypeIds.length}</span>}
-                                    <span className={`transition-transform ${showTypeBar ? 'rotate-180' : ''}`}>▾</span>
-                                </button>
-                                {showTypeBar && (
-                                    <div className="mt-3 p-4 bg-slate-50 rounded-lg border border-slate-200 flex flex-wrap gap-3">
-                                        {animalTypesLoading && <div className="text-sm text-slate-500">Загрузка типов...</div>}
-                                        {!animalTypesLoading && animalTypes.length === 0 && (
-                                            <div className="text-sm text-slate-500">Типы не найдены</div>
-                                        )}
-                                        {animalTypes.map((type) => (
-                                            <label key={type.id} className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedTypeIds.includes(type.id)}
-                                                    onChange={() => toggleType(type.id)}
-                                                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                                />
-                                                <span className="text-sm text-slate-700">{type.title}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {activeBreedType && (
-                                <div className="min-w-[260px]">
-                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                        Породы ({activeBreedType.title})
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            value={breedQuery}
-                                            onChange={(e) => setBreedQuery(e.target.value)}
-                                            onFocus={() => breedSuggestions.length && setShowBreedSuggestions(true)}
-                                            onBlur={() => setShowBreedSuggestions(false)}
-                                            placeholder="Введите породу"
-                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        />
-                                        {showBreedSuggestions && breedSuggestions.length > 0 && (
-                                            <div
-                                                ref={breedDropdownRef}
-                                                className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto"
-                                            >
-                                                {breedSuggestions.map((breed) => (
+                                        {showCitySuggestions && citySuggestions.length > 0 && (
+                                            <div ref={cityDropdownRef} className="autocomplete-dropdown">
+                                                {citySuggestions.map(city => (
                                                     <div
-                                                        key={breed.id}
-                                                        onMouseDown={() => addBreed(breed.title)}
-                                                        className="px-3 py-2 hover:bg-slate-100 cursor-pointer border-b border-slate-100 last:border-0 transition-colors text-sm"
+                                                        key={city.id}
+                                                         onMouseDown={() => {
+                                                             setSelectedCity(city);
+                                                             setCityQuery(city.title);
+                                                             setMetroQuery('');
+                                                             setMetroId(null);
+                                                             setMetroStations([]);
+                                                             setShowCitySuggestions(false);
+                                                         }}
+                                                        className="autocomplete-item"
                                                     >
-                                                        {breed.title}
+                                                        {city.title}
                                                     </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                    {selectedBreeds.length > 0 && (
-                                        <div className="mt-3 flex flex-wrap gap-2">
-                                            {selectedBreeds.map((breed) => (
-                                                <span
-                                                    key={breed}
-                                                    className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium"
-                                                >
-                                                    {breed}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeBreed(breed)}
-                                                        className="hover:text-blue-900 transition-colors"
+                                                 ))}
+                                             </div>
+                                         )}
+                                     </div>
+
+                                     {selectedCity?.hasMetro && (
+                                         <div className="relative">
+                                             <label className="block text-sm font-medium text-slate-700 mb-2">Метро</label>
+                                             <input
+                                                 type="text"
+                                                 placeholder="Выберите станцию"
+                                                 value={metroQuery}
+                                                 onChange={(e) => {
+                                                     setMetroQuery(e.target.value);
+                                                     setMetroId(null);
+                                                 }}
+                                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                             />
+
+                                             {metroLoading && (
+                                                 <div className="absolute right-3 top-9 text-xs text-slate-400">
+                                                     ...
+                                                 </div>
+                                             )}
+
+                                            {metroStations.length > 0 && (
+                                                <div className="autocomplete-dropdown">
+                                                    {metroStations.map(s => (
+                                                        <div
+                                                            key={s.id}
+                                                            onMouseDown={() => {
+                                                                setMetroQuery(s.title);
+                                                                setMetroId(s.id);
+                                                                setMetroStations([]);
+                                                            }}
+                                                            className="autocomplete-item autocomplete-metro"
+                                                        >
+                                                            {s.line?.color && (
+                                                                <span
+                                                                    className="metro-dot"
+                                                                    style={{backgroundColor: s.line.color}}
+                                                                />
+                                                            )}
+                                                            <div>
+                                                                <div className="metro-title">{s.title}</div>
+                                                                <div className="metro-line">{s.line?.title}</div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                 </div>
+                                             )}
+                                         </div>
+                                     )}
+
+                                     <div>
+                                         <label className="block text-sm font-medium text-slate-700 mb-2">Цена от</label>
+                                         <input
+                                             type="number"
+                                             step="0.01"
+                                             placeholder="мин"
+                                             value={priceFromInput}
+                                             onChange={(e) => setPriceFromInput(e.target.value)}
+                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                         />
+                                     </div>
+
+                                     <div>
+                                         <label className="block text-sm font-medium text-slate-700 mb-2">Цена до</label>
+                                         <input
+                                             type="number"
+                                             step="0.01"
+                                             placeholder="макс"
+                                             value={priceToInput}
+                                             onChange={(e) => setPriceToInput(e.target.value)}
+                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                         />
+                                     </div>
+
+                                    <div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowTypeBar(!showTypeBar)}
+                                            className="filter-toggle"
+                                        >
+                                            Типы животных {selectedTypeIds.length > 0 && <span className="ml-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-semibold">{selectedTypeIds.length}</span>}
+                                            <span className={`transition-transform ${showTypeBar ? 'rotate-180' : ''}`}>▾</span>
+                                        </button>
+                                        {showTypeBar && (
+                                            <div className="filter-panel">
+                                                {animalTypesLoading && <div className="text-sm text-slate-500">Загрузка типов...</div>}
+                                                {!animalTypesLoading && animalTypes.length === 0 && (
+                                                    <div className="text-sm text-slate-500">Типы не найдены</div>
+                                                )}
+                                                 {animalTypes.map((type) => (
+                                                     <label key={type.id} className="flex items-center gap-2 cursor-pointer">
+                                                         <input
+                                                             type="checkbox"
+                                                             checked={selectedTypeIds.includes(type.id)}
+                                                             onChange={() => toggleType(type.id)}
+                                                             className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                         />
+                                                         <span className="text-sm text-slate-700">{type.title}</span>
+                                                     </label>
+                                                 ))}
+                                             </div>
+                                         )}
+                                     </div>
+
+                                     {activeBreedType && (
+                                         <div>
+                                             <label className="block text-sm font-medium text-slate-700 mb-2">
+                                                 Породы ({activeBreedType.title})
+                                             </label>
+                                             <div className="relative">
+                                                 <input
+                                                     type="text"
+                                                     value={breedQuery}
+                                                     onChange={(e) => setBreedQuery(e.target.value)}
+                                                     onFocus={() => breedSuggestions.length && setShowBreedSuggestions(true)}
+                                                     onBlur={() => setShowBreedSuggestions(false)}
+                                                     placeholder="Введите породу"
+                                                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                 />
+                                                {showBreedSuggestions && breedSuggestions.length > 0 && (
+                                                    <div
+                                                        ref={breedDropdownRef}
+                                                        className="autocomplete-dropdown"
                                                     >
-                                                        ×
-                                                    </button>
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                                                        {breedSuggestions.map((breed) => (
+                                                            <div
+                                                                key={breed.id}
+                                                                onMouseDown={() => addBreed(breed.title)}
+                                                                className="autocomplete-item"
+                                                            >
+                                                                {breed.title}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                             </div>
+                                             {selectedBreeds.length > 0 && (
+                                                 <div className="mt-3 flex flex-wrap gap-2">
+                                                     {selectedBreeds.map((breed) => (
+                                                         <span
+                                                             key={breed}
+                                                             className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium"
+                                                         >
+                                                             {breed}
+                                                             <button
+                                                                 type="button"
+                                                                 onClick={() => removeBreed(breed)}
+                                                                 className="hover:text-blue-900 transition-colors"
+                                                             >
+                                                                 ×
+                                                             </button>
+                                                         </span>
+                                                     ))}
+                                                 </div>
+                                             )}
+                                         </div>
+                                     )}
 
-                            <div className="min-w-[220px]">
-                                <label className="block text-sm font-medium text-slate-700 mb-3">Пол</label>
-                                <div className="flex flex-wrap gap-3">
-                                    {Object.values(GenderEnum).filter((g) => g !== GenderEnum.ANY).map((gender) => (
-                                        <label key={gender} className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedGenders.includes(gender)}
-                                                onChange={() => toggleGender(gender)}
-                                                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                            />
-                                            <span className="text-sm text-slate-700">{GENDER_LABELS[gender] ?? gender}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
+                                     <div>
+                                         <label className="block text-sm font-medium text-slate-700 mb-3">Пол</label>
+                                         <div className="flex flex-wrap gap-3">
+                                             {Object.values(GenderEnum).filter((g) => g !== GenderEnum.ANY).map((gender) => (
+                                                 <label key={gender} className="flex items-center gap-2 cursor-pointer">
+                                                     <input
+                                                         type="checkbox"
+                                                         checked={selectedGenders.includes(gender)}
+                                                         onChange={() => toggleGender(gender)}
+                                                         className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                     />
+                                                     <span className="text-sm text-slate-700">{GENDER_LABELS[gender] ?? gender}</span>
+                                                 </label>
+                                             ))}
+                                         </div>
+                                     </div>
 
-                            <div className="min-w-[220px]">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAgeBar(!showAgeBar)}
-                                    className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors"
-                                >
-                                    Возраст {selectedAges.length > 0 && <span className="ml-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-semibold">{selectedAges.length}</span>}
-                                    <span className={`transition-transform ${showAgeBar ? 'rotate-180' : ''}`}>▾</span>
-                                </button>
-                                {showAgeBar && (
-                                    <div className="mt-3 p-4 bg-slate-50 rounded-lg border border-slate-200 flex flex-wrap gap-3">
-                                        {Object.entries(AgeEnum).map(([key, value]) => (
-                                            <label key={key} className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedAges.includes(key)}
-                                                    onChange={() => toggleAge(key)}
-                                                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                                />
-                                                <span className="text-sm text-slate-700">{AGE_LABELS[value] ?? key}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                                    <div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAgeBar(!showAgeBar)}
+                                            className="filter-toggle"
+                                        >
+                                            Возраст {selectedAges.length > 0 && <span className="ml-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-semibold">{selectedAges.length}</span>}
+                                            <span className={`transition-transform ${showAgeBar ? 'rotate-180' : ''}`}>▾</span>
+                                        </button>
+                                        {showAgeBar && (
+                                            <div className="filter-panel">
+                                                {Object.entries(AgeEnum).map(([key, value]) => (
+                                                    <label key={key} className="flex items-center gap-2 cursor-pointer">
+                                                         <input
+                                                             type="checkbox"
+                                                             checked={selectedAges.includes(key)}
+                                                             onChange={() => toggleAge(key)}
+                                                             className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                         />
+                                                         <span className="text-sm text-slate-700">{AGE_LABELS[value] ?? key}</span>
+                                                     </label>
+                                                 ))}
+                                             </div>
+                                         )}
+                                     </div>
 
-                        {hasActiveFilters && (
-                            <div className="mt-6 pt-4 border-t border-slate-200 flex items-center gap-2">
-                                <span className="text-sm text-slate-600">Активные фильтры:</span>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setSelectedCity(null);
-                                        setCityQuery('');
-                                        setMetroQuery('');
-                                        setMetroId(null);
-                                        setPriceFromInput('');
-                                        setPriceToInput('');
-                                        setSelectedTypeIds([]);
-                                        setSelectedBreeds([]);
-                                        setSelectedGenders([]);
-                                        setSelectedAges([]);
-                                    }}
-                                    className="text-sm text-blue-600 hover:text-blue-700 font-medium underline"
-                                >
-                                    Очистить все
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                                     {hasActiveFilters && (
+                                         <div className="pt-2 border-t border-slate-200 flex items-center gap-2">
+                                             <span className="text-sm text-slate-600">Активные фильтры:</span>
+                                             <button
+                                                 type="button"
+                                                 onClick={() => {
+                                                     setSelectedCity(null);
+                                                     setCityQuery('');
+                                                     setMetroQuery('');
+                                                     setMetroId(null);
+                                                     setPriceFromInput('');
+                                                     setPriceToInput('');
+                                                     setSelectedTypeIds([]);
+                                                     setSelectedBreeds([]);
+                                                     setSelectedGenders([]);
+                                                     setSelectedAges([]);
+                                                 }}
+                                                 className="text-sm text-blue-600 hover:text-blue-700 font-medium underline"
+                                             >
+                                                 Очистить все
+                                             </button>
+                                         </div>
+                                     )}
+                                 </div>
+                             </div>
+                         </aside>
+
+                        <div className="search-results">
+                             {error && (
+                                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                                     <div className="text-red-600 font-semibold">Ошибка</div>
+                                     <div className="text-red-700">{error}</div>
+                                 </div>
+                             )}
+
+                             {hasSearched && loading && (
+                                 <div className="flex justify-center items-center py-12">
+                                     <div className="text-center">
+                                         <div className="text-blue-600 mx-auto mb-4">Загрузка...</div>
+                                         <p className="text-slate-600">Поиск в процессе...</p>
+                                     </div>
+                                 </div>
+                             )}
+
+                             {hasSearched && !loading && results.length === 0 && !error && (
+                                 <div className="text-center py-12">
+                                     <h3 className="text-xl font-semibold text-slate-700 mb-2">Ничего не найдено</h3>
+                                     <p className="text-slate-600">По запросу "{query}" результатов не найдено. Попробуйте другие параметры поиска.</p>
+                                 </div>
+                             )}
+
+                             {results.length > 0 && (
+                                 <div>
+                                     <div className="flex items-center justify-between mb-6">
+                                         <h2 className="text-2xl font-bold text-slate-800">Результаты поиска</h2>
+                                         <span className="text-sm text-slate-600">Найдено: <span className="font-semibold text-slate-800">{results.length}</span></span>
+                                     </div>
+
+                                     <div className="listings-grid">
+                                         {results.map((listing) => {
+                                             const listingPhotos = listingsPhotos[listing.id] || [];
+                                             const firstPhoto = listingPhotos[0];
+
+                                             return (
+                                                 <div key={listing.id} className="listing-card">
+                                                     {firstPhoto ? (
+                                                         <img
+                                                             src={resolveApiUrl(firstPhoto)}
+                                                             alt="Listing cover"
+                                                             className="listing-image"
+                                                         />
+                                                     ) : (
+                                                         <div className="listing-placeholder">
+                                                             Нет фото
+                                                         </div>
+                                                     )}
+                                                     <div className="listing-content">
+                                                         <h3>
+                                                             {listing.title || 'Без названия'}
+                                                         </h3>
+                                                         <p>
+                                                             {listing.description?.substring(0, 90)}
+                                                             {listing.description && listing.description.length > 90
+                                                                 ? '...'
+                                                                 : ''}
+                                                         </p>
+                                                         <p>
+                                                             <strong>Цена:</strong> <span className="tag-price">{listing.price} ₽</span>
+                                                         </p>
+                                                         <p>
+                                                             <strong>Город:</strong> {listing.cityTitle || '—'}
+                                                         </p>
+                                                         <Link
+                                                             to={`/listings/${listing.id}`}
+                                                             className="btn btn-secondary"
+                                                             style={{ display: 'inline-block', marginTop: '0.5rem', fontSize: '0.9rem' }}
+                                                         >
+                                                             Посмотреть
+                                                         </Link>
+                                                     </div>
+                                                 </div>
+                                             );
+                                         })}
+                                     </div>
+                                 </div>
+                             )}
+                         </div>
+                     </div>
                 </form>
-
-                {error && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-                        <div className="text-red-600 font-semibold">Ошибка</div>
-                        <div className="text-red-700">{error}</div>
-                    </div>
-                )}
-
-                {hasSearched && loading && (
-                    <div className="flex justify-center items-center py-12">
-                        <div className="text-center">
-                            <div className="text-blue-600 mx-auto mb-4">Загрузка...</div>
-                            <p className="text-slate-600">Поиск в процессе...</p>
-                        </div>
-                    </div>
-                )}
-
-                {hasSearched && !loading && results.length === 0 && !error && (
-                    <div className="text-center py-12">
-                        <div className="text-6xl mb-4">🔍</div>
-                        <h3 className="text-xl font-semibold text-slate-700 mb-2">Ничего не найдено</h3>
-                        <p className="text-slate-600">По запросу "{query}" результатов не найдено. Попробуйте другие параметры поиска.</p>
-                    </div>
-                )}
-
-                {results.length > 0 && (
-                    <div>
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-slate-800">Результаты поиска</h2>
-                            <span className="text-sm text-slate-600">Найдено: <span className="font-semibold text-slate-800">{results.length}</span></span>
-                        </div>
-
-                        <div className="listings-grid">
-                            {results.map((listing) => {
-                                const listingPhotos = listingsPhotos[listing.id] || [];
-                                const firstPhoto = listingPhotos[0];
-
-                                return (
-                                    <div key={listing.id} className="listing-card">
-                                        {firstPhoto ? (
-                                            <img
-                                                src={resolveApiUrl(firstPhoto)}
-                                                alt="Listing cover"
-                                                className="listing-image"
-                                            />
-                                        ) : (
-                                            <div className="listing-placeholder">
-                                                Нет фото
-                                            </div>
-                                        )}
-                                        <div className="listing-content">
-                                            <h3>
-                                                {listing.title || 'Без названия'}
-                                            </h3>
-                                            <p>
-                                                {listing.description?.substring(0, 90)}
-                                                {listing.description && listing.description.length > 90
-                                                    ? '...'
-                                                    : ''}
-                                            </p>
-                                            <p>
-                                                <strong>Цена:</strong> <span className="tag-price">{listing.price} ₽</span>
-                                            </p>
-                                            <p>
-                                                <strong>Город:</strong> {listing.cityTitle || '—'}
-                                            </p>
-                                            <Link
-                                                to={`/listings/${listing.id}`}
-                                                className="btn btn-secondary"
-                                                style={{ display: 'inline-block', marginTop: '0.5rem', fontSize: '0.9rem' }}
-                                            >
-                                                Посмотреть
-                                            </Link>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     );
