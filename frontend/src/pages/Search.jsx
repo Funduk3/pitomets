@@ -42,6 +42,9 @@ export const Search = () => {
     const [selectedGenders, setSelectedGenders] = useState([]);
     const [selectedAges, setSelectedAges] = useState([]);
     const [sortOrder, setSortOrder] = useState('NEWEST');
+    const [hasMore, setHasMore] = useState(false);
+    const [searchAfterToken, setSearchAfterToken] = useState(null);
+    const PAGE_SIZE = 10;
     const [showTypeBar, setShowTypeBar] = useState(false);
     const [showAgeBar, setShowAgeBar] = useState(false);
     const breedDropdownRef = useRef(null);
@@ -187,7 +190,7 @@ export const Search = () => {
 
     useEffect(() => {
         if (hasSearched) {
-            handleSearch();
+            handleSearch(null, undefined, false);
         }
     }, [selectedCity, metroId, priceFromInput, priceToInput, selectedTypeIds, selectedBreeds, selectedGenders, selectedAges, sortOrder]);
 
@@ -239,11 +242,11 @@ export const Search = () => {
         if (q && q !== query) {
             setQuery(q);
             setHasSearched(true);
-            handleSearch(null, q);
+            handleSearch(null, q, false);
         }
     }, [location.search]);
 
-    const handleSearch = async (e, overrideQuery) => {
+    const handleSearch = async (e, overrideQuery, append = false) => {
         if (e?.preventDefault) e.preventDefault();
 
         const searchText = (overrideQuery ?? query).trim();
@@ -270,6 +273,9 @@ export const Search = () => {
             return;
         }
 
+        if (!append) {
+            setSearchAfterToken(null);
+        }
         setHasSearched(true);
         setLoading(true);
         setError('');
@@ -278,10 +284,10 @@ export const Search = () => {
             const metroParam = (selectedCity?.hasMetro && metroId != null) ? metroId : null;
             const typesParam = selectedTypes.map((t) => t.title);
 
-            const data = await searchAPI.searchListings(
+            const response = await searchAPI.searchListings(
                 searchText,
                 0,
-                10,
+                PAGE_SIZE,
                 {
                     city: selectedCity?.id ?? null,
                     metro: metroParam,
@@ -291,13 +297,17 @@ export const Search = () => {
                     breeds: selectedBreeds.length ? selectedBreeds : null,
                     genders: selectedGenders.length ? selectedGenders : null,
                     ages: selectedAges.length ? selectedAges : null,
-                    sort: sortOrder
+                    sort: sortOrder,
+                    searchAfter: append ? searchAfterToken : null
                 }
             );
 
-            if (Array.isArray(data)) {
-                setResults(data);
-                const photosPromises = data.map(async (listing) => {
+            const items = Array.isArray(response?.items) ? response.items : [];
+            if (items.length >= 0) {
+                setResults((prev) => (append ? [...prev, ...items] : items));
+                setHasMore(items.length === PAGE_SIZE && Array.isArray(response?.nextSearchAfter));
+                setSearchAfterToken(response?.nextSearchAfter ?? null);
+                const photosPromises = items.map(async (listing) => {
                     try {
                         const photosData = await photosAPI.getListingPhotos(listing.id);
                         return {listingId: listing.id, photos: photosData.photos || []};
@@ -308,21 +318,23 @@ export const Search = () => {
                 });
 
                 const photosResults = await Promise.all(photosPromises);
-                const photosMap = {};
+                const photosMap = append ? { ...listingsPhotos } : {};
                 photosResults.forEach(({listingId, photos}) => {
                     photosMap[listingId] = photos;
                 });
                 setListingsPhotos(photosMap);
             } else {
-                console.error('Unexpected response format:', data);
+                console.error('Unexpected response format:', response);
                 setError('Invalid response format from server');
-                setResults([]);
+                if (!append) setResults([]);
+                setHasMore(false);
             }
         } catch (err) {
             console.error('Search error:', err);
             const errorMessage = err.response?.data?.message || err.message || 'Failed to search listings';
             setError(errorMessage);
-            setResults([]);
+            if (!append) setResults([]);
+            setHasMore(false);
         } finally {
             setLoading(false);
         }
@@ -378,7 +390,7 @@ export const Search = () => {
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" ref={rootRef}>
-                <form onSubmit={handleSearch} className="space-y-6">
+                <form onSubmit={(e) => handleSearch(e, undefined, false)} className="space-y-6">
                     <div className="search-layout">
                         <aside className="search-sidebar">
                             <div className="filters-card">
@@ -738,14 +750,13 @@ export const Search = () => {
                                                     <option value="PRICE_DESC">Цена по убыванию</option>
                                                 </select>
                                             </label>
-                                            <span className="sort-count">Найдено: <span className="sort-count-strong">{results.length}</span></span>
                                         </div>
                                     </div>
 
-                                     <div className="listings-grid">
-                                         {results.map((listing) => {
-                                             const listingPhotos = listingsPhotos[listing.id] || [];
-                                             const firstPhoto = listingPhotos[0];
+                                    <div className="listings-grid">
+                                        {results.map((listing) => {
+                                            const listingPhotos = listingsPhotos[listing.id] || [];
+                                            const firstPhoto = listingPhotos[0];
 
                                              return (
                                                  <div key={listing.id} className="listing-card">
@@ -784,14 +795,26 @@ export const Search = () => {
                                                              Посмотреть
                                                          </Link>
                                                      </div>
-                                                 </div>
-                                             );
-                                         })}
-                                     </div>
-                                 </div>
-                             )}
-                         </div>
-                     </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    {hasMore && (
+                                        <div className="pager-controls">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleSearch(null, undefined, true)}
+                                                disabled={loading}
+                                                className="btn"
+                                            >
+                                                {loading ? 'Загрузка...' : 'Показать ещё'}
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </form>
             </div>
         </div>

@@ -1,11 +1,14 @@
 package com.pitomets.monolit.controller
 
 import com.pitomets.monolit.model.dto.elastic.AutocompleteDoc
+import com.pitomets.monolit.model.dto.response.SearchListingsPageResponse
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
 import com.pitomets.monolit.service.SearchService
 import com.pitomets.monolit.model.Gender
 import com.pitomets.monolit.model.AgeEnum
 import com.pitomets.monolit.model.SearchSort
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -18,6 +21,8 @@ import java.math.BigDecimal
 class SearchController(
     private val searchService: SearchService
 ) {
+    private val mapper = jacksonObjectMapper()
+
     @GetMapping("/listings")
     fun searchListings(
         @RequestParam("query") query: String,
@@ -32,7 +37,8 @@ class SearchController(
         @RequestParam("genders", required = false) genders: List<Gender>?,
         @RequestParam("ages", required = false) ages: List<AgeEnum>?,
         @RequestParam("sort", required = false, defaultValue = "NEWEST") sort: SearchSort = SearchSort.NEWEST,
-    ): List<SearchListingsResponse> =
+        @RequestParam("searchAfter", required = false) searchAfter: String?,
+    ): SearchListingsPageResponse =
         searchService.search(
             query,
             page,
@@ -46,6 +52,7 @@ class SearchController(
             genders,
             ages,
             sort,
+            searchAfter?.let { mapper.readValue<List<Any>>(it) },
         )
 
     @GetMapping("/listings/{id}/similar")

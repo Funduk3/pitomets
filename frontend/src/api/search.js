@@ -14,7 +14,8 @@ export const searchAPI = {
             breeds = null,
             genders = null,
             ages = null,
-            sort = null
+            sort = null,
+            searchAfter = null
         } = {}
     ) => {
         try {
@@ -33,11 +34,12 @@ export const searchAPI = {
             if (Array.isArray(genders) && genders.length) params.genders = genders.join(',');
             if (Array.isArray(ages) && ages.length) params.ages = ages.join(',');
             if (sort) params.sort = sort;
+            if (Array.isArray(searchAfter) && searchAfter.length) params.searchAfter = JSON.stringify(searchAfter);
 
             const response = await api.get('/search/listings', { params });
 
             console.log('Search API response:', response.data);
-            return response.data || [];
+            return response.data || { items: [], nextSearchAfter: null };
         } catch (error) {
             console.error('Search API error:', error);
             console.error('Error details:', {

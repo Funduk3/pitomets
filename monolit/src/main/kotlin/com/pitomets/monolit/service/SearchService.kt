@@ -10,6 +10,7 @@ import com.pitomets.monolit.model.dto.elastic.SearchListingDocument
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
 import com.pitomets.monolit.model.Gender
 import com.pitomets.monolit.model.AgeEnum
+import com.pitomets.monolit.model.dto.response.SearchListingsPageResponse
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
@@ -31,14 +32,19 @@ class SearchService(
         breeds: List<String>? = null,
         genders: List<Gender>? = null,
         ages: List<AgeEnum>? = null,
-        sort: SearchSort = SearchSort.NEWEST
-    ): List<SearchListingsResponse> {
+        sort: SearchSort = SearchSort.NEWEST,
+        searchAfter: List<Any>? = null
+    ): SearchListingsPageResponse {
         val from = page * size
         val response = client.search(
             { s ->
                 s.index(INDEX)
-                    .from(from)
                     .size(size)
+                    .apply {
+                        if (searchAfter.isNullOrEmpty()) {
+                            from(from)
+                        }
+                    }
                     .sort { sortBuilder ->
                         when (sort) {
                             SearchSort.PRICE_ASC -> sortBuilder.field {
@@ -49,6 +55,33 @@ class SearchService(
                             }
                             SearchSort.NEWEST -> sortBuilder.field {
                                 f -> f.field("id").order(co.elastic.clients.elasticsearch._types.SortOrder.Desc)
+                            }
+                        }
+                    }
+                    .apply {
+                        if (sort != SearchSort.NEWEST) {
+                            sort { sortBuilder ->
+                                sortBuilder.field {
+                                    f -> f.field("id").order(co.elastic.clients.elasticsearch._types.SortOrder.Desc)
+                                }
+                            }
+                        }
+                    }
+                    .apply {
+                        if (!searchAfter.isNullOrEmpty()) {
+                            val values = searchAfter.mapNotNull { value ->
+                                when (value) {
+                                    is Int -> FieldValue.of(value.toLong())
+                                    is Long -> FieldValue.of(value)
+                                    is Double -> FieldValue.of(value)
+                                    is Float -> FieldValue.of(value.toDouble())
+                                    is Boolean -> FieldValue.of(value)
+                                    is String -> FieldValue.of(value)
+                                    else -> null
+                                }
+                            }
+                            if (values.isNotEmpty()) {
+                                searchAfter(values)
                             }
                         }
                     }
@@ -149,7 +182,8 @@ class SearchService(
             SearchListingDocument::class.java
         )
 
-        return response.hits().hits()
+        val hits = response.hits().hits()
+        val items = hits
             .mapNotNull { it.source() }
             .map { doc ->
                 SearchListingsResponse(
@@ -160,6 +194,20 @@ class SearchService(
                     doc.cityTitle
                 )
             }
+        val nextSearchAfter = hits.lastOrNull()?.sort()?.mapNotNull { sv ->
+            when {
+                sv.isLong -> sv.longValue()
+                sv.isDouble -> sv.doubleValue()
+                sv.isBoolean -> sv.booleanValue()
+                sv.isString -> sv.stringValue()
+                else -> null
+            }
+        }
+
+        return SearchListingsPageResponse(
+            items = items,
+            nextSearchAfter = nextSearchAfter
+        )
     }
 
     fun indexListing(doc: SearchListingDocument): IndexResponse {
