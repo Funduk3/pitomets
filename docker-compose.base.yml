@@ -81,8 +81,13 @@ services:
     image: prom/prometheus:v3.9.1
     ports:
       - "9090:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=90d"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
     networks:
       - web
 
@@ -93,7 +98,8 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
-
+    volumes:
+      - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
     networks:
@@ -188,11 +194,116 @@ services:
     networks:
       - web
 
+  node_exporter:
+    image: prom/node-exporter:v1.10.1
+    container_name: node_exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    networks:
+      - web
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.55.1
+    container_name: cadvisor
+    restart: unless-stopped
+    command:
+      - "--port=4040"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /sys:/sys:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "4040:4040"
+    networks:
+      - web
+
+  redis_exporter:
+    image: oliver006/redis_exporter:v1.80.2
+    container_name: redis_exporter
+    restart: unless-stopped
+    command: [ "--redis.addr=redis:6379" ]
+    depends_on:
+      - redis
+    ports:
+      - "9121:9121"
+    networks:
+      - web
+
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:v0.19.0
+    container_name: postgres_exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://user:password@postgres:5432/pitomets?sslmode=disable"
+    depends_on:
+      - postgres
+    ports:
+      - "9187:9187"
+    networks:
+      - web
+
+  postgres_exporter_messenger:
+    image: prometheuscommunity/postgres-exporter:v0.19.0
+    container_name: postgres_exporter_messenger
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://user:password@postgres-messenger:5432/messenger?sslmode=disable"
+    depends_on:
+      - postgres-messenger
+    ports:
+      - "9188:9187"
+    networks:
+      - web
+
+  elasticsearch_exporter:
+    image: quay.io/prometheuscommunity/elasticsearch-exporter:v1.10.0
+    container_name: elasticsearch_exporter
+    restart: unless-stopped
+    environment:
+      - ES_URI=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    ports:
+      - "9114:9114"
+    networks:
+      - web
+
+  loki:
+    image: grafana/loki:3.6.5
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    networks:
+      - web
+
+  vector:
+    image: timberio/vector:0.53.0-debian
+    container_name: vector
+    depends_on:
+      - loki
+    volumes:
+      - ./vector.toml:/etc/vector/vector.toml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: ["-c", "/etc/vector/vector.toml"]
+    networks:
+      - web
+
 volumes:
   postgres_main_data:
   postgres_messenger_data:
   es_data:
   minio-data:
+  grafana_data:
+  prometheus_data:
+  loki_data:
 
 networks:
   web:

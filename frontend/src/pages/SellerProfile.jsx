@@ -75,16 +75,7 @@ export const SellerProfile = () => {
           <button
             type="submit"
             disabled={loading}
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              backgroundColor: '#3498db',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '1rem',
-              cursor: loading ? 'not-allowed' : 'pointer'
-            }}
+            className="btn btn-primary btn-block"
           >
             {loading ? 'Сохраняем...' : isUpdate ? 'Обновить профиль' : 'Создать профиль'}
           </button>
@@ -93,4 +84,3 @@ export const SellerProfile = () => {
     </ProtectedRoute>
   );
 };
-

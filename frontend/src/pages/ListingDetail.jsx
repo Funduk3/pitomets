@@ -21,6 +21,7 @@ export const ListingDetail = () => {
   const [error, setError] = useState('');
   const [isFavourite, setIsFavourite] = useState(false);
   const [sellerProfile, setSellerProfile] = useState(null);
+  const [lastResolvedProfile, setLastResolvedProfile] = useState(null);
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [similarListings, setSimilarListings] = useState([]);
   const [similarPhotos, setSimilarPhotos] = useState({});
@@ -55,6 +56,9 @@ export const ListingDetail = () => {
     try {
       const data = await listingsAPI.getListing(parseInt(id));
       console.log('Listing data:', data);
+      if (typeof window !== 'undefined' && window.__DEV_DEBUG) {
+        console.debug('DEBUG loadListing response:', data);
+      }
       setListing(data);
       setCityTitle(data.city?.title || '');
       if (data.metro) {
@@ -148,7 +152,14 @@ export const ListingDetail = () => {
     if (!listing?.sellerId) return;
     try {
       const profile = await sellerAPI.getSellerProfile(listing.sellerId);
+      if (typeof window !== 'undefined' && window.__DEV_DEBUG) {
+        console.debug('DEBUG loadSellerProfile: listing.sellerId=', listing.sellerId, ' -> sellerProfile=', profile);
+        try { console.debug('DEBUG currentUser:', JSON.parse(localStorage.getItem('user') || 'null')); } catch(_) {}
+      }
       setSellerProfile(profile);
+      if (typeof window !== 'undefined' && window.__DEV_DEBUG) {
+        setLastResolvedProfile(profile);
+      }
 
       if (profile.userId) {
         loadAvatar(profile.userId);
@@ -286,19 +297,25 @@ export const ListingDetail = () => {
               />
             )}
             <div style={{ flex: 1 }}>
-              <Link
-                to={`/seller/profile/view/${sellerProfile.id}`}
-                style={{ textDecoration: 'none', color: '#3498db', fontSize: '1.1rem', fontWeight: 'bold' }}
-              >
-                {sellerProfile.shopName}
-              </Link>
-              {sellerProfile.rating != null && (
-                <p className="small-muted" style={{ margin: '0.25rem 0 0 0' }}>
-                  Рейтинг: {sellerProfile.rating.toFixed(2)} / 5
-                  {sellerProfile.isVerified && ' ✓ Проверен'}
-                </p>
-              )}
-            </div>
+              {(() => {
+                const displayName = sellerProfile?.shopName || 'Продавец';
+                const profileLink = sellerProfile?.id
+                  ? `/seller/profile/view/${sellerProfile.id}`
+                  : `/user/profile/${listing.sellerId}`;
+
+                return (
+                  <Link to={profileLink} style={{ textDecoration: 'none', color: '#3498db', fontSize: '1.1rem', fontWeight: 'bold' }}>
+                    {displayName}
+                  </Link>
+                );
+              })()}
+               {sellerProfile.rating != null && (
+                 <p className="small-muted" style={{ margin: '0.25rem 0 0 0' }}>
+                   Рейтинг: {sellerProfile.rating.toFixed(2)} / 5
+                   {sellerProfile.isVerified && ' ✓ Проверен'}
+                 </p>
+               )}
+             </div>
           </div>
         </div>
       )}
@@ -358,7 +375,13 @@ export const ListingDetail = () => {
           {isAuthenticated() && user?.id === listing.sellerId && (
             <div className="link-actions">
               <Link to={`/listings/${id}/edit`} className="btn btn-secondary">Изменить объявление</Link>
+
               <Link to={`/listings/${id}/photos`} className="btn btn-ghost">Изменить фотографии</Link>
+
+              {/* allow owner to add own listing to favourites as well */}
+              <button onClick={handleToggleFavourite} className={isFavourite ? 'btn btn-ghost' : 'btn btn-secondary'}>
+                {isFavourite ? 'Удалить из избранных' : 'Добавить в избранное'}
+              </button>
             </div>
           )}
           {isAuthenticated() && user?.id !== listing.sellerId && (
