@@ -14,6 +14,7 @@ data class SearchListingDocument(
     @JsonProperty("breed") val breed: String? = null,
     @JsonProperty("gender") val gender: Gender? = null,
     @JsonProperty("ageEnum") val ageEnum: String? = null,
+    @JsonProperty("cityTitle") val cityTitle: String? = null,
     @JsonProperty("city") val city: Long,
     @JsonProperty("metro") val metro: Long? = null,
     @JsonProperty("price") val price: BigDecimal,

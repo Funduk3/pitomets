@@ -33,6 +33,7 @@ class ListingOutboxProcessor(
                             breed = event.breed,
                             gender = event.gender,
                             ageEnum = event.ageEnum,
+                            cityTitle = event.cityTitle,
                             city = event.city,
                             metro = event.metro,
                             price = event.price,

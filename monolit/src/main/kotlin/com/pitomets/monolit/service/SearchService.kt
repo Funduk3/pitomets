@@ -98,11 +98,20 @@ class SearchService(
                                 }
                             }
                             genders?.takeIf { it.isNotEmpty() }?.let { values ->
+                                val normalized = values
+                                    .flatMap { g ->
+                                        if (g == Gender.M || g == Gender.F) {
+                                            listOf(g, Gender.ANY)
+                                        } else {
+                                            listOf(g)
+                                        }
+                                    }
+                                    .distinct()
                                 b.filter { f ->
                                     f.terms { t ->
                                         t.field("gender")
                                         t.terms { tv ->
-                                            tv.value(values.map { v -> FieldValue.of(v.name) })
+                                            tv.value(normalized.map { v -> FieldValue.of(v.name) })
                                         }
                                     }
                                 }
@@ -131,7 +140,9 @@ class SearchService(
                 SearchListingsResponse(
                     doc.id,
                     doc.title,
-                    doc.description
+                    doc.description,
+                    doc.price,
+                    doc.cityTitle
                 )
             }
     }
@@ -171,7 +182,7 @@ class SearchService(
         }, SearchListingDocument::class.java)
         return response.hits().hits()
             .mapNotNull { it.source() }
-            .map { SearchListingsResponse(it.id, it.title, it.description) }
+            .map { SearchListingsResponse(it.id, it.title, it.description, it.price, it.cityTitle) }
     }
 
     fun autocomplete(query: String, size: Int): List<AutocompleteDoc> {

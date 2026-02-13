@@ -46,6 +46,9 @@ class ListingOutbox(
     @Column(name = "age_enum")
     val ageEnum: String? = null,
 
+    @Column(name = "city_title")
+    val cityTitle: String? = null,
+
     @Column(name = "city")
     val city: Long,
 
