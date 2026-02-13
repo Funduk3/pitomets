@@ -1,10 +1,13 @@
-import {useState, useEffect, useRef} from 'react';
+import {useState, useEffect, useMemo, useRef} from 'react';
 import {searchAPI} from '../api/search';
 import {photosAPI} from '../api/photos';
 import { resolveApiUrl } from '../api/axios';
 import {Link, useLocation} from 'react-router-dom';
 import { citiesAPI } from '../api/cities';
 import { metroAPI } from '../api/metro';
+import { animalAPI } from '../api/animal';
+import { GENDER_LABELS, GenderEnum } from '../util/gender';
+import { AGE_LABELS, AgeEnum } from '../util/age';
 
 export const Search = () => {
     const location = useLocation();
@@ -30,6 +33,17 @@ export const Search = () => {
     const rootRef = useRef(null);
     const [priceFromInput, setPriceFromInput] = useState('');
     const [priceToInput, setPriceToInput] = useState('');
+    const [animalTypes, setAnimalTypes] = useState([]);
+    const [animalTypesLoading, setAnimalTypesLoading] = useState(false);
+    const [selectedTypeIds, setSelectedTypeIds] = useState([]);
+    const [breedQuery, setBreedQuery] = useState('');
+    const [breedSuggestions, setBreedSuggestions] = useState([]);
+    const [showBreedSuggestions, setShowBreedSuggestions] = useState(false);
+    const [selectedBreeds, setSelectedBreeds] = useState([]);
+    const [selectedGenders, setSelectedGenders] = useState([]);
+    const [selectedAges, setSelectedAges] = useState([]);
+    const breedDropdownRef = useRef(null);
+    const lastBreedTypeIdRef = useRef(null);
 
     useEffect(() => {
         if (!query.trim()) {
@@ -56,6 +70,7 @@ export const Search = () => {
                 setShowSuggestions(false);
                 setShowCitySuggestions(false);
                 setMetroStations([]);
+                setShowBreedSuggestions(false);
             }
         };
 
@@ -66,6 +81,7 @@ export const Search = () => {
                 setShowSuggestions(false);
                 setShowCitySuggestions(false);
                 setMetroStations([]);
+                setShowBreedSuggestions(false);
             }
         };
 
@@ -75,6 +91,32 @@ export const Search = () => {
             document.removeEventListener('keydown', onKey);
             document.removeEventListener('mousedown', onClick);
         };
+    }, []);
+
+    const selectedTypes = useMemo(
+        () => animalTypes.filter((t) => selectedTypeIds.includes(t.id)),
+        [animalTypes, selectedTypeIds]
+    );
+
+    const activeBreedType = useMemo(() => {
+        if (selectedTypes.length !== 1) return null;
+        return selectedTypes[0]?.hasBreed ? selectedTypes[0] : null;
+    }, [selectedTypes]);
+
+    useEffect(() => {
+        const loadTypes = async () => {
+            try {
+                setAnimalTypesLoading(true);
+                const data = await animalAPI.getTypes();
+                setAnimalTypes(Array.isArray(data) ? data : []);
+            } catch (e) {
+                console.error('Animal types load error', e);
+                setAnimalTypes([]);
+            } finally {
+                setAnimalTypesLoading(false);
+            }
+        };
+        loadTypes();
     }, []);
 
     useEffect(() => {
@@ -139,7 +181,49 @@ export const Search = () => {
         if (hasSearched) {
             handleSearch();
         }
-    }, [selectedCity, metroId, priceFromInput, priceToInput]);
+    }, [selectedCity, metroId, priceFromInput, priceToInput, selectedTypeIds, selectedBreeds, selectedGenders, selectedAges]);
+
+    useEffect(() => {
+        const nextId = activeBreedType?.id ?? null;
+        if (lastBreedTypeIdRef.current !== nextId) {
+            setSelectedBreeds([]);
+            setBreedQuery('');
+            setBreedSuggestions([]);
+            setShowBreedSuggestions(false);
+            lastBreedTypeIdRef.current = nextId;
+        }
+    }, [activeBreedType]);
+
+    useEffect(() => {
+        if (!activeBreedType) {
+            setBreedQuery('');
+            setBreedSuggestions([]);
+            setShowBreedSuggestions(false);
+            setSelectedBreeds([]);
+            return;
+        }
+        if (breedQuery.length < 2) {
+            setBreedSuggestions([]);
+            setShowBreedSuggestions(false);
+            return;
+        }
+
+        const timeout = setTimeout(async () => {
+            try {
+                const data = await animalAPI.searchBreeds(
+                    breedQuery,
+                    activeBreedType.id
+                );
+                setBreedSuggestions(Array.isArray(data) ? data : []);
+                setShowBreedSuggestions(true);
+            } catch (e) {
+                console.error('Breed autocomplete error', e);
+                setBreedSuggestions([]);
+            }
+        }, 300);
+
+        return () => clearTimeout(timeout);
+    }, [breedQuery, activeBreedType]);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -187,6 +271,7 @@ export const Search = () => {
 
         try {
             const metroParam = (selectedCity?.hasMetro && metroId != null) ? metroId : null;
+            const typesParam = selectedTypes.map((t) => t.title);
 
             const data = await searchAPI.searchListings(
                 searchText,
@@ -196,7 +281,11 @@ export const Search = () => {
                     city: selectedCity?.id ?? null,
                     metro: metroParam,
                     priceFrom: pfParsed !== null ? String(pfParsed) : null,
-                    priceTo: ptParsed !== null ? String(ptParsed) : null
+                    priceTo: ptParsed !== null ? String(ptParsed) : null,
+                    types: typesParam.length ? typesParam : null,
+                    breeds: selectedBreeds.length ? selectedBreeds : null,
+                    genders: selectedGenders.length ? selectedGenders : null,
+                    ages: selectedAges.length ? selectedAges : null
                 }
             );
 
@@ -234,10 +323,44 @@ export const Search = () => {
         }
     };
 
+    const toggleType = (id) => {
+        setSelectedTypeIds((prev) =>
+            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+        );
+    };
+
+    const toggleGender = (value) => {
+        setSelectedGenders((prev) =>
+            prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]
+        );
+    };
+
+    const toggleAge = (value) => {
+        setSelectedAges((prev) =>
+            prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]
+        );
+    };
+
+    const addBreed = (title) => {
+        setSelectedBreeds((prev) => (prev.includes(title) ? prev : [...prev, title]));
+        setBreedQuery('');
+        setBreedSuggestions([]);
+        setShowBreedSuggestions(false);
+    };
+
+    const removeBreed = (title) => {
+        setSelectedBreeds((prev) => prev.filter((item) => item !== title));
+    };
+
     return (
         <div>
             <h2>Поиск по объявлениям</h2>
-            <form onSubmit={handleSearch} className="flex-column-gap" style={{marginBottom: '2rem', display: 'flex', gap: '1rem'}} ref={rootRef}>
+            <form
+                onSubmit={handleSearch}
+                className="flex-column-gap"
+                style={{marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start'}}
+                ref={rootRef}
+            >
                 <div style={{ position: 'relative', width: '220px' }}>
                     <input
                         type="text"
@@ -361,6 +484,121 @@ export const Search = () => {
                         className="form-input"
                         style={{ width: '110px' }}
                     />
+                </div>
+
+                <div style={{ minWidth: 240 }}>
+                    <div className="small-muted" style={{ marginBottom: 6 }}>Тип животного</div>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        {animalTypesLoading && <div className="small-muted">Загрузка типов...</div>}
+                        {!animalTypesLoading && animalTypes.length === 0 && (
+                            <div className="small-muted">Типы не найдены</div>
+                        )}
+                        {animalTypes.map((type) => (
+                            <label key={type.id} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={selectedTypeIds.includes(type.id)}
+                                    onChange={() => toggleType(type.id)}
+                                />
+                                <span>{type.title}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
+                {activeBreedType && (
+                    <div style={{ position: 'relative', width: '240px' }}>
+                        <div className="small-muted" style={{ marginBottom: 6 }}>
+                            Породы ({activeBreedType.title})
+                        </div>
+                        <input
+                            type="text"
+                            value={breedQuery}
+                            onChange={(e) => setBreedQuery(e.target.value)}
+                            onFocus={() => breedSuggestions.length && setShowBreedSuggestions(true)}
+                            onBlur={() => setShowBreedSuggestions(false)}
+                            placeholder="Начните вводить породу"
+                            className="form-input"
+                            style={{ width: '100%' }}
+                        />
+                        {showBreedSuggestions && breedSuggestions.length > 0 && (
+                            <div
+                                ref={breedDropdownRef}
+                                className="autocomplete-dropdown"
+                                style={{ position: 'absolute' }}
+                            >
+                                {breedSuggestions.map((breed) => (
+                                    <div
+                                        key={breed.id}
+                                        onMouseDown={() => addBreed(breed.title)}
+                                        style={{ padding: '0.5rem', cursor: 'pointer' }}
+                                    >
+                                        {breed.title}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {selectedBreeds.length > 0 && (
+                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                                {selectedBreeds.map((breed) => (
+                                    <span
+                                        key={breed}
+                                        style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 6,
+                                            padding: '4px 8px',
+                                            borderRadius: 12,
+                                            background: '#f0f0f0',
+                                            fontSize: 12
+                                        }}
+                                    >
+                                        {breed}
+                                        <button
+                                            type="button"
+                                            onClick={() => removeBreed(breed)}
+                                            className="btn"
+                                            style={{ padding: '0 6px', lineHeight: 1 }}
+                                        >
+                                            ✕
+                                        </button>
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                <div style={{ minWidth: 220 }}>
+                    <div className="small-muted" style={{ marginBottom: 6 }}>Пол</div>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        {Object.values(GenderEnum).map((gender) => (
+                            <label key={gender} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={selectedGenders.includes(gender)}
+                                    onChange={() => toggleGender(gender)}
+                                />
+                                <span>{GENDER_LABELS[gender] ?? gender}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
+                <div style={{ minWidth: 240 }}>
+                    <div className="small-muted" style={{ marginBottom: 6 }}>Возраст</div>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        {Object.entries(AgeEnum).map(([key, value]) => (
+                            <label key={key} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={selectedAges.includes(key)}
+                                    onChange={() => toggleAge(key)}
+                                />
+                                <span>{AGE_LABELS[value] ?? key}</span>
+                            </label>
+                        ))}
+                    </div>
                 </div>
 
                 <div style={{position: "relative", flex: 1}}>

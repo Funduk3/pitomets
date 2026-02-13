@@ -32,6 +32,18 @@ class ElasticConfig {
                             m.properties("description") { p ->
                                 p.text { t -> t.analyzer("russian") }
                             }
+                            m.properties("species") { p ->
+                                p.keyword { k -> k }
+                            }
+                            m.properties("breed") { p ->
+                                p.keyword { k -> k }
+                            }
+                            m.properties("gender") { p ->
+                                p.keyword { k -> k }
+                            }
+                            m.properties("ageEnum") { p ->
+                                p.keyword { k -> k }
+                            }
                         }
                 }
             }

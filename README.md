@@ -30,7 +30,7 @@ docker buildx build \
 
 Дропнуть всё
 ```
-docker stop $(docker ps -aq) docker rm $(docker ps -aq) docker volume rm $(docker volume ls -q)
+docker stop $(docker ps -aq) 2>/dev/null && docker rm $(docker ps -aq) 2>/dev/null && docker volume rm $(docker volume ls -q) 2>/dev/null
 ```
 
 Дашборды графаны

@@ -5,7 +5,16 @@ export const searchAPI = {
         query,
         page = 0,
         size = 10,
-        { city = null, metro = null, priceFrom = null, priceTo = null } = {}
+        {
+            city = null,
+            metro = null,
+            priceFrom = null,
+            priceTo = null,
+            types = null,
+            breeds = null,
+            genders = null,
+            ages = null
+        } = {}
     ) => {
         try {
             const params = {
@@ -18,6 +27,10 @@ export const searchAPI = {
             if (metro !== null) params.metro = metro;
             if (priceFrom !== null) params.priceFrom = priceFrom;
             if (priceTo !== null) params.priceTo = priceTo;
+            if (Array.isArray(types) && types.length) params.types = types.join(',');
+            if (Array.isArray(breeds) && breeds.length) params.breeds = breeds.join(',');
+            if (Array.isArray(genders) && genders.length) params.genders = genders.join(',');
+            if (Array.isArray(ages) && ages.length) params.ages = ages.join(',');
 
             const response = await api.get('/search/listings', { params });
 

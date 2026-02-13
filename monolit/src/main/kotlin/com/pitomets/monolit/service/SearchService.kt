@@ -1,11 +1,14 @@
 package com.pitomets.monolit.service
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient
+import co.elastic.clients.elasticsearch._types.FieldValue
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType
 import co.elastic.clients.elasticsearch.core.IndexResponse
 import com.pitomets.monolit.model.dto.elastic.AutocompleteDoc
 import com.pitomets.monolit.model.dto.elastic.SearchListingDocument
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
+import com.pitomets.monolit.model.Gender
+import com.pitomets.monolit.model.AgeEnum
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
@@ -22,7 +25,11 @@ class SearchService(
         cityId: Long? = null,
         metroId: Long? = null,
         priceFrom: BigDecimal? = null,
-        priceTo: BigDecimal? = null
+        priceTo: BigDecimal? = null,
+        types: List<String>? = null,
+        breeds: List<String>? = null,
+        genders: List<Gender>? = null,
+        ages: List<AgeEnum>? = null
     ): List<SearchListingsResponse> {
         val from = page * size
         val response = client.search(
@@ -67,6 +74,46 @@ class SearchService(
                                             n
                                         }
                                         rq
+                                    }
+                                }
+                            }
+                            types?.takeIf { it.isNotEmpty() }?.let { values ->
+                                b.filter { f ->
+                                    f.terms { t ->
+                                        t.field("species")
+                                        t.terms { tv ->
+                                            tv.value(values.map { v -> FieldValue.of(v) })
+                                        }
+                                    }
+                                }
+                            }
+                            breeds?.takeIf { it.isNotEmpty() }?.let { values ->
+                                b.filter { f ->
+                                    f.terms { t ->
+                                        t.field("breed")
+                                        t.terms { tv ->
+                                            tv.value(values.map { v -> FieldValue.of(v) })
+                                        }
+                                    }
+                                }
+                            }
+                            genders?.takeIf { it.isNotEmpty() }?.let { values ->
+                                b.filter { f ->
+                                    f.terms { t ->
+                                        t.field("gender")
+                                        t.terms { tv ->
+                                            tv.value(values.map { v -> FieldValue.of(v.name) })
+                                        }
+                                    }
+                                }
+                            }
+                            ages?.takeIf { it.isNotEmpty() }?.let { values ->
+                                b.filter { f ->
+                                    f.terms { t ->
+                                        t.field("ageEnum")
+                                        t.terms { tv ->
+                                            tv.value(values.map { v -> FieldValue.of(v.name) })
+                                        }
                                     }
                                 }
                             }

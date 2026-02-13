@@ -3,6 +3,8 @@ package com.pitomets.monolit.controller
 import com.pitomets.monolit.model.dto.elastic.AutocompleteDoc
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
 import com.pitomets.monolit.service.SearchService
+import com.pitomets.monolit.model.Gender
+import com.pitomets.monolit.model.AgeEnum
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -24,6 +26,10 @@ class SearchController(
         @RequestParam("city", required = false) city: Long?,
         @RequestParam("priceFrom", required = false) priceFrom: BigDecimal?,
         @RequestParam("priceTo", required = false) priceTo: BigDecimal?,
+        @RequestParam("types", required = false) types: List<String>?,
+        @RequestParam("breeds", required = false) breeds: List<String>?,
+        @RequestParam("genders", required = false) genders: List<Gender>?,
+        @RequestParam("ages", required = false) ages: List<AgeEnum>?,
     ): List<SearchListingsResponse> =
         searchService.search(
             query,
@@ -33,6 +39,10 @@ class SearchController(
             metro,
             priceFrom,
             priceTo,
+            types,
+            breeds,
+            genders,
+            ages,
         )
 
     @GetMapping("/listings/{id}/similar")
