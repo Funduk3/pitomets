@@ -347,7 +347,16 @@ export const Search = () => {
         setSelectedBreeds((prev) => prev.filter((item) => item !== title));
     };
 
-    const hasActiveFilters = selectedCity || metroId || priceFromInput || priceToInput || selectedTypeIds.length || selectedBreeds.length || selectedGenders.length || selectedAges.length;
+    const hasActiveFilters = Boolean(
+        selectedCity ||
+        metroId ||
+        priceFromInput ||
+        priceToInput ||
+        selectedTypeIds.length ||
+        selectedBreeds.length ||
+        selectedGenders.length ||
+        selectedAges.length
+    );
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -362,7 +371,7 @@ export const Search = () => {
                 <form onSubmit={handleSearch} className="space-y-6">
                     <div className="search-top">
                         <div className="search-bar-row">
-                            <div className="search-bar-input">
+                            <div className="search-bar-input autocomplete-root">
                                 <input
                                     type="text"
                                     value={query}
@@ -523,7 +532,7 @@ export const Search = () => {
                                             onClick={() => setShowTypeBar(!showTypeBar)}
                                             className="filter-toggle"
                                         >
-                                            Типы животных {selectedTypeIds.length > 0 && <span className="ml-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-semibold">{selectedTypeIds.length}</span>}
+                                            Типы животных {selectedTypeIds.length > 0 ? <span className="ml-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-semibold">{selectedTypeIds.length}</span> : null}
                                             <span className={`transition-transform ${showTypeBar ? 'rotate-180' : ''}`}>▾</span>
                                         </button>
                                         {showTypeBar && (
@@ -601,11 +610,11 @@ export const Search = () => {
                                          </div>
                                      )}
 
-                                     <div>
-                                         <label className="block text-sm font-medium text-slate-700 mb-3">Пол</label>
-                                         <div className="flex flex-wrap gap-3">
-                                             {Object.values(GenderEnum).filter((g) => g !== GenderEnum.ANY).map((gender) => (
-                                                 <label key={gender} className="flex items-center gap-2 cursor-pointer">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-3">Пол</label>
+                                        <div className="gender-options">
+                                            {Object.values(GenderEnum).filter((g) => g !== GenderEnum.ANY).map((gender) => (
+                                                <label key={gender} className="flex items-center gap-2 cursor-pointer">
                                                      <input
                                                          type="checkbox"
                                                          checked={selectedGenders.includes(gender)}
@@ -624,7 +633,7 @@ export const Search = () => {
                                             onClick={() => setShowAgeBar(!showAgeBar)}
                                             className="filter-toggle"
                                         >
-                                            Возраст {selectedAges.length > 0 && <span className="ml-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-semibold">{selectedAges.length}</span>}
+                                            Возраст {selectedAges.length > 0 ? <span className="ml-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-semibold">{selectedAges.length}</span> : null}
                                             <span className={`transition-transform ${showAgeBar ? 'rotate-180' : ''}`}>▾</span>
                                         </button>
                                         {showAgeBar && (
