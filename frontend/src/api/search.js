@@ -5,7 +5,18 @@ export const searchAPI = {
         query,
         page = 0,
         size = 10,
-        { city = null, metro = null, priceFrom = null, priceTo = null } = {}
+        {
+            city = null,
+            metro = null,
+            priceFrom = null,
+            priceTo = null,
+            types = null,
+            breeds = null,
+            genders = null,
+            ages = null,
+            sort = null,
+            searchAfter = null
+        } = {}
     ) => {
         try {
             const params = {
@@ -18,11 +29,17 @@ export const searchAPI = {
             if (metro !== null) params.metro = metro;
             if (priceFrom !== null) params.priceFrom = priceFrom;
             if (priceTo !== null) params.priceTo = priceTo;
+            if (Array.isArray(types) && types.length) params.types = types.join(',');
+            if (Array.isArray(breeds) && breeds.length) params.breeds = breeds.join(',');
+            if (Array.isArray(genders) && genders.length) params.genders = genders.join(',');
+            if (Array.isArray(ages) && ages.length) params.ages = ages.join(',');
+            if (sort) params.sort = sort;
+            if (Array.isArray(searchAfter) && searchAfter.length) params.searchAfter = JSON.stringify(searchAfter);
 
             const response = await api.get('/search/listings', { params });
 
             console.log('Search API response:', response.data);
-            return response.data || [];
+            return response.data || { items: [], nextSearchAfter: null };
         } catch (error) {
             console.error('Search API error:', error);
             console.error('Error details:', {

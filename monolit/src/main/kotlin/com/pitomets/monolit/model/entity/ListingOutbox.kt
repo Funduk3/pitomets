@@ -1,6 +1,7 @@
 package com.pitomets.monolit.model.entity
 
 import com.pitomets.monolit.model.EventType
+import com.pitomets.monolit.model.Gender
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -31,6 +32,22 @@ class ListingOutbox(
 
     @Column(name = "description")
     val description: String?,
+
+    @Column(name = "species")
+    val species: String? = null,
+
+    @Column(name = "breed")
+    val breed: String? = null,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender")
+    val gender: Gender? = null,
+
+    @Column(name = "age_enum")
+    val ageEnum: String? = null,
+
+    @Column(name = "city_title")
+    val cityTitle: String? = null,
 
     @Column(name = "city")
     val city: Long,

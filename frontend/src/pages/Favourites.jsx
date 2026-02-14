@@ -66,49 +66,53 @@ export const Favourites = () => {
             <Link to="/search" style={{ color: '#3498db' }}>Их можно найти в поиске</Link>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', marginTop: '2rem' }}>
+          <div className="listings-grid" style={{ marginTop: '2rem' }}>
             {favourites.map((listing) => {
               const listingPhotos = listingsPhotos[listing.id] || [];
               const firstPhoto = listingPhotos[0];
-              
+
               return (
-                <div key={listing.id} style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
+                <Link key={listing.id} to={`/listings/${listing.id}`} className="listing-card">
                   {firstPhoto ? (
                     <img
                       src={resolveApiUrl(firstPhoto)}
-                      alt={listing.title}
-                      style={{
-                        width: '100%',
-                        height: '200px',
-                        objectFit: 'cover',
-                        display: 'block'
-                      }}
+                      alt="Listing cover"
+                      className="listing-image"
                     />
                   ) : (
-                    <div style={{
-                      width: '100%',
-                      height: '200px',
-                      backgroundColor: '#f0f0f0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#999'
-                    }}>
+                    <div className="listing-placeholder">
                       Нет фото
                     </div>
                   )}
-                  <div style={{ padding: '1rem' }}>
-                    <h3 style={{ margin: '0 0 0.5rem 0' }}>{listing.title}</h3>
-                    <p style={{ margin: '0.5rem 0', color: '#666', fontSize: '0.9rem' }}>
-                      {listing.description?.substring(0, 100)}
-                      {listing.description && listing.description.length > 100 ? '...' : ''}
+                  <div className="listing-content">
+                    <h3>
+                      {listing.title || 'Без названия'}
+                    </h3>
+                    <p>
+                      {listing.description?.substring(0, 90)}
+                      {listing.description && listing.description.length > 90 ? '...' : ''}
                     </p>
-                    <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-                      <Link to={`/listings/${listing.id}`} className="btn btn-secondary" style={{ fontSize: '0.9rem' }}>Посмотреть</Link>
-                      <button onClick={() => handleRemove(listing.id)} className="btn btn-danger" style={{ fontSize: '0.9rem' }}>Удалить</button>
+                    <p>
+                      <strong>Цена:</strong> <span className="tag-price">{listing.price} ₽</span>
+                    </p>
+                    <p>
+                      <strong>Город:</strong> {listing.cityTitle || '—'}
+                    </p>
+                    <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleRemove(listing.id);
+                        }}
+                        className="btn btn-danger"
+                        style={{ fontSize: '0.9rem' }}
+                      >
+                        Удалить
+                      </button>
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>

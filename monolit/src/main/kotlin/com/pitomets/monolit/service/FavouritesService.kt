@@ -28,6 +28,8 @@ class FavouritesService(
                 id = requireNotNull(listing.id),
                 title = listing.title,
                 description = listing.description,
+                price = listing.price,
+                cityTitle = listing.city.title,
             )
         }
     }
@@ -53,6 +55,8 @@ class FavouritesService(
             id = requireNotNull(listing.id),
             title = listing.title,
             description = listing.description,
+            price = listing.price,
+            cityTitle = listing.city.title,
         )
     }
 

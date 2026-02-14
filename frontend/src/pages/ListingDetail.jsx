@@ -526,68 +526,36 @@ export const ListingDetail = () => {
           <p>Похожие объявления не найдены</p>
         )}
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-            gap: '1.5rem',
-            marginTop: '1rem',
-          }}
-        >
+        <div className="listings-grid">
           {similarListings.map((listing) => {
             const photos = similarPhotos[listing.id] || [];
             const firstPhoto = photos[0];
 
             return (
-              <Link
-                key={listing.id}
-                to={`/listings/${listing.id}`}
-                style={{
-                  textDecoration: 'none',
-                  color: 'inherit',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  backgroundColor: '#fff',
-                }}
-              >
+              <Link key={listing.id} to={`/listings/${listing.id}`} className="listing-card">
                 {firstPhoto ? (
                   <img
                     src={firstPhoto.startsWith('http')
                       ? firstPhoto
                       : resolveApiUrl(firstPhoto)}
-                    alt={listing.title || 'Untitled'}
-                    style={{
-                      width: '100%',
-                      height: '160px',
-                      objectFit: 'cover',
-                      display: 'block',
-                    }}
+                    alt="Listing cover"
+                    className="listing-image"
                   />
                 ) : (
-                  <div
-                    style={{
-                      height: '160px',
-                      backgroundColor: '#f0f0f0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#999',
-                    }}
-                  >
+                  <div className="listing-placeholder">
                     Нет фото
                   </div>
                 )}
-
-                <div style={{ padding: '0.75rem' }}>
-                  <h4 style={{ margin: '0 0 0.25rem 0' }}>
-                    {listing.title || 'Untitled'}
-                  </h4>
-                  <p style={{ margin: 0, fontWeight: 'bold' }}>
-                    {listing.price} ₽ {/* TODO: currently we don’t have price */}
+                <div className="listing-content">
+                  <h3>
+                    {listing.title || 'Без названия'}
+                  </h3>
+                  <p>
+                    {listing.description?.substring(0, 90)}
+                    {listing.description && listing.description.length > 90 ? '...' : ''}
                   </p>
-                  <p style={{ margin: '0.25rem 0', fontSize: '0.85rem', color: '#666' }}>
-                    {listing.description} {listing.breed && `• ${listing.breed}`}
+                  <p>
+                    <strong>Цена:</strong> <span className="tag-price">{listing.price} ₽</span>
                   </p>
                 </div>
               </Link>

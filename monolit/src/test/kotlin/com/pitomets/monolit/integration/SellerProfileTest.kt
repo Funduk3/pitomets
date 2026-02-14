@@ -252,7 +252,7 @@ class SellerProfileTest : BaseContainers() {
         elasticClient.indices().refresh { r -> r.index("listings") }
         val searchResults = searchService.search(createdListing.description)
         Assertions.assertTrue(
-            searchResults.none { it.id == createdListing.id },
+            searchResults.items.none { it.id == createdListing.id },
             "Deleted listing should not appear in search results"
         )
     }
