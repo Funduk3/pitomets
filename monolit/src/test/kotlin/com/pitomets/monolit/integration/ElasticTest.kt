@@ -2,6 +2,7 @@ package com.pitomets.monolit.integration
 
 import com.pitomets.monolit.model.Gender
 import com.pitomets.monolit.model.dto.request.ListingsRequest
+import com.pitomets.monolit.model.dto.response.SearchListingsPageResponse
 import com.pitomets.monolit.model.dto.response.SearchListingsResponse
 import com.pitomets.monolit.testContainers.BaseContainers
 import io.restassured.RestAssured
@@ -76,15 +77,15 @@ class ElasticTest : BaseContainers() {
         elasticClient.indices().refresh { r -> r.index("listings") }
 
         // Убедимся, что два результата содержат наш токен в title
-        val list: List<SearchListingsResponse> = RestAssured.given()
+        val page: SearchListingsPageResponse = RestAssured.given()
             .contentType(ContentType.JSON)
             .param("query", token, "size", 2)
             .get("/search/listings")
             .then()
             .statusCode(200)
             .extract()
-            .`as`(Array<SearchListingsResponse>::class.java)
-            .toList()
+            .`as`(SearchListingsPageResponse::class.java)
+        val list = page.items
 
         Assertions.assertTrue(
             list.size >= 2,
