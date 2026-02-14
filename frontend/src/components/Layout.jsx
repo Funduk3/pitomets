@@ -98,81 +98,81 @@ export const Layout = ({ children }) => {
                 )}
               </Link>
               <Link to="/profile" style={{ color: '#111111', textDecoration: 'none' }}>Профиль</Link>
-              {!isSearchPage && (
-                <div style={{ position: 'relative', minWidth: '420px' }}>
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      submitSearch();
-                    }}
-                    style={{ display: 'flex', alignItems: 'center' }}
-                  >
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onFocus={() => suggestions.length && setShowSuggestions(true)}
-                      onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                      placeholder="Ищем питомца..."
+            </>
+          )}
+          {!isSearchPage && (
+            <div style={{ position: 'relative', minWidth: '420px' }}>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  submitSearch();
+                }}
+                style={{ display: 'flex', alignItems: 'center' }}
+              >
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => suggestions.length && setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                  placeholder="Ищем питомца..."
+                  style={{
+                    width: '360px',
+                    padding: '0.55rem 0.75rem',
+                    borderRadius: '8px',
+                    border: '1px solid #EDEDED',
+                    backgroundColor: '#FFFFFF',
+                    color: '#111111'
+                  }}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    marginLeft: '0.5rem',
+                    padding: '0.5rem 0.85rem',
+                    backgroundColor: '#111111',
+                    color: '#FFFFFF',
+                    border: '1px solid #111111',
+                    borderRadius: '8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Найти
+                </button>
+              </form>
+              {showSuggestions && suggestions.length > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  background: '#FFFFFF',
+                  border: '1px solid #EDEDED',
+                  borderRadius: '8px',
+                  zIndex: 20,
+                  color: '#111111',
+                  boxShadow: '0 8px 18px rgba(17, 17, 17, 0.08)'
+                }}>
+                  {suggestions.map((s, idx) => (
+                    <div
+                      key={idx}
+                      onMouseDown={() => {
+                        setSearchQuery(s.title);
+                        submitSearch(s.title);
+                      }}
                       style={{
-                        width: '360px',
-                        padding: '0.55rem 0.75rem',
-                        borderRadius: '8px',
-                        border: '1px solid #EDEDED',
-                        backgroundColor: '#FFFFFF',
+                        padding: '0.6rem 0.75rem',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid #EDEDED',
                         color: '#111111'
                       }}
-                    />
-                    <button
-                      type="submit"
-                      style={{
-                        marginLeft: '0.5rem',
-                        padding: '0.5rem 0.85rem',
-                        backgroundColor: '#111111',
-                        color: '#FFFFFF',
-                        border: '1px solid #111111',
-                        borderRadius: '8px',
-                        cursor: 'pointer'
-                      }}
                     >
-                      Найти
-                    </button>
-                  </form>
-                  {showSuggestions && suggestions.length > 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      right: 0,
-                      background: '#FFFFFF',
-                      border: '1px solid #EDEDED',
-                      borderRadius: '8px',
-                      zIndex: 20,
-                      color: '#111111',
-                      boxShadow: '0 8px 18px rgba(17, 17, 17, 0.08)'
-                    }}>
-                      {suggestions.map((s, idx) => (
-                        <div
-                          key={idx}
-                          onMouseDown={() => {
-                            setSearchQuery(s.title);
-                            submitSearch(s.title);
-                          }}
-                          style={{
-                            padding: '0.6rem 0.75rem',
-                            cursor: 'pointer',
-                            borderBottom: '1px solid #EDEDED',
-                            color: '#111111'
-                          }}
-                        >
-                          {s.title}
-                        </div>
-                      ))}
+                      {s.title}
                     </div>
-                  )}
+                  ))}
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
