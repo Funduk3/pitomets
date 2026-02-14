@@ -532,7 +532,7 @@ export const ListingDetail = () => {
             const firstPhoto = photos[0];
 
             return (
-              <div key={listing.id} className="listing-card">
+              <Link key={listing.id} to={`/listings/${listing.id}`} className="listing-card">
                 {firstPhoto ? (
                   <img
                     src={firstPhoto.startsWith('http')
@@ -557,15 +557,8 @@ export const ListingDetail = () => {
                   <p>
                     <strong>Цена:</strong> <span className="tag-price">{listing.price} ₽</span>
                   </p>
-                  <Link
-                    to={`/listings/${listing.id}`}
-                    className="btn btn-secondary"
-                    style={{ display: 'inline-block', marginTop: '0.5rem', fontSize: '0.9rem' }}
-                  >
-                    Посмотреть
-                  </Link>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>

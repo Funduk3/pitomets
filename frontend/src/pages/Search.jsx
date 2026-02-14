@@ -758,44 +758,37 @@ export const Search = () => {
                                             const listingPhotos = listingsPhotos[listing.id] || [];
                                             const firstPhoto = listingPhotos[0];
 
-                                             return (
-                                                 <div key={listing.id} className="listing-card">
-                                                     {firstPhoto ? (
-                                                         <img
-                                                             src={resolveApiUrl(firstPhoto)}
-                                                             alt="Listing cover"
-                                                             className="listing-image"
-                                                         />
-                                                     ) : (
-                                                         <div className="listing-placeholder">
-                                                             Нет фото
-                                                         </div>
-                                                     )}
-                                                     <div className="listing-content">
-                                                         <h3>
-                                                             {listing.title || 'Без названия'}
-                                                         </h3>
-                                                         <p>
-                                                             {listing.description?.substring(0, 90)}
-                                                             {listing.description && listing.description.length > 90
-                                                                 ? '...'
-                                                                 : ''}
-                                                         </p>
-                                                         <p>
-                                                             <strong>Цена:</strong> <span className="tag-price">{listing.price} ₽</span>
-                                                         </p>
-                                                         <p>
-                                                             <strong>Город:</strong> {listing.cityTitle || '—'}
-                                                         </p>
-                                                         <Link
-                                                             to={`/listings/${listing.id}`}
-                                                             className="btn btn-secondary"
-                                                             style={{ display: 'inline-block', marginTop: '0.5rem', fontSize: '0.9rem' }}
-                                                         >
-                                                             Посмотреть
-                                                         </Link>
-                                                     </div>
-                                                </div>
+                                            return (
+                                                <Link key={listing.id} to={`/listings/${listing.id}`} className="listing-card">
+                                                    {firstPhoto ? (
+                                                        <img
+                                                            src={resolveApiUrl(firstPhoto)}
+                                                            alt="Listing cover"
+                                                            className="listing-image"
+                                                        />
+                                                    ) : (
+                                                        <div className="listing-placeholder">
+                                                            Нет фото
+                                                        </div>
+                                                    )}
+                                                    <div className="listing-content">
+                                                        <h3>
+                                                            {listing.title || 'Без названия'}
+                                                        </h3>
+                                                        <p>
+                                                            {listing.description?.substring(0, 90)}
+                                                            {listing.description && listing.description.length > 90
+                                                                ? '...'
+                                                                : ''}
+                                                        </p>
+                                                        <p>
+                                                            <strong>Цена:</strong> <span className="tag-price">{listing.price} ₽</span>
+                                                        </p>
+                                                        <p>
+                                                            <strong>Город:</strong> {listing.cityTitle || '—'}
+                                                        </p>
+                                                    </div>
+                                                </Link>
                                             );
                                         })}
                                     </div>

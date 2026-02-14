@@ -78,7 +78,7 @@ export const Home = () => {
           <div>
             <div className="listings-grid">
               {items.map((listing) => (
-                <div key={listing.listingsId} className="listing-card">
+                <Link key={listing.listingsId} to={`/listings/${listing.listingsId}`} className="listing-card">
                   {listing.coverPhotoId ? (
                     <img
                       src={resolveApiUrl(`/listings/${listing.listingsId}/photos/${listing.coverPhotoId}`)}
@@ -106,15 +106,8 @@ export const Home = () => {
                   <p>
                     <strong>Город:</strong> {listing.city?.title || '—'}
                   </p>
-                  <Link
-                    to={`/listings/${listing.listingsId}`}
-                    className="btn btn-secondary"
-                    style={{ display: 'inline-block', marginTop: '0.5rem', fontSize: '0.9rem' }}
-                  >
-                    Посмотреть
-                  </Link>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
             <div className="pager-controls">

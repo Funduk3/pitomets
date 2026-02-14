@@ -72,7 +72,7 @@ export const Favourites = () => {
               const firstPhoto = listingPhotos[0];
 
               return (
-                <div key={listing.id} className="listing-card">
+                <Link key={listing.id} to={`/listings/${listing.id}`} className="listing-card">
                   {firstPhoto ? (
                     <img
                       src={resolveApiUrl(firstPhoto)}
@@ -99,11 +99,20 @@ export const Favourites = () => {
                       <strong>Город:</strong> {listing.cityTitle || '—'}
                     </p>
                     <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
-                      <Link to={`/listings/${listing.id}`} className="btn btn-secondary" style={{ fontSize: '0.9rem' }}>Посмотреть</Link>
-                      <button onClick={() => handleRemove(listing.id)} className="btn btn-danger" style={{ fontSize: '0.9rem' }}>Удалить</button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleRemove(listing.id);
+                        }}
+                        className="btn btn-danger"
+                        style={{ fontSize: '0.9rem' }}
+                      >
+                        Удалить
+                      </button>
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
