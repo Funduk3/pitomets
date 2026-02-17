@@ -21,6 +21,7 @@ import { Favourites } from './pages/Favourites';
 import { ReviewForm } from './pages/ReviewForm';
 import { Chats } from './pages/Chats';
 import { Chat } from './pages/Chat';
+import { RequireAuth, RequireSeller } from './components/AccessGate';
 
 function App() {
   return (
@@ -35,20 +36,20 @@ function App() {
               <Route path="/confirm" element={<ConfirmEmail />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/seller/profile" element={<SellerProfile />} />
+              <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+              <Route path="/seller/profile" element={<RequireAuth><SellerProfile /></RequireAuth>} />
               <Route path="/seller/profile/view/:sellerId" element={<SellerProfileView />} />
               <Route path="/user/profile/:userId" element={<UserProfileView />} />
-              <Route path="/listings" element={<Listings />} />
-              <Route path="/listings/create" element={<ListingForm />} />
+              <Route path="/listings" element={<RequireSeller><Listings /></RequireSeller>} />
+              <Route path="/listings/create" element={<RequireSeller><ListingForm /></RequireSeller>} />
               <Route path="/listings/:id" element={<ListingDetail />} />
-              <Route path="/listings/:id/edit" element={<ListingForm />} />
-              <Route path="/listings/:id/photos" element={<ListingPhotos />} />
-              <Route path="/listings/:id/review" element={<ReviewForm />} />
+              <Route path="/listings/:id/edit" element={<RequireSeller><ListingForm /></RequireSeller>} />
+              <Route path="/listings/:id/photos" element={<RequireSeller><ListingPhotos /></RequireSeller>} />
+              <Route path="/listings/:id/review" element={<RequireAuth><ReviewForm /></RequireAuth>} />
               <Route path="/search" element={<Search />} />
-              <Route path="/favourites" element={<Favourites />} />
-              <Route path="/chats" element={<Chats />} />
-              <Route path="/chats/:chatId" element={<Chat />} />
+              <Route path="/favourites" element={<RequireAuth><Favourites /></RequireAuth>} />
+              <Route path="/chats" element={<RequireAuth><Chats /></RequireAuth>} />
+              <Route path="/chats/:chatId" element={<RequireAuth><Chat /></RequireAuth>} />
             </Routes>
           </Layout>
         </BrowserRouter>

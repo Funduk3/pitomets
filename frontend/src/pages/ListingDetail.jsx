@@ -286,7 +286,7 @@ export const ListingDetail = () => {
   return (
     <div>
       <h2>{listing.title || 'Untitled'}</h2>
-      {sellerProfile && (
+      {listing?.sellerId && (
         <div className="card" style={{ marginTop: '1rem', marginBottom: '1rem' }}>
           <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'transparent' }}>
             {avatarUrl && (
@@ -309,7 +309,7 @@ export const ListingDetail = () => {
                   </Link>
                 );
               })()}
-               {sellerProfile.rating != null && (
+               {sellerProfile?.rating != null && (
                  <p className="small-muted" style={{ margin: '0.25rem 0 0 0' }}>
                    Рейтинг: {sellerProfile.rating.toFixed(2)} / 5
                    {sellerProfile.isVerified && ' ✓ Проверен'}

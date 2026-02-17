@@ -18,7 +18,7 @@ export const Layout = ({ children }) => {
     navigate('/login');
   };
 
-  const isSeller = Boolean(user?.shopName);
+  const isSeller = Boolean(user?.shopName || user?.isSeller);
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -76,30 +76,26 @@ export const Layout = ({ children }) => {
           <Link to="/" style={{ color: '#111111', textDecoration: 'none', fontSize: '1.5rem', fontWeight: '700', letterSpacing: '-0.01em' }}>
             Питомец
           </Link>
-          {isAuthenticated() && (
-            <>
-              {isSeller && (
-                <Link to="/listings" style={{ color: '#111111', textDecoration: 'none' }}>Мои объявления</Link>
+          <>
+            <Link to="/listings" style={{ color: '#111111', textDecoration: 'none' }}>Мои объявления</Link>
+            <Link to="/favourites" style={{ color: '#111111', textDecoration: 'none' }}>Избранные</Link>
+            <Link to="/chats" style={{ color: hasUnread ? '#FF6B5A' : '#111111', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+              Мои чаты
+              {hasUnread && (
+                <span
+                  aria-label="Есть непрочитанные"
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '999px',
+                    backgroundColor: '#FF6B5A',
+                    display: 'inline-block',
+                  }}
+                />
               )}
-              <Link to="/favourites" style={{ color: '#111111', textDecoration: 'none' }}>Избранные</Link>
-              <Link to="/chats" style={{ color: hasUnread ? '#FF6B5A' : '#111111', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                Мои чаты
-                {hasUnread && (
-                  <span
-                    aria-label="Есть непрочитанные"
-                    style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '999px',
-                      backgroundColor: '#FF6B5A',
-                      display: 'inline-block',
-                    }}
-                  />
-                )}
-              </Link>
-              <Link to="/profile" style={{ color: '#111111', textDecoration: 'none' }}>Профиль</Link>
-            </>
-          )}
+            </Link>
+            <Link to="/profile" style={{ color: '#111111', textDecoration: 'none' }}>Профиль</Link>
+          </>
           {!isSearchPage && (
             <div style={{ position: 'relative', minWidth: '420px' }}>
               <form
@@ -176,20 +172,18 @@ export const Layout = ({ children }) => {
           )}
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          {isAuthenticated() && isSeller && (
-            <Link
-              to="/listings/create"
-              style={{
-                color: '#FFFFFF',
-                textDecoration: 'none',
-                backgroundColor: '#FF6B5A',
-                padding: '0.45rem 0.75rem',
-                borderRadius: '8px'
-              }}
-            >
-              Создать объявление
-            </Link>
-          )}
+          <Link
+            to="/listings/create"
+            style={{
+              color: '#FFFFFF',
+              textDecoration: 'none',
+              backgroundColor: '#FF6B5A',
+              padding: '0.45rem 0.75rem',
+              borderRadius: '8px'
+            }}
+          >
+            Создать объявление
+          </Link>
           {isAuthenticated() ? (
             <button
               onClick={handleLogout}
