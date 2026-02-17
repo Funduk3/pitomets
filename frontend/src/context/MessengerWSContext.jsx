@@ -14,6 +14,8 @@ export const MessengerWSProvider = ({ children }) => {
   const { isAuthenticated, user } = useAuth();
   const [connected, setConnected] = useState(false);
   const [unreadChatIds, setUnreadChatIds] = useState(() => new Set());
+  const [activeChatId, setActiveChatId] = useState(null);
+  const activeChatIdRef = useRef(null);
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const shouldReconnectRef = useRef(true);
@@ -70,7 +72,10 @@ export const MessengerWSProvider = ({ children }) => {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data?.error) return;
+        if (data?.error) {
+          emit({ type: 'ws_error', error: data.error });
+          return;
+        }
         
         // Обработка ответа синхронизации
         if (data?.type === 'sync_response' && data?.messages) {
@@ -80,7 +85,9 @@ export const MessengerWSProvider = ({ children }) => {
               for (const msg of messages) {
                 if (msg?.id != null && msg?.chatId != null) {
                   if (Number(msg.senderId) !== Number(userId)) {
-                    markChatUnread(msg.chatId);
+                    if (activeChatIdRef.current == null || Number(activeChatIdRef.current) !== Number(msg.chatId)) {
+                      markChatUnread(msg.chatId);
+                    }
                   }
                   emit(msg);
                 }
@@ -94,7 +101,9 @@ export const MessengerWSProvider = ({ children }) => {
         // regardless of what page is currently open.
         if (data?.type !== 'read_receipt' && data?.id != null && data?.chatId != null) {
           if (Number(data.senderId) !== Number(userId)) {
-            markChatUnread(data.chatId);
+            if (activeChatIdRef.current == null || Number(activeChatIdRef.current) !== Number(data.chatId)) {
+              markChatUnread(data.chatId);
+            }
           }
           // Обновляем последнее видимое сообщение для этого чата
           updateLastSeenMessage(data.chatId, data.id);
@@ -294,6 +303,7 @@ export const MessengerWSProvider = ({ children }) => {
   const markChatUnread = (chatId) => {
     const id = Number(chatId);
     if (!Number.isFinite(id)) return;
+    if (activeChatIdRef.current != null && Number(activeChatIdRef.current) === id) return;
     setUnreadChatIds((prev) => {
       const next = new Set(prev);
       next.add(id);
@@ -322,10 +332,18 @@ export const MessengerWSProvider = ({ children }) => {
     setUnreadChatIds(next);
   };
 
+  const setActiveChatIdSafe = (id) => {
+    const next = id == null ? null : Number(id);
+    activeChatIdRef.current = next;
+    setActiveChatId(next);
+  };
+
   const value = useMemo(() => ({
     connected,
     subscribe,
     send,
+    activeChatId,
+    setActiveChatId: setActiveChatIdSafe,
     // unread indicator
     hasUnread: unreadChatIds.size > 0,
     unreadChatIds,
@@ -336,7 +354,7 @@ export const MessengerWSProvider = ({ children }) => {
     updateLastSeenMessage,
     requestSync,
     refreshUnreadFromServer,
-  }), [connected, unreadChatIds]);
+  }), [connected, unreadChatIds, activeChatId]);
 
   return <MessengerWSContext.Provider value={value}>{children}</MessengerWSContext.Provider>;
 };

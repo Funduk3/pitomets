@@ -6,6 +6,7 @@ import com.pitomets.messenger.models.SyncResponse
 import com.pitomets.messenger.models.WebSocketMessage
 import com.pitomets.messenger.service.ChatService
 import com.pitomets.messenger.service.MessageService
+import com.pitomets.messenger.service.MessagingBlockedException
 import io.ktor.server.request.header
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.route
@@ -130,6 +131,7 @@ private suspend fun WebSocketServerSession.handleMessage(
     }
 }
 
+@Suppress("ReturnCount")
 private suspend fun WebSocketServerSession.handleSendMessage(
     wsMessage: WebSocketMessage,
     userId: Long,
@@ -148,7 +150,12 @@ private suspend fun WebSocketServerSession.handleSendMessage(
         return
     }
 
-    val message = messageService.createMessage(chatId, userId, content)
+    val message = try {
+        messageService.createMessage(chatId, userId, content)
+    } catch (_: MessagingBlockedException) {
+        send(Frame.Text("""{"error": "Messaging is blocked between users"}"""))
+        return
+    }
     val messageResponse = MessageResponse.from(message)
 
     // Отправляем сообщение отправителю

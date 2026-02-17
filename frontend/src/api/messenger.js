@@ -37,4 +37,25 @@ export const messengerAPI = {
     const response = await api.put(`/api/messenger/messages/chat/${chatId}/read`);
     return response.data;
   },
+
+  // Blocks
+  blockUser: async (blockedId) => {
+    const response = await api.post(`/api/messenger/blocks/${blockedId}`);
+    return response.data;
+  },
+
+  unblockUser: async (blockedId) => {
+    const response = await api.delete(`/api/messenger/blocks/${blockedId}`);
+    return response.data;
+  },
+
+  getBlockStatus: async (blockedId) => {
+    const response = await api.get(`/api/messenger/blocks/${blockedId}`);
+    return response.data;
+  },
+
+  getBlockStatusBetween: async (otherId) => {
+    const response = await api.get(`/api/messenger/blocks/status/${otherId}`);
+    return response.data;
+  },
 };

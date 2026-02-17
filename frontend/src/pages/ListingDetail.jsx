@@ -507,15 +507,6 @@ export const ListingDetail = () => {
             ))}
           </div>
         )}
-        {isAuthenticated() && user?.id !== listing.sellerId && (
-          <Link
-            to={`/listings/${id}/review`}
-            className="btn btn-primary"
-            style={{ display: 'inline-block', marginTop: '1rem' }}
-          >
-            Написать отзыв
-          </Link>
-        )}
       </div>
       <div style={{ marginTop: '3rem' }}>
         <h3>Похожие объявления</h3>

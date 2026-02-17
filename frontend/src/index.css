@@ -425,6 +425,50 @@ img {
   border: 1px solid #EDEDED;
   border-radius: 8px;
 }
+.chat-menu {
+  position: relative;
+}
+.chat-menu-button {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  color: #222;
+}
+.chat-menu-button:hover {
+  color: #000;
+}
+.chat-menu-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  padding: 0.25rem;
+  min-width: 180px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+}
+.chat-menu-item {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #111111;
+  text-decoration: none;
+  display: block;
+}
+.chat-menu-item:hover {
+  background: #f5f5f5;
+}
 
 .avatar-sm {
   width: 60px;

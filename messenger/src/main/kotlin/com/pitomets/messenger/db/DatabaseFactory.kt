@@ -2,6 +2,7 @@ package com.pitomets.messenger.db
 
 import com.pitomets.messenger.models.Chat
 import com.pitomets.messenger.models.Message
+import com.pitomets.messenger.models.UserBlock
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.jetbrains.exposed.sql.Database
@@ -34,7 +35,7 @@ object DatabaseFactory {
 
         transaction {
             // keep schema in sync (adds missing columns too)
-            SchemaUtils.createMissingTablesAndColumns(Chat, Message)
+            SchemaUtils.createMissingTablesAndColumns(Chat, Message, UserBlock)
         }
     }
     const val MAX_POOL_SIZE = 10

@@ -2,9 +2,11 @@ package com.pitomets.messenger
 
 import com.pitomets.messenger.db.DatabaseFactory
 import com.pitomets.messenger.routing.WebSocketManager
+import com.pitomets.messenger.routing.blockRoutes
 import com.pitomets.messenger.routing.chatRoutes
 import com.pitomets.messenger.routing.messageRoutes
 import com.pitomets.messenger.routing.webSocketRoutes
+import com.pitomets.messenger.service.BlockService
 import com.pitomets.messenger.service.ChatService
 import com.pitomets.messenger.service.MessageService
 import io.ktor.http.HttpHeaders
@@ -30,7 +32,8 @@ fun Application.module() {
     DatabaseFactory.init()
 
     // Инициализация сервисов
-    val messageService = MessageService()
+    val blockService = BlockService()
+    val messageService = MessageService(blockService)
     val chatService = ChatService()
     val webSocketManager = WebSocketManager()
 
@@ -81,7 +84,8 @@ fun Application.module() {
         }
 
         messageRoutes(messageService, chatService, webSocketManager)
-        chatRoutes(chatService, messageService)
+        chatRoutes(chatService, messageService, blockService)
+        blockRoutes(blockService, webSocketManager)
         webSocketRoutes(messageService, chatService, webSocketManager)
     }
 }

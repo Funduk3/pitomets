@@ -82,6 +82,8 @@ class ChatService {
             updatedAt = row[Chat.updatedAt],
             unreadCountUser1 = row[Chat.unreadCountUser1],
             unreadCountUser2 = row[Chat.unreadCountUser2],
+            lastUnreadMessageIdUser1 = row[Chat.lastUnreadMessageIdUser1],
+            lastUnreadMessageIdUser2 = row[Chat.lastUnreadMessageIdUser2],
         )
     }
 }
