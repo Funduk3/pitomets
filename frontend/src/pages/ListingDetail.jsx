@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { listingsAPI } from '../api/listings';
 import { resolveApiUrl } from '../api/axios';
 import { photosAPI } from '../api/photos';
@@ -14,6 +14,7 @@ export const ListingDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+  const location = useLocation();
   const [listing, setListing] = useState(null);
   const [photos, setPhotos] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -220,7 +221,7 @@ export const ListingDetail = () => {
 
   const handleMessageSeller = async () => {
     if (!isAuthenticated()) {
-      alert('Please login to message seller');
+      navigate('/login', { state: { from: location.pathname } });
       return;
     }
 
@@ -384,7 +385,7 @@ export const ListingDetail = () => {
               </button>
             </div>
           )}
-          {isAuthenticated() && user?.id !== listing.sellerId && (
+          {user?.id !== listing.sellerId && (
             <div className="link-actions">
               <button onClick={handleMessageSeller} className="btn btn-primary">Написать продавцу</button>
               {isAuthenticated() && (

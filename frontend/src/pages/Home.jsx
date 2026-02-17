@@ -18,6 +18,18 @@ export const Home = () => {
     loadPage(null);
   }, []);
 
+  const typeButtons = [
+    { label: 'Собаки', icon: '🐶' },
+    { label: 'Кошки', icon: '🐱' },
+    { label: 'Птицы', icon: '🦜' },
+    { label: 'Грызуны', icon: '🐹' },
+    { label: 'Хорьки / Экзоты', icon: '🦦' },
+    { label: 'Аквариум', icon: '🐠' },
+    { label: 'Рептилии', icon: '🦎' },
+    { label: 'Скот / Фермерские', icon: '🐄' },
+    { label: 'Другое', icon: '🐾' },
+  ];
+
   const loadPage = async (nextCursorValue) => {
     try {
       setLoading(true);
@@ -37,25 +49,34 @@ export const Home = () => {
 
   return (
     <div>
-      <h1>Питомец</h1>
-      <p>Объявления тут!</p>
-      {!isAuthenticated() && (
-        <div className="hero" style={{ marginTop: '2rem' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          gap: '0.75rem',
+          marginBottom: '2rem'
+        }}
+      >
+        {typeButtons.map(({ label, icon }) => (
           <Link
-            to="/register"
-            className="btn btn-primary"
-            style={{ marginRight: '1rem' }}
-          >
-            Начать
-          </Link>
-          <Link
-            to="/search"
+            key={label}
+            to={`/search?types=${encodeURIComponent(label)}`}
             className="btn btn-secondary"
+            style={{
+              width: '100%',
+              textAlign: 'center',
+              padding: '0.9rem 1rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem'
+            }}
           >
-            Поиск по объявлениям
+            <span style={{ fontSize: '1.25rem' }} aria-hidden="true">{icon}</span>
+            <span>{label}</span>
           </Link>
-        </div>
-      )}
+        ))}
+      </div>
 
       <div style={{ marginTop: '2rem' }}>
         <h2>Свежие объявления</h2>

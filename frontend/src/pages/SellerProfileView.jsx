@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { sellerAPI } from '../api/seller';
 import { resolveApiUrl } from '../api/axios';
 import { photosAPI } from '../api/photos';
@@ -13,6 +13,7 @@ export const SellerProfileView = () => {
   const { sellerId } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+  const location = useLocation();
   const [profile, setProfile] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [listings, setListings] = useState([]);
@@ -140,7 +141,7 @@ export const SellerProfileView = () => {
 
   const handleMessageSeller = async () => {
     if (!isAuthenticated()) {
-      alert('Please login to message seller');
+      navigate('/login', { state: { from: location.pathname } });
       return;
     }
 
@@ -185,7 +186,7 @@ export const SellerProfileView = () => {
               )}
             </div>
 
-            {isAuthenticated() && user?.id !== profile.userId && (
+            {user?.id !== profile.userId && (
               <div style={{ marginTop: '1rem' }}>
                 <button onClick={handleMessageSeller} className="btn btn-primary">Написать продавцу</button>
               </div>
