@@ -102,8 +102,11 @@ export const Login = () => {
           <Link to="/forgot-password" style={{ color: '#007bff', textDecoration: 'none' }}>Забыли пароль?</Link>
         </div>
       </form>
-      <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-        Ещё нет аккаунта? <Link to="/register" state={{ from: redirectTo }}>Регистрация здесь</Link>
+      <div className="auth-switch-block">
+        <p className="auth-switch-text">Ещё нет аккаунта?</p>
+        <Link to="/register" state={{ from: redirectTo }} className="btn btn-secondary btn-block auth-switch-action">
+          Зарегистрироваться
+        </Link>
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import { useMessengerWS } from '../context/MessengerWSContext';
 import { searchAPI } from '../api/search';
 
 export const Layout = ({ children }) => {
-  const { isAuthenticated, logout, user } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   const { hasUnread } = useMessengerWS();
   const navigate = useNavigate();
   const location = useLocation();
@@ -13,13 +13,12 @@ export const Layout = ({ children }) => {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
-
-  const isSeller = Boolean(user?.shopName || user?.isSeller);
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -59,6 +58,14 @@ export const Layout = ({ children }) => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 768px)');
+    const syncViewport = () => setIsMobileViewport(media.matches);
+    syncViewport();
+    media.addEventListener('change', syncViewport);
+    return () => media.removeEventListener('change', syncViewport);
+  }, []);
+
   const submitSearch = (value) => {
     const q = (value ?? searchQuery).trim();
     if (!q) return;
@@ -67,16 +74,20 @@ export const Layout = ({ children }) => {
   };
 
   const isSearchPage = location.pathname.startsWith('/search');
+  const isLoggedIn = isAuthenticated();
+  const isMobileGuest = !isLoggedIn && isMobileViewport;
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF' }}>
       <nav className="app-nav">
-        <div className="nav-left">
+        <div className={`nav-left${isMobileGuest ? ' nav-left-mobile-guest' : ''}`}>
           <Link to="/" className="brand-link">
             Питомец
           </Link>
-          <div className="nav-links">
-            <Link to="/listings" style={{ color: '#111111', textDecoration: 'none' }}>Мои объявления</Link>
+          <div className={`nav-links${isMobileGuest ? ' nav-links-mobile-guest' : ''}`}>
+            {!isMobileGuest && (
+              <Link to="/listings" style={{ color: '#111111', textDecoration: 'none' }}>Мои объявления</Link>
+            )}
             <Link to="/favourites" style={{ color: '#111111', textDecoration: 'none' }}>Избранные</Link>
             <Link to="/chats" style={{ color: hasUnread ? '#FF6B5A' : '#111111', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
               Чаты
@@ -94,12 +105,15 @@ export const Layout = ({ children }) => {
               )}
             </Link>
             <Link to="/profile" style={{ color: '#111111', textDecoration: 'none' }}>Профиль</Link>
+            {isMobileGuest && (
+              <Link to="/login" className="nav-mobile-login">Вход</Link>
+            )}
           </div>
           {!isSearchPage && (
             <div className="nav-search">
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
                   submitSearch();
                 }}
                 className="nav-search-form"
@@ -149,32 +163,33 @@ export const Layout = ({ children }) => {
                     >
                       {s.title}
                     </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
             </div>
           )}
         </div>
         <div className="nav-actions">
-          <Link
-            to="/listings/create"
-            className="nav-create"
-          >
-            Создать объявление
-          </Link>
-          {isAuthenticated() ? (
-            <button
-              onClick={handleLogout}
-              className="nav-logout"
-            >
-              Выйти
-            </button>
-          ) : (
+          {isLoggedIn ? (
+            <>
+              <Link
+                to="/listings/create"
+                className="nav-create"
+              >
+                Создать объявление
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="nav-logout"
+              >
+                Выйти
+              </button>
+            </>
+          ) : !isMobileGuest ? (
             <div className="nav-auth">
               <Link to="/login" style={{ color: '#111111', textDecoration: 'none' }}>Вход</Link>
-              <Link to="/register" style={{ color: '#111111', textDecoration: 'none' }}>Регистрация</Link>
             </div>
-          )}
+          ) : null}
         </div>
       </nav>
       <main className="main-content">

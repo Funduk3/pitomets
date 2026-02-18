@@ -76,6 +76,22 @@ body {
   gap: 0.5rem;
 }
 
+.nav-mobile-login {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #111111;
+  font-weight: 500;
+  font-size: inherit;
+  line-height: inherit;
+  text-decoration: none;
+}
+
+.nav-mobile-login:hover {
+  color: var(--color-accent);
+}
+
 .nav-search-input {
   width: 360px;
   padding: 0.55rem 0.75rem;
@@ -104,8 +120,15 @@ body {
   color: #FFFFFF;
   text-decoration: none;
   background: #FF6B5A;
+  border: 1px solid #FF6B5A;
   padding: 0.45rem 0.75rem;
   border-radius: 8px;
+}
+
+.nav-create:hover {
+  color: #FFFFFF;
+  background: #E04F45;
+  border-color: #E04F45;
 }
 
 .nav-logout {
@@ -255,6 +278,10 @@ img {
   border: 1px solid transparent;
 }
 
+.btn:hover {
+  color: var(--color-bg);
+}
+
 .btn-primary {
   background: var(--color-accent);
   color: var(--color-bg);
@@ -295,6 +322,19 @@ img {
   border-radius: 8px;
   padding: 0.75rem;
   font-size: 1rem;
+}
+
+.auth-switch-block {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.auth-switch-text {
+  margin-bottom: 0.6rem;
+}
+
+.auth-switch-action {
+  text-align: center;
 }
 
 /* Cards */
@@ -677,6 +717,14 @@ img {
 
   .nav-links a {
     white-space: nowrap;
+  }
+
+  .nav-left-mobile-guest {
+    align-items: center;
+  }
+
+  .nav-links-mobile-guest {
+    justify-content: center;
   }
 
   .nav-search {
