@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export const Register = () => {
@@ -13,6 +13,8 @@ export const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { register } = useAuth();
+  const location = useLocation();
+  const redirectTo = location.state?.from || '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -138,9 +140,12 @@ export const Register = () => {
           {loading ? 'Регистрируем...' : 'Регистрация'}
         </button>
       </form>
-      <p style={{ marginTop: '1rem', textAlign: 'center' }}>
-        Уже есть аккаунт? <Link to="/login">Войти тут</Link>
-      </p>
+      <div className="auth-switch-block">
+        <p className="auth-switch-text">Уже есть аккаунт?</p>
+        <Link to="/login" state={{ from: redirectTo }} className="btn btn-secondary btn-block auth-switch-action">
+          Войти
+        </Link>
+      </div>
     </div>
   );
 };

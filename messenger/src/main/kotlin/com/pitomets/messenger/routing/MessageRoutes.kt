@@ -4,6 +4,7 @@ import com.pitomets.messenger.dto.CreateMessageRequest
 import com.pitomets.messenger.dto.MessageResponse
 import com.pitomets.messenger.service.ChatService
 import com.pitomets.messenger.service.MessageService
+import com.pitomets.messenger.service.MessagingBlockedException
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
 import io.ktor.server.request.header
@@ -34,7 +35,11 @@ fun Route.messageRoutes(
                 return@post call.respond(HttpStatusCode.Forbidden, "User is not in this chat")
             }
 
-            val message = messageService.createMessage(request.chatId, senderId, request.content)
+            val message = try {
+                messageService.createMessage(request.chatId, senderId, request.content)
+            } catch (_: MessagingBlockedException) {
+                return@post call.respond(HttpStatusCode.Forbidden, "Messaging is blocked between users")
+            }
             call.respond(HttpStatusCode.Created, MessageResponse.from(message))
         }
 

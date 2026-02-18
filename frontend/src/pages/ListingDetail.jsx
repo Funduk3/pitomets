@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { listingsAPI } from '../api/listings';
 import { resolveApiUrl } from '../api/axios';
 import { photosAPI } from '../api/photos';
@@ -14,6 +14,7 @@ export const ListingDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+  const location = useLocation();
   const [listing, setListing] = useState(null);
   const [photos, setPhotos] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -202,9 +203,17 @@ export const ListingDetail = () => {
       if (isFavourite) {
         await favouritesAPI.deleteFavourite(parseInt(id));
         setIsFavourite(false);
+        setListing((prev) => prev
+          ? { ...prev, likesCount: Math.max(0, (prev.likesCount || 0) - 1) }
+          : prev
+        );
       } else {
         await favouritesAPI.addFavourite(parseInt(id));
         setIsFavourite(true);
+        setListing((prev) => prev
+          ? { ...prev, likesCount: (prev.likesCount || 0) + 1 }
+          : prev
+        );
       }
     } catch (err) {
       const msg = err.response?.data?.message;
@@ -220,7 +229,7 @@ export const ListingDetail = () => {
 
   const handleMessageSeller = async () => {
     if (!isAuthenticated()) {
-      alert('Please login to message seller');
+      navigate('/login', { state: { from: location.pathname } });
       return;
     }
 
@@ -286,7 +295,7 @@ export const ListingDetail = () => {
   return (
     <div>
       <h2>{listing.title || 'Untitled'}</h2>
-      {sellerProfile && (
+      {listing?.sellerId && (
         <div className="card" style={{ marginTop: '1rem', marginBottom: '1rem' }}>
           <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'transparent' }}>
             {avatarUrl && (
@@ -309,7 +318,7 @@ export const ListingDetail = () => {
                   </Link>
                 );
               })()}
-               {sellerProfile.rating != null && (
+               {sellerProfile?.rating != null && (
                  <p className="small-muted" style={{ margin: '0.25rem 0 0 0' }}>
                    Рейтинг: {sellerProfile.rating.toFixed(2)} / 5
                    {sellerProfile.isVerified && ' ✓ Проверен'}
@@ -323,6 +332,11 @@ export const ListingDetail = () => {
         <strong>Рейтинг:</strong>{' '}
         {listing.sellerRating != null ? `${listing.sellerRating.toFixed(2)} / 5` : 'No ratings yet'}
         {listing.sellerReviewsCount != null && ` (${listing.sellerReviewsCount} отзывов)`}
+      </p>
+      <p className="small-muted" style={{ marginTop: '0.25rem' }}>
+        <strong>Просмотры:</strong> {listing.viewsCount ?? 0}
+        {' • '}
+        <strong>В избранных:</strong> {listing.likesCount ?? 0}
       </p>
       <div className="two-col">
         <div style={{ flex: 1 }}>
@@ -384,7 +398,7 @@ export const ListingDetail = () => {
               </button>
             </div>
           )}
-          {isAuthenticated() && user?.id !== listing.sellerId && (
+          {user?.id !== listing.sellerId && (
             <div className="link-actions">
               <button onClick={handleMessageSeller} className="btn btn-primary">Написать продавцу</button>
               {isAuthenticated() && (
@@ -507,15 +521,6 @@ export const ListingDetail = () => {
             ))}
           </div>
         )}
-        {isAuthenticated() && user?.id !== listing.sellerId && (
-          <Link
-            to={`/listings/${id}/review`}
-            className="btn btn-primary"
-            style={{ display: 'inline-block', marginTop: '1rem' }}
-          >
-            Написать отзыв
-          </Link>
-        )}
       </div>
       <div style={{ marginTop: '3rem' }}>
         <h3>Похожие объявления</h3>
@@ -557,6 +562,13 @@ export const ListingDetail = () => {
                   <p>
                     <strong>Цена:</strong> <span className="tag-price">{listing.price} ₽</span>
                   </p>
+                  {listing.viewsCount != null && listing.likesCount != null && (
+                    <p className="small-muted">
+                      <strong>Просмотры:</strong> {listing.viewsCount}
+                      {' • '}
+                      <strong>В избранных:</strong> {listing.likesCount}
+                    </p>
+                  )}
                 </div>
               </Link>
             );

@@ -25,7 +25,7 @@ class SearchController(
 
     @GetMapping("/listings")
     fun searchListings(
-        @RequestParam("query") query: String,
+        @RequestParam("query", required = false) query: String?,
         @RequestParam("page", required = false, defaultValue = "0") page: Int = 0,
         @RequestParam("size", required = false, defaultValue = "10") size: Int = 10,
         @RequestParam("metro", required = false) metro: Long?,
@@ -40,7 +40,7 @@ class SearchController(
         @RequestParam("searchAfter", required = false) searchAfter: String?,
     ): SearchListingsPageResponse =
         searchService.search(
-            query,
+            query ?: "",
             page,
             size,
             city,

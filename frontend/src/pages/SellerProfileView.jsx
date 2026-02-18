@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { sellerAPI } from '../api/seller';
 import { resolveApiUrl } from '../api/axios';
 import { photosAPI } from '../api/photos';
@@ -13,6 +13,7 @@ export const SellerProfileView = () => {
   const { sellerId } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+  const location = useLocation();
   const [profile, setProfile] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [listings, setListings] = useState([]);
@@ -140,7 +141,7 @@ export const SellerProfileView = () => {
 
   const handleMessageSeller = async () => {
     if (!isAuthenticated()) {
-      alert('Please login to message seller');
+      navigate('/login', { state: { from: location.pathname } });
       return;
     }
 
@@ -185,7 +186,7 @@ export const SellerProfileView = () => {
               )}
             </div>
 
-            {isAuthenticated() && user?.id !== profile.userId && (
+            {user?.id !== profile.userId && (
               <div style={{ marginTop: '1rem' }}>
                 <button onClick={handleMessageSeller} className="btn btn-primary">Написать продавцу</button>
               </div>
@@ -231,21 +232,37 @@ export const SellerProfileView = () => {
                   const firstPhoto = listingPhotos[0];
 
                   return (
-                    <Link key={listing.listingsId} to={`/listings/${listing.listingsId}`} className="link-card">
+                    <Link key={listing.listingsId} to={`/listings/${listing.listingsId}`} className="listing-card">
                       {firstPhoto ? (
-                        <img src={resolveApiUrl(firstPhoto)} alt={listing.title} style={{ height: '200px', objectFit: 'cover', display: 'block' }} />
+                        <img
+                          src={resolveApiUrl(firstPhoto)}
+                          alt="Listing cover"
+                          className="listing-image"
+                        />
                       ) : (
-                        <div className="listing-placeholder">Нет фото</div>
-                      )}
-                      <div className="card-body">
-                        <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: 'var(--color-text)' }}>{listing.title}</h3>
-                        <p className="small-muted" style={{ margin: '0.5rem 0', fontSize: '0.9rem' }}>{listing.description?.substring(0, 100)}{listing.description && listing.description.length > 100 ? '...' : ''}</p>
-                        <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span className="tag-price">{listing.price} ₽</span>
-                          {listing.species && <span className="small-muted" style={{ fontSize: '0.85rem' }}>{listing.species}</span>}
+                        <div className="listing-placeholder">
+                          Нет фото
                         </div>
-                        {listing.ageMonths != null && <p className="small-muted" style={{ margin: '0.25rem 0 0 0' }}>Возраст: {AGE_LABELS[listing.ageMonths] || 'Не указан'}</p>}
-                        {listing.gender && <p className="small-muted" style={{ margin: '0.25rem 0 0 0' }}>Пол: {GENDER_LABELS[listing.gender] || 'Любой'}</p>}
+                      )}
+                      <div className="listing-content">
+                        <h3>
+                          {listing.title || 'Без названия'}
+                        </h3>
+                        <p>
+                          {listing.description?.substring(0, 90)}
+                          {listing.description && listing.description.length > 90 ? '...' : ''}
+                        </p>
+                        <p>
+                          <strong>Цена:</strong> <span className="tag-price">{listing.price} ₽</span>
+                        </p>
+                        <p>
+                          <strong>Город:</strong> {listing.city?.title || '—'}
+                        </p>
+                        <p className="small-muted">
+                          <strong>Просмотры:</strong> {listing.viewsCount ?? 0}
+                          {' • '}
+                          <strong>В избранных:</strong> {listing.likesCount ?? 0}
+                        </p>
                       </div>
                     </Link>
                   );

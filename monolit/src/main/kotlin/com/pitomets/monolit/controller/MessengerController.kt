@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.DeleteMapping
 
 @RestController
 @RequestMapping("/api/messenger")
@@ -103,6 +104,59 @@ class MessengerController(
             userId = userPrincipal.id,
             method = HttpMethod.PUT,
             path = "/api/messages/chat/$chatId/read"
+        )
+        return ResponseEntity.ok(result)
+    }
+
+    // Blocks endpoints
+    @PostMapping("/blocks/{blockedId}")
+    fun blockUser(
+        @AuthenticationPrincipal userPrincipal: UserPrincipal,
+        @PathVariable blockedId: Long
+    ): ResponseEntity<Any> {
+        val result = messengerService.proxyRequest(
+            userId = userPrincipal.id,
+            method = HttpMethod.POST,
+            path = "/api/blocks/$blockedId"
+        )
+        return ResponseEntity.ok(result)
+    }
+
+    @DeleteMapping("/blocks/{blockedId}")
+    fun unblockUser(
+        @AuthenticationPrincipal userPrincipal: UserPrincipal,
+        @PathVariable blockedId: Long
+    ): ResponseEntity<Any> {
+        val result = messengerService.proxyRequest(
+            userId = userPrincipal.id,
+            method = HttpMethod.DELETE,
+            path = "/api/blocks/$blockedId"
+        )
+        return ResponseEntity.ok(result)
+    }
+
+    @GetMapping("/blocks/{blockedId}")
+    fun getBlockStatus(
+        @AuthenticationPrincipal userPrincipal: UserPrincipal,
+        @PathVariable blockedId: Long
+    ): ResponseEntity<Any> {
+        val result = messengerService.proxyRequest(
+            userId = userPrincipal.id,
+            method = HttpMethod.GET,
+            path = "/api/blocks/$blockedId"
+        )
+        return ResponseEntity.ok(result)
+    }
+
+    @GetMapping("/blocks/status/{otherId}")
+    fun getBlockStatusBetween(
+        @AuthenticationPrincipal userPrincipal: UserPrincipal,
+        @PathVariable otherId: Long
+    ): ResponseEntity<Any> {
+        val result = messengerService.proxyRequest(
+            userId = userPrincipal.id,
+            method = HttpMethod.GET,
+            path = "/api/blocks/status/$otherId"
         )
         return ResponseEntity.ok(result)
     }

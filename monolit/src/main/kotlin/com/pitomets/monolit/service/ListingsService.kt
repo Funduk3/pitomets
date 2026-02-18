@@ -45,6 +45,7 @@ class ListingsService(
     private val cityRepo: CitiesRepository,
     private val metroRepo: MetroStationRepo,
     private val redisTemplate: RedisTemplate<String, String>,
+    private val metricsService: ListingMetricsService,
 ) {
     // Controller functions
 
@@ -98,6 +99,34 @@ class ListingsService(
             response,
             response.father,
             response.mother
+        )
+    }
+
+    fun getListingWithView(
+        listingId: Long,
+        viewerId: Long?,
+        viewerIp: String?,
+        userAgent: String?
+    ): ListingsResponse {
+        val response = listingsRepo.findListingOrThrow(listingId)
+
+        metricsService.recordViewAsync(
+            listingId = listingId,
+            ownerId = response.sellerProfile.seller?.id,
+            viewerId = viewerId,
+            ip = viewerIp,
+            userAgent = userAgent
+        )
+
+        val views = response.viewsCount + metricsService.getPendingViewsDelta(listingId)
+        val likes = response.likesCount + metricsService.getPendingLikesDelta(listingId)
+
+        return buildListingsResponse(
+            response,
+            response.father,
+            response.mother,
+            viewsCount = views,
+            likesCount = likes
         )
     }
 
@@ -240,7 +269,9 @@ class ListingsService(
                         color = station.line.color
                     )
                 )
-            }
+            },
+            viewsCount = saved.viewsCount,
+            likesCount = saved.likesCount
         )
     }
 
@@ -344,7 +375,9 @@ class ListingsService(
     private fun buildListingsResponse(
         savedListing: Listing,
         father: Pet?,
-        mother: Pet?
+        mother: Pet?,
+        viewsCount: Long = savedListing.viewsCount,
+        likesCount: Long = savedListing.likesCount
     ) = ListingsResponse(
         description = savedListing.description,
         sellerId = requireNotNull(savedListing.sellerProfile.seller?.id),
@@ -375,7 +408,9 @@ class ListingsService(
                     color = station.line.color
                 )
             )
-        }
+        },
+        viewsCount = viewsCount,
+        likesCount = likesCount
     )
 
     private val log = LoggerFactory.getLogger(ListingsService::class.java)

@@ -18,6 +18,18 @@ export const Home = () => {
     loadPage(null);
   }, []);
 
+  const typeButtons = [
+    { label: 'Собаки', icon: '🐶' },
+    { label: 'Кошки', icon: '🐱' },
+    { label: 'Птицы', icon: '🦜' },
+    { label: 'Грызуны', icon: '🐹' },
+    { label: 'Хорьки / Экзоты', mobileLabel: 'Хорьки Экзоты', icon: '🦦' },
+    { label: 'Аквариум', icon: '🐠' },
+    { label: 'Рептилии', icon: '🦎' },
+    { label: 'Скот / Фермерские', mobileLabel: 'Скот Фермерские', icon: '🐄' },
+    { label: 'Другое', icon: '🐾' },
+  ];
+
   const loadPage = async (nextCursorValue) => {
     try {
       setLoading(true);
@@ -37,25 +49,36 @@ export const Home = () => {
 
   return (
     <div>
-      <h1>Питомец</h1>
-      <p>Объявления тут!</p>
-      {!isAuthenticated() && (
-        <div className="hero" style={{ marginTop: '2rem' }}>
+      <div
+        className="home-category-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          gap: '0.75rem',
+          marginBottom: '2rem'
+        }}
+      >
+        {typeButtons.map(({ label, mobileLabel, icon }) => (
           <Link
-            to="/register"
-            className="btn btn-primary"
-            style={{ marginRight: '1rem' }}
+            key={label}
+            to={`/search?types=${encodeURIComponent(label)}`}
+            className="btn btn-secondary home-category-button"
+            style={{
+              width: '100%',
+              textAlign: 'center',
+              padding: '0.9rem 1rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem'
+            }}
           >
-            Начать
+            <span className="home-category-icon" style={{ fontSize: '1.25rem' }} aria-hidden="true">{icon}</span>
+            <span className="home-category-label home-category-label-desktop">{label}</span>
+            <span className="home-category-label home-category-label-mobile">{mobileLabel || label}</span>
           </Link>
-          <Link
-            to="/search"
-            className="btn btn-secondary"
-          >
-            Поиск по объявлениям
-          </Link>
-        </div>
-      )}
+        ))}
+      </div>
 
       <div style={{ marginTop: '2rem' }}>
         <h2>Свежие объявления</h2>
@@ -105,6 +128,11 @@ export const Home = () => {
                   </p>
                   <p>
                     <strong>Город:</strong> {listing.city?.title || '—'}
+                  </p>
+                  <p className="small-muted">
+                    <strong>Просмотры:</strong> {listing.viewsCount ?? 0}
+                    {' • '}
+                    <strong>В избранных:</strong> {listing.likesCount ?? 0}
                   </p>
                   </div>
                 </Link>

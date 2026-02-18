@@ -8,7 +8,7 @@ docker network create web
 
 Можно пробить туннель до контейнеров
 ```
-ssh -i ~/.ssh/pitomets -L 5432:localhost:5432 student@178.154.194.186
+ssh -i ~/.ssh/1244 -L 5432:localhost:5432 student@178.154.194.186
 ```
 
 дев сборка

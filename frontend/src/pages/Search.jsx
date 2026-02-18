@@ -238,19 +238,44 @@ export const Search = () => {
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
-        const q = params.get('q');
+        const q = params.get('q') || '';
+        const typesParam = params.get('types');
+        if (typesParam && animalTypes.length) {
+            const titles = typesParam
+                .split(',')
+                .map((s) => decodeURIComponent(s).trim())
+                .filter(Boolean);
+            const ids = animalTypes
+                .filter((t) => titles.some((title) => title.toLowerCase() === t.title.toLowerCase()))
+                .map((t) => t.id);
+            setSelectedTypeIds(ids);
+            if (!q) {
+                setQuery('');
+                setHasSearched(true);
+                return;
+            }
+        }
         if (q && q !== query) {
             setQuery(q);
             setHasSearched(true);
             handleSearch(null, q, false);
         }
-    }, [location.search]);
+    }, [location.search, animalTypes]);
 
     const handleSearch = async (e, overrideQuery, append = false) => {
         if (e?.preventDefault) e.preventDefault();
 
         const searchText = (overrideQuery ?? query).trim();
-        if (!searchText) return;
+        const hasFilters =
+            selectedTypeIds.length ||
+            selectedBreeds.length ||
+            selectedGenders.length ||
+            selectedAges.length ||
+            selectedCity ||
+            metroId ||
+            priceFromInput ||
+            priceToInput;
+        if (!searchText && !hasFilters) return;
 
         const normalize = (s) => {
             if (s == null || s === '') return null;
@@ -669,7 +694,7 @@ export const Search = () => {
 
                         <div className="search-results">
                             <div className="search-top">
-                                <div className="search-bar-row search-bar-row-stacked">
+                                <div className="search-bar-row search-bar-row-stacked search-query-row">
                                     <div className="search-bar-input autocomplete-root">
                                         <input
                                             type="text"
@@ -681,7 +706,7 @@ export const Search = () => {
                                             onFocus={() => suggestions.length && setShowSuggestions(true)}
                                             onBlur={() => setShowSuggestions(false)}
                                             placeholder="Ищем питомца..."
-                                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base search-query-input"
                                         />
 
                                         {showSuggestions && suggestions.length > 0 && (
@@ -704,7 +729,7 @@ export const Search = () => {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="btn btn-primary search-bar-action"
+                                        className="btn btn-primary search-bar-action search-bar-submit"
                                     >
                                         {loading ? 'Ищем...' : 'Найти'}
                                     </button>
@@ -726,10 +751,16 @@ export const Search = () => {
                                  </div>
                              )}
 
-                             {hasSearched && !loading && results.length === 0 && !error && (
+                             {hasSearched && !loading && results.length === 0 && !error && query.trim() && (
                                  <div className="text-center py-12">
                                      <h3 className="text-xl font-semibold text-slate-700 mb-2">Ничего не найдено</h3>
                                      <p className="text-slate-600">По запросу "{query}" результатов не найдено. Попробуйте другие параметры поиска.</p>
+                                 </div>
+                             )}
+                             {hasSearched && !loading && results.length === 0 && !error && !query.trim() && (
+                                 <div className="text-center py-12">
+                                     <h3 className="text-xl font-semibold text-slate-700 mb-2">Ничего не найдено</h3>
+                                     <p className="text-slate-600">Поменяйте фильтры или введите запрос.</p>
                                  </div>
                              )}
 
@@ -787,6 +818,13 @@ export const Search = () => {
                                                         <p>
                                                             <strong>Город:</strong> {listing.cityTitle || '—'}
                                                         </p>
+                                                        {listing.viewsCount != null && listing.likesCount != null && (
+                                                            <p className="small-muted">
+                                                                <strong>Просмотры:</strong> {listing.viewsCount}
+                                                                {' • '}
+                                                                <strong>В избранных:</strong> {listing.likesCount}
+                                                            </p>
+                                                        )}
                                                     </div>
                                                 </Link>
                                             );

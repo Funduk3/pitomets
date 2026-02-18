@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { listingsAPI } from '../api/listings';
 import { resolveApiUrl } from '../api/axios';
 import { photosAPI } from '../api/photos';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 
 export const Listings = () => {
+  const navigate = useNavigate();
   const [listings, setListings] = useState([]);
   const [listingsPhotos, setListingsPhotos] = useState({});
   const [loading, setLoading] = useState(true);
@@ -77,58 +78,72 @@ export const Listings = () => {
             <Link to="/listings/create" style={{ color: '#3498db' }}>Создать первое объявление</Link>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+          <div className="listings-grid" style={{ marginTop: '2rem' }}>
             {listings.map((listing) => {
               const listingPhotos = listingsPhotos[listing.listingsId] || [];
               const firstPhoto = listingPhotos[0];
               
               return (
-                <div key={listing.listingsId} style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
+                <Link key={listing.listingsId} to={`/listings/${listing.listingsId}`} className="listing-card">
                   {firstPhoto ? (
                     <img
                       src={resolveApiUrl(firstPhoto)}
-                      alt={listing.title || 'Untitled'}
-                      style={{
-                        width: '100%',
-                        height: '200px',
-                        objectFit: 'cover',
-                        display: 'block'
-                      }}
+                      alt="Listing cover"
+                      className="listing-image"
                     />
                   ) : (
-                    <div style={{
-                      width: '100%',
-                      height: '200px',
-                      backgroundColor: '#f0f0f0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#999'
-                    }}>
+                    <div className="listing-placeholder">
                       Нет фото
                     </div>
                   )}
-                   <div style={{ padding: '1rem' }}>
-                     <h3 style={{ margin: '0 0 0.5rem 0' }}>{listing.title || 'Untitled'}</h3>
-                    <p style={{ margin: '0.5rem 0', color: '#666', fontSize: '0.9rem' }}>
-                      {listing.description?.substring(0, 100)}
-                      {listing.description && listing.description.length > 100 ? '...' : ''}
+                  <div className="listing-content">
+                    <h3>{listing.title || 'Без названия'}</h3>
+                    <p>
+                      {listing.description?.substring(0, 90)}
+                      {listing.description && listing.description.length > 90 ? '...' : ''}
                     </p>
-                    <p><strong>Цена:</strong> {listing.price} ₽</p>
-                    <p><strong>Вид:</strong> {listing.species}</p>
-                    {listing.breed && <p><strong>Порода:</strong> {listing.breed}</p>}
-                    <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <Link to={`/listings/${listing.listingsId}`} className="btn btn-secondary" style={{ fontSize: '0.9rem' }}>Посмотреть</Link>
-                      <Link to={`/listings/${listing.listingsId}/edit`} className="btn" style={{ backgroundColor: '#f39c12', color: '#fff', fontSize: '0.9rem' }}>Изменить</Link>
-                      <button onClick={() => handleDelete(listing.listingsId)} className="btn btn-danger" style={{ fontSize: '0.9rem' }}>Удалить</button>
+                    <p>
+                      <strong>Цена:</strong> <span className="tag-price">{listing.price} ₽</span>
+                    </p>
+                    <p>
+                      <strong>Город:</strong> {listing.city?.title || '—'}
+                    </p>
+                    <p className="small-muted">
+                      <strong>Просмотры:</strong> {listing.viewsCount ?? 0}
+                      {' • '}
+                      <strong>В избранных:</strong> {listing.likesCount ?? 0}
+                    </p>
+                    <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          navigate(`/listings/${listing.listingsId}/edit`);
+                        }}
+                        className="btn"
+                        style={{ backgroundColor: '#f39c12', color: '#fff', fontSize: '0.9rem' }}
+                      >
+                        Изменить
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDelete(listing.listingsId);
+                        }}
+                        className="btn btn-danger"
+                        style={{ fontSize: '0.9rem' }}
+                      >
+                        Удалить
+                      </button>
                     </div>
-                   </div>
-                 </div>
-               );
-             })}
-           </div>
-         )}
-       </div>
-     </ProtectedRoute>
-   );
- };
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </ProtectedRoute>
+  );
+};

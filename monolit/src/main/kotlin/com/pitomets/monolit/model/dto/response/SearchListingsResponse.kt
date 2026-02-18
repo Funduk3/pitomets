@@ -8,4 +8,6 @@ data class SearchListingsResponse(
     val description: String,
     val price: BigDecimal,
     val cityTitle: String?,
+    val viewsCount: Long? = null,
+    val likesCount: Long? = null,
 )

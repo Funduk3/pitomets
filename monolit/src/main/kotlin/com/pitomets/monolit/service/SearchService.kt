@@ -88,13 +88,17 @@ class SearchService(
                     .query { q ->
                         q.bool { b ->
                             // search
-                            b.must {
-                                it.multiMatch { m ->
-                                    m.query(query)
-                                        .fields("title^3", "description")
-                                        .fuzziness("AUTO")
-                                        .prefixLength(MIN_CHAR_COUNT)
-                                        .maxExpansions(MAX_EXPANSIONS_COUNT)
+                            if (query.isBlank()) {
+                                b.must { it.matchAll { m -> m } }
+                            } else {
+                                b.must {
+                                    it.multiMatch { m ->
+                                        m.query(query)
+                                            .fields("title^3", "description")
+                                            .fuzziness("AUTO")
+                                            .prefixLength(MIN_CHAR_COUNT)
+                                            .maxExpansions(MAX_EXPANSIONS_COUNT)
+                                    }
                                 }
                             }
                             // filters

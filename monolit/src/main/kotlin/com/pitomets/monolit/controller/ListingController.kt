@@ -6,6 +6,7 @@ import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.ListingsCursorResponse
 import com.pitomets.monolit.model.dto.response.ListingsResponse
 import com.pitomets.monolit.service.ListingsService
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -23,9 +24,17 @@ class ListingController(
 ) {
     @GetMapping("/")
     fun getListing(
-        @RequestParam("id") listingId: Long
+        @RequestParam("id") listingId: Long,
+        @AuthenticationPrincipal userPrincipal: UserPrincipal?,
+        request: HttpServletRequest,
     ): ListingsResponse =
-        listingsService.getListing(listingId)
+        listingsService.getListingWithView(
+            listingId = listingId,
+            viewerId = userPrincipal?.id,
+            viewerIp = request.getHeader("X-Forwarded-For")?.split(",")?.firstOrNull()?.trim()
+                ?: request.remoteAddr,
+            userAgent = request.getHeader("User-Agent")
+        )
 
     @GetMapping("/my")
     fun getMyListings(

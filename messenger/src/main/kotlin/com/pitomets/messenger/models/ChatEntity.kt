@@ -14,5 +14,7 @@ data class ChatEntity(
     @Contextual val createdAt: Instant,
     @Contextual val updatedAt: Instant,
     val unreadCountUser1: Int,
-    val unreadCountUser2: Int
+    val unreadCountUser2: Int,
+    val lastUnreadMessageIdUser1: Long?,
+    val lastUnreadMessageIdUser2: Long?
 )

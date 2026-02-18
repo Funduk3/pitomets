@@ -1,6 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { messengerAPI } from '../api/messenger';
+import { listingsAPI } from '../api/listings';
 import { resolveApiUrl } from '../api/axios';
 import { userAPI } from '../api/user';
 import { sellerAPI } from '../api/seller';
@@ -11,7 +12,7 @@ import { useMessengerWS } from '../context/MessengerWSContext';
 export const Chat = () => {
   const { chatId } = useParams();
   const { isAuthenticated, user } = useAuth();
-  const { connected: wsConnected, subscribe, send, markChatRead, updateLastSeenMessage } = useMessengerWS();
+  const { connected: wsConnected, subscribe, send, markChatRead, updateLastSeenMessage, setActiveChatId } = useMessengerWS();
   const [chat, setChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -19,10 +20,18 @@ export const Chat = () => {
   const [error, setError] = useState('');
   const [otherProfile, setOtherProfile] = useState(null);
   const [listingPhotoUrl, setListingPhotoUrl] = useState(null);
+  const [listing, setListing] = useState(null);
   const [otherAvatarUrl, setOtherAvatarUrl] = useState(null);
   const [otherSellerProfileId, setOtherSellerProfileId] = useState(null);
   const [isTabVisible, setIsTabVisible] = useState(!document.hidden);
   const [unreadBoundaryId, setUnreadBoundaryId] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [isBlockedByMe, setIsBlockedByMe] = useState(false);
+  const [isBlockedMe, setIsBlockedMe] = useState(false);
+  const menuRef = useRef(null);
+  const otherUserIdRef = useRef(null);
+  const pendingBlockStatusRef = useRef(null);
   const syncIntervalRef = useRef(null);
   const markReadTimeoutRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -38,6 +47,30 @@ export const Chat = () => {
       byId.set(String(m.id), m);
     }
     return Array.from(byId.values()).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  };
+
+  const getOtherUserId = () => {
+    if (!chat?.user1Id || !chat?.user2Id || !user?.id) return null;
+    return chat.user1Id === user.id ? chat.user2Id : chat.user1Id;
+  };
+
+  const applyBlockStatus = (payload) => {
+    const blockedByMe = Boolean(payload?.blockedByMe);
+    const blockedMe = Boolean(payload?.blockedMe);
+    setIsBlockedByMe(blockedByMe);
+    setIsBlockedMe(blockedMe);
+    setIsBlocked(Boolean(payload?.blockedAny ?? (blockedByMe || blockedMe)));
+  };
+
+  const refreshBlockStatus = async (otherUserIdValue) => {
+    try {
+      const status = await messengerAPI.getBlockStatusBetween(otherUserIdValue);
+      applyBlockStatus(status);
+    } catch (_) {
+      setIsBlocked(false);
+      setIsBlockedByMe(false);
+      setIsBlockedMe(false);
+    }
   };
 
   useEffect(() => {
@@ -70,10 +103,26 @@ export const Chat = () => {
   }, [chatId, user?.id]);
 
   useEffect(() => {
+    if (!chatId) return;
+    setActiveChatId(Number(chatId));
+    return () => setActiveChatId(null);
+  }, [chatId, setActiveChatId]);
+
+  useEffect(() => {
     const onVisibility = () => setIsTabVisible(!document.hidden);
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onClick = (event) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [menuOpen]);
 
   // периодическая синхронизация сообщений (на случай разрывов WS)
   useEffect(() => {
@@ -146,6 +195,45 @@ export const Chat = () => {
   };
 
   useEffect(() => {
+    if (!isAuthenticated() || !chatId || !user?.id) return;
+    if (!chat?.user1Id || !chat?.user2Id) return;
+    const otherUserId = getOtherUserId();
+    if (!otherUserId) return;
+    otherUserIdRef.current = otherUserId;
+    if (pendingBlockStatusRef.current && Number(pendingBlockStatusRef.current.otherUserId) === Number(otherUserId)) {
+      applyBlockStatus(pendingBlockStatusRef.current);
+      pendingBlockStatusRef.current = null;
+    }
+    let cancelled = false;
+    (async () => {
+      await refreshBlockStatus(otherUserId);
+      if (cancelled) return;
+    })();
+    return () => { cancelled = true; };
+  }, [chat?.id, chat?.user1Id, chat?.user2Id, user?.id]);
+
+  useEffect(() => {
+    if (!isAuthenticated() || !chatId || !user?.id) return;
+    if (!isBlocked) return;
+    const otherUserId = getOtherUserId();
+    if (!otherUserId) return;
+    const interval = setInterval(() => {
+      refreshBlockStatus(otherUserId);
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [chat?.id, chat?.user1Id, chat?.user2Id, user?.id, isBlocked]);
+
+  useEffect(() => {
+    if (!isAuthenticated() || !chatId || !user?.id) return;
+    const otherUserId = getOtherUserId();
+    if (!otherUserId) return;
+    const interval = setInterval(() => {
+      if (!isBlocked) refreshBlockStatus(otherUserId);
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [chat?.id, chat?.user1Id, chat?.user2Id, user?.id, isBlocked]);
+
+  useEffect(() => {
     const otherUserId = chat?.user1Id === user?.id ? chat?.user2Id : chat?.user1Id;
     if (!otherUserId) return;
     let cancelled = false;
@@ -207,6 +295,20 @@ export const Chat = () => {
     return () => { cancelled = true; };
   }, [chat?.listingId]);
 
+  useEffect(() => {
+    if (!chat?.listingId) { setListing(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await listingsAPI.getListing(chat.listingId);
+        if (!cancelled) setListing(data);
+      } catch (_) {
+        if (!cancelled) setListing(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [chat?.listingId]);
+
   const loadMessages = async () => {
     try {
       const data = await messengerAPI.getChatMessages(parseInt(chatId));
@@ -248,6 +350,24 @@ export const Chat = () => {
   useEffect(() => {
     if (!isAuthenticated() || !chatId) return;
     return subscribe((message) => {
+      if (message?.type === 'ws_error') {
+        const msg = String(message.error || '');
+        if (msg.toLowerCase().includes('blocked')) {
+          const otherUserId = getOtherUserId();
+          if (otherUserId) refreshBlockStatus(otherUserId);
+          setIsBlocked(true);
+        }
+        return;
+      }
+      if (message?.type === 'block_status') {
+        const currentOtherId = otherUserIdRef.current;
+        if (currentOtherId && Number(message.otherUserId) === Number(currentOtherId)) {
+          applyBlockStatus(message);
+          return;
+        }
+        pendingBlockStatusRef.current = message;
+        return;
+      }
       if (message?.type === 'read_receipt') {
         const currentChatId = parseInt(chatId);
         if (Number(message.chatId) !== currentChatId) return;
@@ -259,13 +379,21 @@ export const Chat = () => {
       if (Number(message.chatId) !== currentChatId) return;
       setMessages((prev) => mergeMessagesById(prev, [message]));
       updateLastSeenMessage(currentChatId, message.id);
+      if (isBlockedMe && Number(message.senderId) !== Number(user?.id)) {
+        const otherUserId = getOtherUserId();
+        if (otherUserId) refreshBlockStatus(otherUserId);
+      }
       if (message?.senderId != null && Number(message.senderId) !== Number(user?.id)) scheduleMarkRead();
       scrollToBottom();
     });
-  }, [chatId, user?.id, subscribe]);
+  }, [chatId, user?.id, subscribe, isBlocked, isBlockedMe, chat?.user1Id, chat?.user2Id]);
 
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
+    if (isBlocked) {
+      alert(isBlockedMe ? 'Вы заблокированы' : 'Вы заблокировали этого пользователя');
+      return;
+    }
     try {
       const message = { type: 'send_message', chatId: parseInt(chatId), content: newMessage.trim() };
       if (send(message)) {
@@ -277,6 +405,13 @@ export const Chat = () => {
       }
     } catch (err) {
       console.error('Failed to send message:', err);
+      const msg = err?.response?.data?.message || err?.response?.data || '';
+      if (typeof msg === 'string' && msg.toLowerCase().includes('blocked')) {
+        setIsBlocked(true);
+        setIsBlockedMe(true);
+        alert('Отправка невозможна: вы заблокированы');
+        return;
+      }
       alert('Failed to send message');
     }
   };
@@ -301,6 +436,22 @@ export const Chat = () => {
   const isListingChat = chat?.listingId != null;
   const listingTitle = isListingChat ? (chat?.listingTitle || 'Объявление') : otherName;
   const listingLink = isListingChat ? `/listings/${chat.listingId}` : null;
+  const canLeaveReview = isListingChat && listing?.sellerId != null && Number(listing.sellerId) !== Number(user?.id);
+
+  const toggleBlock = async () => {
+    try {
+      if (isBlockedByMe) {
+        await messengerAPI.unblockUser(otherUserId);
+      } else {
+        await messengerAPI.blockUser(otherUserId);
+      }
+      await refreshBlockStatus(otherUserId);
+      setMenuOpen(false);
+    } catch (err) {
+      console.error('Failed to update block:', err);
+      alert('Не удалось изменить блокировку');
+    }
+  };
 
   return (
     <div className="chat-shell">
@@ -340,8 +491,33 @@ export const Chat = () => {
           </div>
           <div className="small-muted">{wsConnected ? '🟢 Подключено' : '🔴 Отключено'}</div>
         </div>
+        <div className="chat-menu" ref={menuRef}>
+          <button
+            type="button"
+            className="chat-menu-button"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            aria-label="Открыть меню"
+          >
+            ⋯
+          </button>
+          {menuOpen && (
+            <div className="chat-menu-dropdown">
+              <button type="button" className="chat-menu-item" onClick={toggleBlock}>
+                {isBlockedByMe ? 'Разблокировать' : 'Заблокировать'}
+              </button>
+              {canLeaveReview && (
+                <Link
+                  to={`/listings/${chat.listingId}/review`}
+                  className="chat-menu-item"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Написать отзыв
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-
       <div className="chat-body" ref={messagesContainerRef} onScroll={updateAutoScrollState}>
         {messages.map((msg) => {
           const isOwn = Number(msg.senderId) === Number(user?.id);
@@ -375,13 +551,32 @@ export const Chat = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="chat-input-row">
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyPress={handleKeyPress} placeholder="Введите сообщение..." className="chat-input" />
-          <button onClick={sendMessage} disabled={!newMessage.trim()} className="btn btn-primary" style={{ padding: '0.75rem 1.5rem' }}>Отправить</button>
+      {isBlocked ? (
+        <div className="chat-input-row">
+          <div className="small-muted">{isBlockedMe ? 'Вы заблокированы' : 'Сначала разблокируйте'}</div>
         </div>
-      </div>
+      ) : (
+        <div className="chat-input-row">
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Введите сообщение..."
+              className="chat-input"
+            />
+            <button
+              onClick={sendMessage}
+              disabled={!newMessage.trim()}
+              className="btn btn-primary"
+              style={{ padding: '0.75rem 1.5rem' }}
+            >
+              Отправить
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-

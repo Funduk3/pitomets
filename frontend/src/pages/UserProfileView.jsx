@@ -276,6 +276,11 @@ export const UserProfileView = () => {
                               Пол: {GENDER_LABELS[listing.gender] || 'Любой'}
                             </p>
                           )}
+                          <p className="small-muted" style={{ margin: '0.25rem 0 0 0' }}>
+                            <strong>Просмотры:</strong> {listing.viewsCount ?? 0}
+                            {' • '}
+                            <strong>В избранных:</strong> {listing.likesCount ?? 0}
+                          </p>
                         </div>
                       </Link>
                     );

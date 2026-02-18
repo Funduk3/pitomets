@@ -13,13 +13,15 @@ data class ChatResponse(
     val createdAt: String,
     val updatedAt: String,
     val unreadCount: Int = 0,
-    val lastMessage: MessageResponse? = null
+    val lastMessage: MessageResponse? = null,
+    val lastUnreadMessage: MessageResponse? = null
 ) {
     companion object {
         fun from(
             entity: ChatEntity,
             unreadCount: Int = 0,
-            lastMessage: MessageResponse? = null
+            lastMessage: MessageResponse? = null,
+            lastUnreadMessage: MessageResponse? = null
         ): ChatResponse {
             return ChatResponse(
                 id = entity.id,
@@ -30,7 +32,8 @@ data class ChatResponse(
                 createdAt = entity.createdAt.toString(),
                 updatedAt = entity.updatedAt.toString(),
                 unreadCount = unreadCount,
-                lastMessage = lastMessage
+                lastMessage = lastMessage,
+                lastUnreadMessage = lastUnreadMessage
             )
         }
     }

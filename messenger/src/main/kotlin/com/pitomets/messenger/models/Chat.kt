@@ -15,6 +15,8 @@ object Chat : LongIdTable("chats") {
     // Unread counters per participant (unreadCount is per-user, not per-chat globally)
     val unreadCountUser1 = integer("unread_count_user1").default(0)
     val unreadCountUser2 = integer("unread_count_user2").default(0)
+    val lastUnreadMessageIdUser1 = long("last_unread_message_id_user1").nullable()
+    val lastUnreadMessageIdUser2 = long("last_unread_message_id_user2").nullable()
 
     const val MAX_LISTING_TITLE_LENGTH = 255
 }

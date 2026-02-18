@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export const Login = () => {
@@ -10,6 +10,8 @@ export const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = location.state?.from || '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,7 +22,7 @@ export const Login = () => {
       // Note: In production, password should be hashed on client or sent securely
       // For now, using password directly as passwordHash (backend expects passwordHash)
       await login(email, password);
-      navigate('/');
+      navigate(redirectTo);
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
     } finally {
@@ -100,8 +102,11 @@ export const Login = () => {
           <Link to="/forgot-password" style={{ color: '#007bff', textDecoration: 'none' }}>Забыли пароль?</Link>
         </div>
       </form>
-      <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-        Ещё нет аккаунта? <Link to="/register">Регистрация здесь</Link>
+      <div className="auth-switch-block">
+        <p className="auth-switch-text">Ещё нет аккаунта?</p>
+        <Link to="/register" state={{ from: redirectTo }} className="btn btn-secondary btn-block auth-switch-action">
+          Зарегистрироваться
+        </Link>
       </div>
     </div>
   );

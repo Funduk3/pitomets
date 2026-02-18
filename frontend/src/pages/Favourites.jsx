@@ -98,6 +98,11 @@ export const Favourites = () => {
                     <p>
                       <strong>Город:</strong> {listing.cityTitle || '—'}
                     </p>
+                    <p className="small-muted">
+                      <strong>Просмотры:</strong> {listing.viewsCount ?? 0}
+                      {' • '}
+                      <strong>В избранных:</strong> {listing.likesCount ?? 0}
+                    </p>
                     <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
                       <button
                         onClick={(e) => {
