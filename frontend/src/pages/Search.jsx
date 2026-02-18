@@ -694,7 +694,7 @@ export const Search = () => {
 
                         <div className="search-results">
                             <div className="search-top">
-                                <div className="search-bar-row search-bar-row-stacked">
+                                <div className="search-bar-row search-bar-row-stacked search-query-row">
                                     <div className="search-bar-input autocomplete-root">
                                         <input
                                             type="text"
@@ -706,7 +706,7 @@ export const Search = () => {
                                             onFocus={() => suggestions.length && setShowSuggestions(true)}
                                             onBlur={() => setShowSuggestions(false)}
                                             placeholder="Ищем питомца..."
-                                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base search-query-input"
                                         />
 
                                         {showSuggestions && suggestions.length > 0 && (
@@ -729,7 +729,7 @@ export const Search = () => {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="btn btn-primary search-bar-action"
+                                        className="btn btn-primary search-bar-action search-bar-submit"
                                     >
                                         {loading ? 'Ищем...' : 'Найти'}
                                     </button>

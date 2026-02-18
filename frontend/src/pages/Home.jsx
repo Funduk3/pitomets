@@ -23,10 +23,10 @@ export const Home = () => {
     { label: 'Кошки', icon: '🐱' },
     { label: 'Птицы', icon: '🦜' },
     { label: 'Грызуны', icon: '🐹' },
-    { label: 'Хорьки / Экзоты', icon: '🦦' },
+    { label: 'Хорьки / Экзоты', mobileLabel: 'Хорьки Экзоты', icon: '🦦' },
     { label: 'Аквариум', icon: '🐠' },
     { label: 'Рептилии', icon: '🦎' },
-    { label: 'Скот / Фермерские', icon: '🐄' },
+    { label: 'Скот / Фермерские', mobileLabel: 'Скот Фермерские', icon: '🐄' },
     { label: 'Другое', icon: '🐾' },
   ];
 
@@ -50,6 +50,7 @@ export const Home = () => {
   return (
     <div>
       <div
+        className="home-category-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
@@ -57,11 +58,11 @@ export const Home = () => {
           marginBottom: '2rem'
         }}
       >
-        {typeButtons.map(({ label, icon }) => (
+        {typeButtons.map(({ label, mobileLabel, icon }) => (
           <Link
             key={label}
             to={`/search?types=${encodeURIComponent(label)}`}
-            className="btn btn-secondary"
+            className="btn btn-secondary home-category-button"
             style={{
               width: '100%',
               textAlign: 'center',
@@ -72,8 +73,9 @@ export const Home = () => {
               gap: '0.5rem'
             }}
           >
-            <span style={{ fontSize: '1.25rem' }} aria-hidden="true">{icon}</span>
-            <span>{label}</span>
+            <span className="home-category-icon" style={{ fontSize: '1.25rem' }} aria-hidden="true">{icon}</span>
+            <span className="home-category-label home-category-label-desktop">{label}</span>
+            <span className="home-category-label home-category-label-mobile">{mobileLabel || label}</span>
           </Link>
         ))}
       </div>

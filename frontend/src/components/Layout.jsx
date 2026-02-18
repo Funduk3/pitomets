@@ -12,6 +12,7 @@ export const Layout = ({ children }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -49,6 +50,15 @@ export const Layout = ({ children }) => {
     }
   }, [location.pathname]);
 
+  useEffect(() => {
+    const onScroll = () => {
+      setShowScrollTop(window.scrollY > 480);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   const submitSearch = (value) => {
     const q = (value ?? searchQuery).trim();
     if (!q) return;
@@ -60,27 +70,16 @@ export const Layout = ({ children }) => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF' }}>
-      <nav style={{
-        backgroundColor: '#FFFFFF',
-        padding: '1rem 1.5rem',
-        color: '#111111',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderBottom: '1px solid #EDEDED',
-        position: 'sticky',
-        top: 0,
-        zIndex: 1000
-      }}>
-        <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
-          <Link to="/" style={{ color: '#111111', textDecoration: 'none', fontSize: '1.5rem', fontWeight: '700', letterSpacing: '-0.01em' }}>
+      <nav className="app-nav">
+        <div className="nav-left">
+          <Link to="/" className="brand-link">
             Питомец
           </Link>
-          <>
+          <div className="nav-links">
             <Link to="/listings" style={{ color: '#111111', textDecoration: 'none' }}>Мои объявления</Link>
             <Link to="/favourites" style={{ color: '#111111', textDecoration: 'none' }}>Избранные</Link>
             <Link to="/chats" style={{ color: hasUnread ? '#FF6B5A' : '#111111', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-              Мои чаты
+              Чаты
               {hasUnread && (
                 <span
                   aria-label="Есть непрочитанные"
@@ -95,15 +94,15 @@ export const Layout = ({ children }) => {
               )}
             </Link>
             <Link to="/profile" style={{ color: '#111111', textDecoration: 'none' }}>Профиль</Link>
-          </>
+          </div>
           {!isSearchPage && (
-            <div style={{ position: 'relative', minWidth: '420px' }}>
+            <div className="nav-search">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
                   submitSearch();
                 }}
-                style={{ display: 'flex', alignItems: 'center' }}
+                className="nav-search-form"
               >
                 <input
                   type="text"
@@ -112,26 +111,11 @@ export const Layout = ({ children }) => {
                   onFocus={() => suggestions.length && setShowSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                   placeholder="Ищем питомца..."
-                  style={{
-                    width: '360px',
-                    padding: '0.55rem 0.75rem',
-                    borderRadius: '8px',
-                    border: '1px solid #EDEDED',
-                    backgroundColor: '#FFFFFF',
-                    color: '#111111'
-                  }}
+                  className="nav-search-input"
                 />
                 <button
                   type="submit"
-                  style={{
-                    marginLeft: '0.5rem',
-                    padding: '0.5rem 0.85rem',
-                    backgroundColor: '#111111',
-                    color: '#FFFFFF',
-                    border: '1px solid #111111',
-                    borderRadius: '8px',
-                    cursor: 'pointer'
-                  }}
+                  className="nav-search-button"
                 >
                   Найти
                 </button>
@@ -171,44 +155,40 @@ export const Layout = ({ children }) => {
             </div>
           )}
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+        <div className="nav-actions">
           <Link
             to="/listings/create"
-            style={{
-              color: '#FFFFFF',
-              textDecoration: 'none',
-              backgroundColor: '#FF6B5A',
-              padding: '0.45rem 0.75rem',
-              borderRadius: '8px'
-            }}
+            className="nav-create"
           >
             Создать объявление
           </Link>
           {isAuthenticated() ? (
             <button
               onClick={handleLogout}
-              style={{
-                backgroundColor: '#EDEDED',
-                color: '#111111',
-                border: '1px solid #EDEDED',
-                padding: '0.5rem 1rem',
-                borderRadius: '8px',
-                cursor: 'pointer'
-              }}
+              className="nav-logout"
             >
               Выйти
             </button>
           ) : (
-            <div style={{ display: 'flex', gap: '1rem' }}>
+            <div className="nav-auth">
               <Link to="/login" style={{ color: '#111111', textDecoration: 'none' }}>Вход</Link>
               <Link to="/register" style={{ color: '#111111', textDecoration: 'none' }}>Регистрация</Link>
             </div>
           )}
         </div>
       </nav>
-      <main style={{ flex: 1, padding: '2.5rem 1.5rem', maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
+      <main className="main-content">
         {children}
       </main>
+      {showScrollTop && (
+        <button
+          className="scroll-top"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Наверх"
+        >
+          ↑
+        </button>
+      )}
     </div>
   );
 };
