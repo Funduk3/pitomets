@@ -17,23 +17,6 @@ interface ListingsRepo : JpaRepository<Listing, Long> {
     fun findBySellerProfile(sellerProfile: SellerProfile): List<Listing>
     fun findByIsArchivedFalseOrderByIdDesc(pageable: Pageable): List<Listing>
     fun findByIsArchivedFalseAndIdLessThanOrderByIdDesc(id: Long, pageable: Pageable): List<Listing>
-
-    @Modifying
-    @Query("update Listing l set l.viewsCount = l.viewsCount + :delta where l.id = :listingId")
-    fun incrementViews(
-        @Param("listingId") listingId: Long,
-        @Param("delta") delta: Long
-    )
-
-    @Modifying
-    @Query(
-        value = "update listing set likes_count = GREATEST(likes_count + :delta, 0) where id = :listingId",
-        nativeQuery = true
-    )
-    fun incrementLikes(
-        @Param("listingId") listingId: Long,
-        @Param("delta") delta: Long
-    )
 }
 
 fun ListingsRepo.findListingOrThrow(listingId: Long): Listing =

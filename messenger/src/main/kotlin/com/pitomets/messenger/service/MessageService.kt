@@ -12,7 +12,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.statements.StatementType
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import java.sql.ResultSet
@@ -128,19 +128,29 @@ class MessageService(
         if (chatIds.isEmpty()) return emptyMap()
         return transaction {
             val ids = chatIds.toList()
+            val placeholders = ids.joinToString(",") { "?" }
             val sql = """
                 SELECT DISTINCT ON (m.chat_id)
                     m.id, m.chat_id, m.sender_id, m.content, m.created_at, m.is_read
                 FROM messages m
-                WHERE m.chat_id IN (${ids.joinToString(",")})
+                WHERE m.chat_id IN ($placeholders)
                 ORDER BY m.chat_id, m.created_at DESC
             """.trimIndent()
             val result = linkedMapOf<Long, MessageEntity>()
-            exec(sql, explicitStatementType = StatementType.SELECT) { rs ->
-                while (rs.next()) {
-                    val msg = resultSetToMessage(rs)
-                    result[msg.chatId] = msg
+            val stmt = TransactionManager.current().connection.prepareStatement(sql, false)
+            try {
+                ids.forEachIndexed { index, id ->
+                    stmt.set(index + 1, id)
                 }
+                val rs = stmt.executeQuery()
+                rs.use {
+                    while (rs.next()) {
+                        val msg = resultSetToMessage(rs)
+                        result[msg.chatId] = msg
+                    }
+                }
+            } finally {
+                stmt.close()
             }
             result
         }
@@ -157,29 +167,45 @@ class MessageService(
 
         return transaction {
             val requested = lastMessageIds.toList()
-            val valuesPlaceholders = requested.joinToString(",") { "(${it.first}, ${it.second})" }
+            val valuesPlaceholders = requested.joinToString(",") { "(?, ?)" }
             val sql = """
                 WITH last_seen(chat_id, last_message_id) AS (VALUES $valuesPlaceholders)
                 SELECT m.id, m.chat_id, m.sender_id, m.content, m.created_at, m.is_read
                 FROM messages m
                 JOIN last_seen ls ON ls.chat_id = m.chat_id
                 JOIN chats c ON c.id = m.chat_id
-                WHERE (c.user1_id = $userId OR c.user2_id = $userId)
-                  AND m.sender_id <> $userId
+                WHERE (c.user1_id = ? OR c.user2_id = ?)
+                  AND m.sender_id <> ?
                   AND m.is_read = false
                   AND m.id > ls.last_message_id
                 ORDER BY m.created_at ASC
-                LIMIT $MAX_UNREAD_MESSAGE_COUNT
+                LIMIT ?
             """.trimIndent()
             val result = mutableMapOf<Long, MutableList<MessageEntity>>()
-            exec(sql, explicitStatementType = StatementType.SELECT) { rs ->
-                while (rs.next()) {
-                    val msg = resultSetToMessage(rs)
-                    val list = result.getOrPut(msg.chatId) { mutableListOf() }
-                    if (list.size < MAX_UNREAD_MESSAGE_COUNT_PER_CHAT) {
-                        list.add(msg)
+            val stmt = TransactionManager.current().connection.prepareStatement(sql, false)
+            try {
+                var index = 1
+                requested.forEach { (chatId, lastMessageId) ->
+                    stmt.set(index++, chatId)
+                    stmt.set(index++, lastMessageId)
+                }
+                stmt.set(index++, userId)
+                stmt.set(index++, userId)
+                stmt.set(index++, userId)
+                stmt.set(index, MAX_UNREAD_MESSAGE_COUNT)
+
+                val rs = stmt.executeQuery()
+                rs.use {
+                    while (rs.next()) {
+                        val msg = resultSetToMessage(rs)
+                        val list = result.getOrPut(msg.chatId) { mutableListOf() }
+                        if (list.size < MAX_UNREAD_MESSAGE_COUNT_PER_CHAT) {
+                            list.add(msg)
+                        }
                     }
                 }
+            } finally {
+                stmt.close()
             }
             result
         }

@@ -3,6 +3,7 @@ package com.pitomets.monolit.service
 import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.redis.core.script.DefaultRedisScript
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -10,6 +11,7 @@ import java.security.MessageDigest
 import java.time.Duration
 import org.springframework.data.redis.core.ScanOptions
 import java.nio.charset.StandardCharsets
+import java.util.UUID
 
 @Service
 @Suppress("TooManyFunctions")
@@ -47,22 +49,24 @@ class ListingMetricsService(
 
         val actorKey = buildActorKey(viewerId, ip, userAgent) ?: return false
         val dedupKey = viewDedupKey(listingId, actorKey)
-
-        val first = redisTemplate.opsForValue().setIfAbsent(dedupKey, "1", VIEW_DEDUP_TTL)
-        if (first != true) {
-            return false
-        }
-
         val deltaKey = viewDeltaKey(listingId)
-        redisTemplate.opsForValue().increment(deltaKey, 1)
-        redisTemplate.expire(deltaKey, DELTA_TTL)
-        return true
+        val result = redisTemplate.execute(
+            VIEW_RECORD_SCRIPT,
+            listOf(dedupKey, deltaKey),
+            VIEW_DEDUP_TTL.seconds.toString(),
+            DELTA_TTL.seconds.toString()
+        )
+        return result == 1L
     }
 
     fun recordLikeDelta(listingId: Long, delta: Long) {
         val deltaKey = likeDeltaKey(listingId)
-        redisTemplate.opsForValue().increment(deltaKey, delta)
-        redisTemplate.expire(deltaKey, DELTA_TTL)
+        redisTemplate.execute(
+            LIKE_DELTA_SCRIPT,
+            listOf(deltaKey),
+            delta.toString(),
+            DELTA_TTL.seconds.toString()
+        )
     }
 
     fun getPendingViewsDelta(listingId: Long): Long =
@@ -93,22 +97,31 @@ class ListingMetricsService(
 
         val batch = mutableListOf<Pair<Long, Long>>()
         val keysToDelete = mutableListOf<String>()
+        val batchId = UUID.randomUUID().toString()
 
         keys.forEach { key ->
-            val listingId = key.substringAfterLast(":").toLongOrNull()
+            val isProcessing = key.contains(":processing:")
+            val baseKey = if (isProcessing) key.substringBefore(":processing:") else key
+            val listingId = baseKey.substringAfterLast(":").toLongOrNull()
             if (listingId == null) {
                 redisTemplate.delete(key)
                 return@forEach
             }
 
-            val delta = redisTemplate.opsForValue().get(key)?.toLongOrNull()
+            val processingKey = if (isProcessing) key else "$baseKey:processing:$batchId"
+            if (!isProcessing) {
+                val renamed = redisTemplate.renameIfAbsent(baseKey, processingKey)
+                if (renamed != true) return@forEach
+            }
+
+            val delta = redisTemplate.opsForValue().get(processingKey)?.toLongOrNull()
             if (delta == null || delta == 0L) {
-                redisTemplate.delete(key)
+                redisTemplate.delete(processingKey)
                 return@forEach
             }
 
             batch.add(listingId to delta)
-            keysToDelete.add(key)
+            keysToDelete.add(processingKey)
         }
 
         if (batch.isEmpty()) return
@@ -206,5 +219,31 @@ class ListingMetricsService(
         private const val VIEW_DELTA_PATTERN = "listing:views:delta:*"
         private const val LIKE_DELTA_PATTERN = "listing:likes:delta:*"
         private const val KEYS_COUNT = 1000L
+
+        private val VIEW_RECORD_SCRIPT = DefaultRedisScript<Long>().apply {
+            setResultType(Long::class.java)
+            setScriptText(
+                """
+                if redis.call("SET", KEYS[1], "1", "NX", "EX", ARGV[1]) then
+                    redis.call("INCRBY", KEYS[2], 1)
+                    redis.call("EXPIRE", KEYS[2], ARGV[2])
+                    return 1
+                else
+                    return 0
+                end
+                """.trimIndent()
+            )
+        }
+
+        private val LIKE_DELTA_SCRIPT = DefaultRedisScript<Long>().apply {
+            setResultType(Long::class.java)
+            setScriptText(
+                """
+                redis.call("INCRBY", KEYS[1], ARGV[1])
+                redis.call("EXPIRE", KEYS[1], ARGV[2])
+                return 1
+                """.trimIndent()
+            )
+        }
     }
 }
