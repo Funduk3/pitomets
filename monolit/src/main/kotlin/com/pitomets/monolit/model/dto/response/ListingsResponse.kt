@@ -36,5 +36,9 @@ data class ListingsResponse(
 
     val city: CityDto,
 
-    val metro: MetroDto?
+    val metro: MetroDto?,
+
+    val viewsCount: Long,
+
+    val likesCount: Long
 )

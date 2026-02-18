@@ -203,9 +203,17 @@ export const ListingDetail = () => {
       if (isFavourite) {
         await favouritesAPI.deleteFavourite(parseInt(id));
         setIsFavourite(false);
+        setListing((prev) => prev
+          ? { ...prev, likesCount: Math.max(0, (prev.likesCount || 0) - 1) }
+          : prev
+        );
       } else {
         await favouritesAPI.addFavourite(parseInt(id));
         setIsFavourite(true);
+        setListing((prev) => prev
+          ? { ...prev, likesCount: (prev.likesCount || 0) + 1 }
+          : prev
+        );
       }
     } catch (err) {
       const msg = err.response?.data?.message;
@@ -324,6 +332,11 @@ export const ListingDetail = () => {
         <strong>Рейтинг:</strong>{' '}
         {listing.sellerRating != null ? `${listing.sellerRating.toFixed(2)} / 5` : 'No ratings yet'}
         {listing.sellerReviewsCount != null && ` (${listing.sellerReviewsCount} отзывов)`}
+      </p>
+      <p className="small-muted" style={{ marginTop: '0.25rem' }}>
+        <strong>Просмотры:</strong> {listing.viewsCount ?? 0}
+        {' • '}
+        <strong>В избранных:</strong> {listing.likesCount ?? 0}
       </p>
       <div className="two-col">
         <div style={{ flex: 1 }}>
@@ -549,6 +562,13 @@ export const ListingDetail = () => {
                   <p>
                     <strong>Цена:</strong> <span className="tag-price">{listing.price} ₽</span>
                   </p>
+                  {listing.viewsCount != null && listing.likesCount != null && (
+                    <p className="small-muted">
+                      <strong>Просмотры:</strong> {listing.viewsCount}
+                      {' • '}
+                      <strong>В избранных:</strong> {listing.likesCount}
+                    </p>
+                  )}
                 </div>
               </Link>
             );

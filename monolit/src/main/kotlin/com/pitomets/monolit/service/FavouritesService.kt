@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service
 class FavouritesService(
     private val favouritesRepo: FavouritesRepo,
     private val listingsRepo: ListingsRepo,
+    private val metricsService: ListingMetricsService,
 ) {
     fun getFavourites(
         userId: Long
@@ -30,6 +31,8 @@ class FavouritesService(
                 description = listing.description,
                 price = listing.price,
                 cityTitle = listing.city.title,
+                viewsCount = listing.viewsCount,
+                likesCount = listing.likesCount,
             )
         }
     }
@@ -51,12 +54,16 @@ class FavouritesService(
             Favourite(userId = userId, listingId = listingId)
         )
 
+        metricsService.recordLikeDelta(listingId, 1)
+
         return SearchListingsResponse(
             id = requireNotNull(listing.id),
             title = listing.title,
             description = listing.description,
             price = listing.price,
             cityTitle = listing.city.title,
+            viewsCount = listing.viewsCount,
+            likesCount = listing.likesCount + metricsService.getPendingLikesDelta(listingId),
         )
     }
 
@@ -67,5 +74,6 @@ class FavouritesService(
         val favourite = favouritesRepo.findByUserIdAndListingId(userId, listingId)
             ?: throw ListingNotFoundException("Favourite not found")
         favouritesRepo.delete(favourite)
+        metricsService.recordLikeDelta(listingId, -1)
     }
 }

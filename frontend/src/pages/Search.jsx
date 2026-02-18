@@ -818,6 +818,13 @@ export const Search = () => {
                                                         <p>
                                                             <strong>Город:</strong> {listing.cityTitle || '—'}
                                                         </p>
+                                                        {listing.viewsCount != null && listing.likesCount != null && (
+                                                            <p className="small-muted">
+                                                                <strong>Просмотры:</strong> {listing.viewsCount}
+                                                                {' • '}
+                                                                <strong>В избранных:</strong> {listing.likesCount}
+                                                            </p>
+                                                        )}
                                                     </div>
                                                 </Link>
                                             );

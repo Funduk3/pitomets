@@ -57,6 +57,12 @@ class Listing(
     @Column(name = "cover_photo_id")
     var coverPhotoId: Long? = null,
 
+    @Column(name = "views_count")
+    var viewsCount: Long = 0,
+
+    @Column(name = "likes_count")
+    var likesCount: Long = 0,
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "city_id", nullable = false)
     var city: CityEntity,

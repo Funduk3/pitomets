@@ -127,6 +127,11 @@ export const Home = () => {
                   <p>
                     <strong>Город:</strong> {listing.city?.title || '—'}
                   </p>
+                  <p className="small-muted">
+                    <strong>Просмотры:</strong> {listing.viewsCount ?? 0}
+                    {' • '}
+                    <strong>В избранных:</strong> {listing.likesCount ?? 0}
+                  </p>
                   </div>
                 </Link>
               ))}
