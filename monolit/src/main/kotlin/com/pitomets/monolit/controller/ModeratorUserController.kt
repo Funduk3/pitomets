@@ -1,18 +1,16 @@
 package com.pitomets.monolit.controller
 
 import com.pitomets.monolit.model.dto.request.AdminMessage
-import com.pitomets.monolit.model.dto.response.ListingsResponse
 import com.pitomets.monolit.model.dto.response.UserResponse
-import com.pitomets.monolit.service.ListingsService
 import com.pitomets.monolit.service.UserService
-import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-@Controller
+@RestController
 @RequestMapping("/admin/user")
 class ModeratorUserController(
     private val userService: UserService
@@ -26,12 +24,12 @@ class ModeratorUserController(
     fun getPendingUserById(@PathVariable id: Long) =
         userService.getPendingUser(id)
 
-    @PostMapping("/{id}")
+    @PostMapping("/{id}/approve")
     fun acceptUser(@PathVariable id: Long) {
         userService.approveUser(id)
     }
 
-    @PostMapping("/{id}")
+    @PostMapping("/{id}/decline")
     fun declineUser(
         @PathVariable id: Long,
         @RequestBody adminMessage: AdminMessage

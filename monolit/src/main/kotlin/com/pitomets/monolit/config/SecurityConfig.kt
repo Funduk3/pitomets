@@ -107,6 +107,7 @@ class SecurityConfig(
                 it.requestMatchers(HttpMethod.GET, "/seller/{sellerId}/reviews/**").permitAll()
                 it.requestMatchers("/seller/{sellerProfileId}/reviews/**").authenticated()
                 it.requestMatchers("/seller/profile").authenticated() // Создание профиля для всех
+                it.requestMatchers("/admin/**").hasRole("ADMIN")
                 it.requestMatchers("/listings/**").hasRole("SELLER")
                 it.requestMatchers("/seller/**").hasRole("SELLER")
                 it.anyRequest().authenticated()

@@ -5,7 +5,7 @@ import { useMessengerWS } from '../context/MessengerWSContext';
 import { searchAPI } from '../api/search';
 
 export const Layout = ({ children }) => {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
   const { hasUnread } = useMessengerWS();
   const navigate = useNavigate();
   const location = useLocation();
@@ -76,6 +76,7 @@ export const Layout = ({ children }) => {
   const isSearchPage = location.pathname.startsWith('/search');
   const isLoggedIn = isAuthenticated();
   const isMobileGuest = !isLoggedIn && isMobileViewport;
+  const isAdmin = user?.role === 'ADMIN';
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF' }}>
@@ -105,6 +106,9 @@ export const Layout = ({ children }) => {
               )}
             </Link>
             <Link to="/profile" style={{ color: '#111111', textDecoration: 'none' }}>Профиль</Link>
+            {isAdmin && (
+              <Link to="/moderation" style={{ color: '#111111', textDecoration: 'none' }}>Модерация</Link>
+            )}
             {isMobileGuest && (
               <Link to="/login" className="nav-mobile-login">Вход</Link>
             )}

@@ -88,6 +88,7 @@ class ProfileService(
             isVerified = user.sellerProfile?.isVerified,
             createdAt = user.sellerProfile?.createdAt,
             avatarKey = user.avatarKey,
+            role = user.role.name,
         )
     }
 

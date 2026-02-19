@@ -117,6 +117,10 @@ class ListingsService(
         userAgent: String?
     ): ListingsResponse {
         val response = listingsRepo.findListingOrThrow(listingId)
+        val isOwner = response.sellerProfile.seller?.id == viewerId
+        if (!response.isApproved && !isOwner) {
+            throw ListingNotFoundException("Listing with id $listingId not found")
+        }
 
         metricsService.recordViewAsync(
             listingId = listingId,
@@ -291,8 +295,7 @@ class ListingsService(
                 )
             },
             viewsCount = saved.viewsCount,
-            likesCount = saved.likesCount
-            },
+            likesCount = saved.likesCount,
             moderatorMessage = saved.moderatorMessage
         )
     }
@@ -488,10 +491,9 @@ class ListingsService(
                 )
             )
         },
-        moderatorMessage = savedListing.moderatorMessage
-        },
         viewsCount = viewsCount,
-        likesCount = likesCount
+        likesCount = likesCount,
+        moderatorMessage = savedListing.moderatorMessage
     )
 
     private val log = LoggerFactory.getLogger(ListingsService::class.java)

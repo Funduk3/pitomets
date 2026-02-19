@@ -19,6 +19,7 @@ import com.pitomets.monolit.repository.BuyerProfileRepo
 import com.pitomets.monolit.repository.UserRepo
 import com.pitomets.monolit.repository.findUserOrThrow
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -34,7 +35,11 @@ class UserService(
     private val authManager: AuthenticationManager,
     private val repo: UserRepo,
     private val buyerProfileRepo: BuyerProfileRepo,
-    private val encoder: PasswordEncoder
+    private val encoder: PasswordEncoder,
+    @Value("\${admin.login:admin}")
+    private val adminLogin: String,
+    @Value("\${admin.password:pitomets_admin_1488}")
+    private val adminPassword: String,
 ) {
     private val log = LoggerFactory.getLogger(UserService::class.java)
 
@@ -84,6 +89,47 @@ class UserService(
 
     @Suppress("ThrowsCount")
     fun login(email: String, rawPassword: String): TokenResponse {
+        if (email == adminLogin) {
+            if (rawPassword != adminPassword) {
+                throw InvalidCredentialsException("Invalid email or password")
+            }
+
+            val admin = repo.findByEmail(adminLogin)?.apply {
+                if (role != UserRole.ADMIN) {
+                    role = UserRole.ADMIN
+                }
+                if (!isConfirmed) {
+                    isConfirmed = true
+                    confirmationToken = null
+                }
+                if (!isApproved) {
+                    isApproved = true
+                }
+                if (!encoder.matches(adminPassword, passwordHash)) {
+                    passwordHash = encoder.encode(adminPassword)
+                        ?: throw IllegalPasswordException("Problem with password")
+                }
+            } ?: User(
+                email = adminLogin,
+                fullName = "Admin",
+                passwordHash = encoder.encode(adminPassword)
+                    ?: throw IllegalPasswordException("Problem with password"),
+                role = UserRole.ADMIN,
+                isConfirmed = true,
+                isApproved = true
+            )
+
+            repo.save(admin)
+
+            val accessToken = jwtService.generateAccessToken(adminLogin)
+            val refreshToken = jwtService.createRefreshToken(adminLogin)
+
+            return TokenResponse(
+                accessToken = accessToken,
+                refreshToken = refreshToken,
+            )
+        }
+
         try {
             val authToken = UsernamePasswordAuthenticationToken(email, rawPassword)
             val authentication: Authentication = authManager.authenticate(authToken)

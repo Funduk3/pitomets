@@ -21,7 +21,8 @@ import { Favourites } from './pages/Favourites';
 import { ReviewForm } from './pages/ReviewForm';
 import { Chats } from './pages/Chats';
 import { Chat } from './pages/Chat';
-import { RequireAuth, RequireSeller } from './components/AccessGate';
+import { Moderation } from './pages/Moderation';
+import { RequireAdmin, RequireAuth, RequireSeller } from './components/AccessGate';
 
 function App() {
   return (
@@ -50,6 +51,7 @@ function App() {
               <Route path="/favourites" element={<RequireAuth><Favourites /></RequireAuth>} />
               <Route path="/chats" element={<RequireAuth><Chats /></RequireAuth>} />
               <Route path="/chats/:chatId" element={<RequireAuth><Chat /></RequireAuth>} />
+              <Route path="/moderation" element={<RequireAdmin><Moderation /></RequireAdmin>} />
             </Routes>
           </Layout>
         </BrowserRouter>

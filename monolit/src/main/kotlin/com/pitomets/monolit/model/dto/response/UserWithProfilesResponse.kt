@@ -23,4 +23,6 @@ data class UserWithProfilesResponse(
 
     // avatar
     val avatarKey: String?,
+
+    val role: String,
 )
