@@ -9,7 +9,7 @@ class SellerReviewsService(
     private val reviewsRepo: ReviewsRepo,
 ) {
     fun getReviewsBySeller(sellerProfileId: Long): List<ReviewResponse> {
-        return reviewsRepo.findBySellerProfileId(sellerProfileId).map { r ->
+        return reviewsRepo.findBySellerProfileIdAndIsApprovedTrue(sellerProfileId).map { r ->
             ReviewResponse(
                 id = requireNotNull(r.id),
                 rating = r.rating,

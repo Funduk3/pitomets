@@ -1,6 +1,7 @@
 package com.pitomets.monolit.service
 
 import com.pitomets.monolit.exceptions.BadReviewException
+import com.pitomets.monolit.model.dto.request.AdminMessage
 import com.pitomets.monolit.model.dto.request.CreateReviewRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingReviewRequest
 import com.pitomets.monolit.model.dto.response.ReviewResponse
@@ -12,6 +13,7 @@ import com.pitomets.monolit.repository.UserRepo
 import com.pitomets.monolit.repository.findListingOrThrow
 import com.pitomets.monolit.repository.findUserOrThrow
 import jakarta.transaction.Transactional
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.OffsetDateTime
 
@@ -22,6 +24,8 @@ class ListingReviewsService(
     private val listingsRepo: ListingsRepo,
     private val sellerProfileRepo: SellerProfileRepo,
 ) {
+    private val log = LoggerFactory.getLogger(ListingReviewsService::class.java)
+
     @Transactional
     fun createListingReview(
         authorId: Long,
@@ -77,7 +81,7 @@ class ListingReviewsService(
     }
 
     fun getReviewByListing(listingId: Long): List<ReviewResponse> =
-        reviewsRepo.findByListingId(listingId).map { r ->
+        reviewsRepo.findByListingIdAndIsApprovedTrue(listingId).map { r ->
             ReviewResponse(
                 id = requireNotNull(r.id),
                 rating = r.rating,
@@ -88,6 +92,62 @@ class ListingReviewsService(
                 createdAt = r.createdAt
             )
         }
+
+    fun getPendingReviews(): List<ReviewResponse> {
+        return reviewsRepo.findByIsApprovedFalse().map { r ->
+            ReviewResponse(
+                id = requireNotNull(r.id),
+                rating = r.rating,
+                text = r.text,
+                authorId = requireNotNull(r.author.id),
+                listingId = requireNotNull(r.listing?.id),
+                sellerProfileId = requireNotNull(r.sellerProfile.id),
+                createdAt = r.createdAt
+            )
+        }
+    }
+
+    fun getPendingReview(id: Long): ReviewResponse {
+        val review = reviewsRepo.findByIdAndIsApprovedFalse(id)
+            ?: throw BadReviewException("Pending review with id $id not found")
+        return ReviewResponse(
+            id = requireNotNull(review.id),
+            rating = review.rating,
+            text = review.text,
+            authorId = requireNotNull(review.author.id),
+            listingId = requireNotNull(review.listing?.id),
+            sellerProfileId = requireNotNull(review.sellerProfile.id),
+            createdAt = review.createdAt
+        )
+    }
+
+    @Transactional
+    fun approveReview(id: Long) {
+        val review = reviewsRepo.findById(id)
+            .orElseThrow { BadReviewException("Review not found") }
+        review.isApproved = true
+        reviewsRepo.save(review)
+    }
+
+    @Transactional
+    fun declineReview(id: Long, adminMessage: AdminMessage) {
+        val review = reviewsRepo.findByIdAndIsApprovedFalse(id)
+            ?: throw BadReviewException("Pending review with id $id not found")
+        log.info("Declining review id={} with reason={}", id, adminMessage.message)
+
+        val sellerProfile = review.sellerProfile
+        sellerProfile.sumReviews -= review.rating
+        sellerProfile.countReviews -= 1
+        sellerProfile.rating =
+            if (sellerProfile.countReviews.toInt() == 0) {
+                0.0
+            } else {
+                sellerProfile.sumReviews.toDouble() / sellerProfile.countReviews.toDouble()
+            }
+        sellerProfileRepo.save(sellerProfile)
+
+        reviewsRepo.delete(review)
+    }
 
     @Transactional
     fun deleteListingReview(

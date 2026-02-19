@@ -7,6 +7,7 @@ import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.exceptions.authExceptions.AuthenticationException
 import com.pitomets.monolit.exceptions.authExceptions.InvalidTokenException
 import com.pitomets.monolit.kafka.notifications.producer.NotificationPublisher
+import com.pitomets.monolit.model.dto.request.AdminMessage
 import com.pitomets.monolit.model.dto.response.TokenResponse
 import com.pitomets.monolit.model.dto.response.UserResponse
 import com.pitomets.monolit.model.entity.BuyerProfile
@@ -130,19 +131,6 @@ class UserService(
         jwtService.deleteRefreshToken(refreshToken)
     }
 
-    fun getAll(): List<UserResponse> {
-        val users = repo.findAll()
-        return users.map {
-            UserResponse(
-                id = requireNotNull(it.id) { "User ID cannot be null" },
-                email = it.email,
-                fullName = it.fullName,
-                hasBuyerProfile = it.buyerProfile != null,
-                hasSellerProfile = it.sellerProfile != null
-            )
-        }
-    }
-
     @Transactional
     fun confirmEmail(token: String) {
         log.info("Confirm email requested with token={}", token)
@@ -157,7 +145,6 @@ class UserService(
         repo.save(user)
         log.info("Confirm email success for user id={}", user.id)
     }
-
 
     fun forgotPassword(email: String) {
         val user = repo.findByEmail(email)
@@ -210,4 +197,42 @@ class UserService(
             ?: throw IllegalPasswordException("Problem with password")
         repo.save(user)
     }
+
+    fun getPendingUsers(): List<UserResponse> {
+        return repo.findByIsApprovedFalse()
+            .map { buildUserResponse(it) }
+    }
+
+    fun getPendingUser(id: Long): UserResponse {
+        val user = repo.findByIdAndIsApprovedFalse(id)
+            ?: throw UserNotFoundException("Pending user with id $id not found")
+        return buildUserResponse(user)
+    }
+
+    @Transactional
+    fun approveUser(id: Long) {
+        val user = repo.findUserOrThrow(id)
+        user.isApproved = true
+        repo.save(user)
+    }
+
+    @Transactional
+    fun declineUser(id: Long, adminMessage: AdminMessage) {
+        val user = repo.findByIdAndIsApprovedFalse(id)
+            ?: throw UserNotFoundException("Pending user with id $id not found")
+        log.info("Declining user id={} with reason={}", id, adminMessage.message)
+        repo.delete(user)
+    }
+
+    private fun buildUserResponse(user: User): UserResponse {
+        return UserResponse(
+            id = requireNotNull(user.id) { "User ID cannot be null" },
+            email = user.email,
+            fullName = user.fullName,
+            hasBuyerProfile = user.buyerProfile != null,
+            hasSellerProfile = user.sellerProfile != null
+        )
+    }
+
+
 }

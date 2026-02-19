@@ -136,6 +136,24 @@ export const Listings = () => {
                       >
                         Удалить
                       </button>
+                   <div style={{ padding: '1rem' }}>
+                     <h3 style={{ margin: '0 0 0.5rem 0' }}>{listing.title || 'Untitled'}</h3>
+                   <p style={{ margin: '0.5rem 0', color: '#666', fontSize: '0.9rem' }}>
+                     {listing.description?.substring(0, 100)}
+                     {listing.description && listing.description.length > 100 ? '...' : ''}
+                   </p>
+                   {listing.moderatorMessage && (
+                     <p style={{ margin: '0.5rem 0', color: '#c0392b', fontSize: '0.9rem' }}>
+                       Объявление не одобрено модератором: {listing.moderatorMessage}
+                     </p>
+                   )}
+                    <p><strong>Цена:</strong> {listing.price} ₽</p>
+                    <p><strong>Вид:</strong> {listing.species}</p>
+                    {listing.breed && <p><strong>Порода:</strong> {listing.breed}</p>}
+                    <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <Link to={`/listings/${listing.listingsId}`} className="btn btn-secondary" style={{ fontSize: '0.9rem' }}>Посмотреть</Link>
+                      <Link to={`/listings/${listing.listingsId}/edit`} className="btn" style={{ backgroundColor: '#f39c12', color: '#fff', fontSize: '0.9rem' }}>Изменить</Link>
+                      <button onClick={() => handleDelete(listing.listingsId)} className="btn btn-danger" style={{ fontSize: '0.9rem' }}>Удалить</button>
                     </div>
                   </div>
                 </Link>

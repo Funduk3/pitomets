@@ -40,5 +40,7 @@ data class ListingsResponse(
 
     val viewsCount: Long,
 
-    val likesCount: Long
+    val likesCount: Long,
+
+    val moderatorMessage: String? = null
 )

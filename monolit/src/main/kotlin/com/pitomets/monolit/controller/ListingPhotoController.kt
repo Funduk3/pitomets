@@ -49,9 +49,10 @@ class ListingPhotoController(
 
     @GetMapping
     fun getListingPhotos(
-        @PathVariable listingId: Long
+        @PathVariable listingId: Long,
+        @AuthenticationPrincipal user: UserPrincipal?
     ): ListingPhotoResponse {
-        val listing = listingsService.getListing(listingId)
+        val listing = listingsService.getListing(listingId, user?.id)
         val photos = listingPhotoService.getListingPhotos(listingId)
 
         return ListingPhotoResponse(

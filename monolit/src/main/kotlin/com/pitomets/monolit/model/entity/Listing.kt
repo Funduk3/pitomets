@@ -47,6 +47,12 @@ class Listing(
 
     var price: BigDecimal,
 
+    @Column(name = "is_approved")
+    var isApproved: Boolean = false,
+
+    @Column(name = "moderator_message", columnDefinition = "text")
+    var moderatorMessage: String? = null,
+
     @Column(name = "is_archived")
     var isArchived: Boolean = false,
 

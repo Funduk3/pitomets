@@ -10,6 +10,7 @@ import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.CityDto
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.pitomets.monolit.model.dto.request.AdminMessage
 import com.pitomets.monolit.model.dto.response.ListingsCursorResponse
 import com.pitomets.monolit.model.dto.response.ListingsResponse
 import com.pitomets.monolit.model.dto.response.MetroDto
@@ -67,34 +68,41 @@ class ListingsService(
             father,
             mother,
             request.cityId,
-            request.metroId
+            request.metroId,
         )
         val saved = listingsRepo.save(listing)
 
-        outboxRepo.save(
-            ListingOutbox(
-                listingId = requireNotNull(saved.id),
-                eventType = EventType.CREATE,
-                title = saved.title,
-                description = saved.description,
-                species = saved.species,
-                breed = saved.breed,
-                gender = saved.gender,
-                ageEnum = AgeEnum.entries.getOrNull(saved.ageMonths)?.name,
-                cityTitle = saved.city.title,
-                city = saved.city.id,
-                metro = saved.metroStation?.id,
-                price = saved.price,
+        if (saved.isApproved) {
+            outboxRepo.save(
+                ListingOutbox(
+                    listingId = requireNotNull(saved.id),
+                    eventType = EventType.CREATE,
+                    title = saved.title,
+                    description = saved.description,
+                    species = saved.species,
+                    breed = saved.breed,
+                    gender = saved.gender,
+                    ageEnum = AgeEnum.entries.getOrNull(saved.ageMonths)?.name,
+                    cityTitle = saved.city.title,
+                    city = saved.city.id,
+                    metro = saved.metroStation?.id,
+                    price = saved.price,
+                )
             )
-        )
+        }
 
         return buildListingsResponse(saved, father, mother)
     }
 
     fun getListing(
-        listingId: Long
+        listingId: Long,
+        currentUserId: Long? = null
     ): ListingsResponse {
         val response = listingsRepo.findListingOrThrow(listingId)
+        val isOwner = response.sellerProfile.seller?.id == currentUserId
+        if (!response.isApproved && !isOwner) {
+            throw ListingNotFoundException("Listing with id $listingId not found")
+        }
         return buildListingsResponse(
             response,
             response.father,
@@ -142,6 +150,18 @@ class ListingsService(
         }
     }
 
+    fun getSellerListingsPublic(sellerId: Long): List<ListingsResponse> {
+        val seller = findSellerProfile(sellerId, sellerProfileRepo, log)
+        val listings = listingsRepo.findBySellerProfileAndIsApprovedTrue(seller)
+        return listings.map { listing ->
+            buildListingsResponse(
+                listing,
+                listing.father,
+                listing.mother
+            )
+        }
+    }
+
     fun getHomeListings(cursor: Long?): ListingsCursorResponse {
         val cacheKey = homeCacheKey(cursor)
         redisTemplate.opsForValue().get(cacheKey)?.let { cached ->
@@ -155,9 +175,9 @@ class ListingsService(
         )
 
         val result = if (cursor == null) {
-            listingsRepo.findByIsArchivedFalseOrderByIdDesc(pageable)
+            listingsRepo.findByIsArchivedFalseAndIsApprovedTrueOrderByIdDesc(pageable)
         } else {
-            listingsRepo.findByIsArchivedFalseAndIdLessThanOrderByIdDesc(cursor, pageable)
+            listingsRepo.findByIsArchivedFalseAndIsApprovedTrueAndIdLessThanOrderByIdDesc(cursor, pageable)
         }
 
         val slice = result.take(HOME_PAGE_SIZE)
@@ -218,7 +238,7 @@ class ListingsService(
 
         val saved = listingsRepo.save(listing)
 
-        val shouldIndex = request.title != null || request.description != null
+        val shouldIndex = (request.title != null || request.description != null) && listing.isApproved
 
         if (shouldIndex) {
             outboxRepo.save(
@@ -272,6 +292,8 @@ class ListingsService(
             },
             viewsCount = saved.viewsCount,
             likesCount = saved.likesCount
+            },
+            moderatorMessage = saved.moderatorMessage
         )
     }
 
@@ -295,6 +317,63 @@ class ListingsService(
                 price = 0.toBigDecimal(),
             )
         )
+    }
+
+    @Transactional
+    fun approveListing(id: Long) {
+        val listing = listingsRepo.findListingOrThrow(id)
+        listing.isApproved = true
+        listing.moderatorMessage = null
+        val saved = listingsRepo.save(listing)
+
+        outboxRepo.save(
+            ListingOutbox(
+                listingId = requireNotNull(saved.id),
+                eventType = EventType.UPDATE,
+                title = saved.title,
+                description = saved.description,
+                species = saved.species,
+                breed = saved.breed,
+                gender = saved.gender,
+                ageEnum = AgeEnum.entries.getOrNull(saved.ageMonths)?.name,
+                cityTitle = saved.city.title,
+                city = saved.city.id,
+                metro = saved.metroStation?.id,
+                price = saved.price,
+            )
+        )
+    }
+
+    @Transactional
+    fun declineListing(id: Long, message: AdminMessage) {
+        val listing = listingsRepo.findListingOrThrow(id)
+        listing.isApproved = false
+        listing.moderatorMessage = message.message
+        listingsRepo.save(listing)
+
+        outboxRepo.save(
+            ListingOutbox(
+                listingId = requireNotNull(listing.id),
+                eventType = EventType.DELETE,
+                title = null,
+                description = null,
+                city = 0,
+                metro = null,
+                price = 0.toBigDecimal(),
+            )
+        )
+    }
+
+    fun getPendingListings(): List<ListingsResponse> {
+        return listingsRepo.findByIsApprovedFalse().map { listing ->
+            buildListingsResponse(listing, listing.father, listing.mother)
+        }
+    }
+
+    fun getPendingListing(listingId: Long): ListingsResponse {
+        val listing = listingsRepo.findByIdAndIsApprovedFalse(listingId)
+            ?: throw ListingNotFoundException("Pending listing with id $listingId not found")
+        return buildListingsResponse(listing, listing.father, listing.mother)
     }
 
     // use it in any class
@@ -369,7 +448,7 @@ class ListingsService(
         metroStation = metroId?.let {
             metroRepo.findById(it)
                 .orElseThrow()
-        }
+        },
     )
 
     private fun buildListingsResponse(
@@ -408,6 +487,8 @@ class ListingsService(
                     color = station.line.color
                 )
             )
+        },
+        moderatorMessage = savedListing.moderatorMessage
         },
         viewsCount = viewsCount,
         likesCount = likesCount

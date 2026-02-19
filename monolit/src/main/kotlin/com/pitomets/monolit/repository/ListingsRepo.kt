@@ -15,8 +15,13 @@ import org.springframework.stereotype.Repository
 interface ListingsRepo : JpaRepository<Listing, Long> {
     fun findAllByIdIn(ids: List<Long>): List<Listing>
     fun findBySellerProfile(sellerProfile: SellerProfile): List<Listing>
+    fun findBySellerProfileAndIsApprovedTrue(sellerProfile: SellerProfile): List<Listing>
     fun findByIsArchivedFalseOrderByIdDesc(pageable: Pageable): List<Listing>
     fun findByIsArchivedFalseAndIdLessThanOrderByIdDesc(id: Long, pageable: Pageable): List<Listing>
+    fun findByIsArchivedFalseAndIsApprovedTrueOrderByIdDesc(pageable: Pageable): List<Listing>
+    fun findByIsArchivedFalseAndIsApprovedTrueAndIdLessThanOrderByIdDesc(id: Long, pageable: Pageable): List<Listing>
+    fun findByIdAndIsApprovedFalse(id: Long): Listing?
+    fun findByIsApprovedFalse(): List<Listing>
 }
 
 fun ListingsRepo.findListingOrThrow(listingId: Long): Listing =
