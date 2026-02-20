@@ -11,6 +11,7 @@ import com.pitomets.monolit.model.dto.request.RegisterRequest
 import com.pitomets.monolit.model.dto.response.TokenResponse
 import com.pitomets.monolit.model.dto.response.UserResponse
 import com.pitomets.monolit.repository.ListingsRepo
+import com.pitomets.monolit.repository.SellerProfileRepo
 import com.pitomets.monolit.repository.UserRepo
 import com.pitomets.monolit.service.SearchService
 import io.minio.BucketExistsArgs
@@ -60,6 +61,9 @@ abstract class BaseContainers {
 
     @Autowired
     lateinit var userRepo: UserRepo
+
+    @Autowired
+    lateinit var sellerProfileRepo: SellerProfileRepo
 
     @Autowired
     lateinit var searchService: SearchService
@@ -271,6 +275,9 @@ abstract class BaseContainers {
             .`as`(TokenResponse::class.java)
     }
 
+    fun loginAdmin(): TokenResponse =
+        login("admin@admin.com", "pitomets_admin_1488")
+
     fun createBaseSeller(): TokenResponse {
         val email = faker.internet().emailAddress()
         val password = faker.internet().password(8, 16)
@@ -287,7 +294,18 @@ abstract class BaseContainers {
             .post("/seller/profile")
             .then()
             .statusCode(201)
+        val userId = userRepo.findByEmail(email)?.id
+            ?: error("User not found for email=$email")
+        approveSellerProfile(userId)
         return login(email, password)
+    }
+
+    fun approveSellerProfile(userId: Long) {
+        val profile = sellerProfileRepo.findBySellerId(userId)
+            ?: error("Seller profile not found for userId=$userId")
+        profile.isApproved = true
+        profile.isVerified = true
+        sellerProfileRepo.save(profile)
     }
 
     fun createSomeListings(count: Int, sellerToken: TokenResponse) {

@@ -75,6 +75,7 @@ class SellerProfileTest : BaseContainers() {
             .statusCode(201)
             .extract()
             .`as`(SellerProfileResponse::class.java)
+        approveSellerProfile(created.userId ?: error("Seller user id missing"))
 
         // Перелогиниться для получения роли SELLER
         val sellerTokens = login(email, password)
@@ -95,6 +96,7 @@ class SellerProfileTest : BaseContainers() {
             .statusCode(200)
             .extract()
             .`as`(SellerProfileResponse::class.java)
+        approveSellerProfile(updated.userId ?: error("Seller user id missing"))
 
         // Проверки
         Assertions.assertEquals(created.id, updated.id)
@@ -140,6 +142,13 @@ class SellerProfileTest : BaseContainers() {
             createListingRequest.species,
             createdListing!!.species
         )
+
+        val adminToken = loginAdmin()
+        RestAssured.given()
+            .auth().oauth2(adminToken.accessToken)
+            .post("/admin/listing/${createdListing.id}/approve")
+            .then()
+            .statusCode(200)
 
         // Найти объявление без ауф токена
         RestAssured.given()

@@ -3,6 +3,7 @@ package com.pitomets.monolit.service
 import com.pitomets.monolit.exceptions.UserNotFoundException
 import com.pitomets.monolit.exceptions.profileExceptions.ProfileAlreadyExistsException
 import com.pitomets.monolit.model.UserPrincipal
+import com.pitomets.monolit.model.dto.request.AdminMessage
 import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
 import com.pitomets.monolit.model.dto.request.UpdateUserProfileRequest
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
@@ -10,19 +11,32 @@ import com.pitomets.monolit.model.dto.response.UserWithProfilesResponse
 import com.pitomets.monolit.model.entity.SellerProfile
 import com.pitomets.monolit.model.entity.User
 import com.pitomets.monolit.model.entity.UserRole
+import com.pitomets.monolit.model.entity.ListingOutbox
+import com.pitomets.monolit.model.EventType
 import com.pitomets.monolit.repository.SellerProfileRepo
 import com.pitomets.monolit.repository.UserRepo
+import com.pitomets.monolit.repository.ListingsRepo
+import com.pitomets.monolit.repository.ReviewsRepo
+import com.pitomets.monolit.repository.ListingPhotoRepo
+import com.pitomets.monolit.repository.FavouritesRepo
+import com.pitomets.monolit.repository.ListingOutboxRepository
 import com.pitomets.monolit.repository.findUserOrThrow
 import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.OffsetDateTime
 
 @Service
 class ProfileService(
     private val userRepo: UserRepo,
-    private val sellerProfileRepo: SellerProfileRepo
+    private val sellerProfileRepo: SellerProfileRepo,
+    private val listingsRepo: ListingsRepo,
+    private val reviewsRepo: ReviewsRepo,
+    private val listingPhotoRepo: ListingPhotoRepo,
+    private val favouritesRepo: FavouritesRepo,
+    private val listingOutboxRepo: ListingOutboxRepository,
 ) {
     private val log = LoggerFactory.getLogger(ProfileService::class.java)
 
@@ -39,7 +53,9 @@ class ProfileService(
         val sellerProfile = SellerProfile(
             seller = user,
             shopName = request.shopName,
-            description = request.description
+            description = request.description,
+            isVerified = false,
+            isApproved = false
         )
         val saved = sellerProfileRepo.save(sellerProfile)
 
@@ -86,8 +102,13 @@ class ProfileService(
             description = user.sellerProfile?.description,
             rating = user.sellerProfile?.rating,
             isVerified = user.sellerProfile?.isVerified,
+            sellerProfileApproved = user.sellerProfile?.isApproved,
             createdAt = user.sellerProfile?.createdAt,
             avatarKey = user.avatarKey,
+            bannedUntil = user.bannedUntil,
+            banMessage = user.bannedUntil?.takeIf { it.isAfter(OffsetDateTime.now()) }
+                ?.let { "Ваш профиль был заблокирован модератором" },
+            role = user.role.name,
         )
     }
 
@@ -113,6 +134,8 @@ class ProfileService(
 
         sellerProfile.shopName = request.shopName
         sellerProfile.description = request.description
+        sellerProfile.isApproved = false
+        sellerProfile.isVerified = false
 
         val updated = sellerProfileRepo.save(sellerProfile)
 
@@ -160,5 +183,85 @@ class ProfileService(
             createdAt = sellerProfile.createdAt,
             avatarKey = sellerProfile.seller?.avatarKey
         )
+    }
+
+    fun getPendingSellerProfiles(): List<SellerProfileResponse> {
+        return sellerProfileRepo.findByIsApprovedFalse()
+            .map { profile ->
+                SellerProfileResponse(
+                    id = requireNotNull(profile.id) { "Seller profile ID cannot be null" },
+                    userId = profile.seller?.id,
+                    shopName = profile.shopName,
+                    description = profile.description,
+                    rating = profile.rating,
+                    isVerified = profile.isVerified,
+                    createdAt = profile.createdAt,
+                    avatarKey = profile.seller?.avatarKey
+                )
+            }
+    }
+
+    fun getPendingSellerProfile(id: Long): SellerProfileResponse {
+        val profile = sellerProfileRepo.findByIdAndIsApprovedFalse(id)
+            ?: throw UserNotFoundException("Pending seller profile with id $id not found")
+        return SellerProfileResponse(
+            id = requireNotNull(profile.id) { "Seller profile ID cannot be null" },
+            userId = profile.seller?.id,
+            shopName = profile.shopName,
+            description = profile.description,
+            rating = profile.rating,
+            isVerified = profile.isVerified,
+            createdAt = profile.createdAt,
+            avatarKey = profile.seller?.avatarKey
+        )
+    }
+
+    @Transactional
+    fun approveSellerProfile(id: Long) {
+        val profile = sellerProfileRepo.findByIdAndIsApprovedFalse(id)
+            ?: throw UserNotFoundException("Pending seller profile with id $id not found")
+        profile.isApproved = true
+        profile.isVerified = true
+        sellerProfileRepo.save(profile)
+    }
+
+    @Transactional
+    fun declineSellerProfile(id: Long, adminMessage: AdminMessage) {
+        val profile = sellerProfileRepo.findByIdAndIsApprovedFalse(id)
+            ?: throw UserNotFoundException("Pending seller profile with id $id not found")
+        val seller = profile.seller
+        log.info("Declining seller profile id={} reason={}", id, adminMessage.message)
+        val listings = listingsRepo.findBySellerProfile(profile)
+        listings.forEach { listing ->
+            val listingId = requireNotNull(listing.id)
+            reviewsRepo.deleteByListingId(listingId)
+            listingPhotoRepo.deleteAllByListingId(listingId)
+            favouritesRepo.deleteAllByListingId(listingId)
+            listingOutboxRepo.save(
+                ListingOutbox(
+                    listingId = listingId,
+                    eventType = EventType.DELETE,
+                    title = null,
+                    description = null,
+                    city = 0,
+                    metro = null,
+                    price = 0.toBigDecimal(),
+                )
+            )
+        }
+        listingsRepo.deleteAll(listings)
+        reviewsRepo.deleteBySellerProfileId(requireNotNull(profile.id))
+
+        seller?.let { user ->
+            user.role = UserRole.USER
+            user.sellerProfile = null
+            user.bannedUntil = OffsetDateTime.now().plusDays(BAN_DAYS)
+            userRepo.save(user)
+        }
+        sellerProfileRepo.delete(profile)
+    }
+
+    companion object {
+        private const val BAN_DAYS: Long = 7
     }
 }

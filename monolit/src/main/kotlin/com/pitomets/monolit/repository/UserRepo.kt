@@ -11,6 +11,8 @@ interface UserRepo : JpaRepository<User, Long> {
     fun findByEmail(email: String): User?
     fun findByConfirmationToken(token: String): User?
     fun findByPasswordResetToken(token: String): User?
+    fun findByIsApprovedFalse(): List<User>
+    fun findByIdAndIsApprovedFalse(id: Long): User?
 }
 
 fun UserRepo.findUserOrThrow(userId: Long): User =

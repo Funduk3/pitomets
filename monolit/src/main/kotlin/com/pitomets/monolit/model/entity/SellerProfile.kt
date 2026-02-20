@@ -42,5 +42,8 @@ class SellerProfile(
     var createdAt: OffsetDateTime = OffsetDateTime.now(),
 
     @Column(name = "is_verified", nullable = false)
-    var isVerified: Boolean = false
+    var isVerified: Boolean = false,
+
+    @Column(name = "is_approved", nullable = false, columnDefinition = "boolean default false")
+    var isApproved: Boolean = false
 )

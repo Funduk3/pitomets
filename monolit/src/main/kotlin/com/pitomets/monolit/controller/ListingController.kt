@@ -46,7 +46,7 @@ class ListingController(
     fun getSellerListings(
         @RequestParam("sellerId") sellerId: Long
     ): List<ListingsResponse> =
-        listingsService.getUserListings(sellerId)
+        listingsService.getSellerListingsPublic(sellerId)
 
     @GetMapping("/home")
     fun getHomeListings(

@@ -150,7 +150,7 @@ class MessageService(
                     }
                 }
             } finally {
-                stmt.close()
+                stmt.closeIfPossible()
             }
             result
         }
@@ -205,7 +205,7 @@ class MessageService(
                     }
                 }
             } finally {
-                stmt.close()
+                stmt.closeIfPossible()
             }
             result
         }

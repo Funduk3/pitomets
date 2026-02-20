@@ -19,8 +19,14 @@ data class UserWithProfilesResponse(
     @JsonProperty("verified")
     @JsonAlias("isVerified")
     val isVerified: Boolean?,
+    val sellerProfileApproved: Boolean?,
     val createdAt: OffsetDateTime?,
 
     // avatar
     val avatarKey: String?,
+
+    val bannedUntil: OffsetDateTime?,
+    val banMessage: String?,
+
+    val role: String,
 )

@@ -291,10 +291,30 @@ export const ListingDetail = () => {
   if (loading) return <div>Грузим...</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
   if (!listing) return <div>Объявление не найдено</div>;
+  const isOwner = isAuthenticated() && user?.id === listing.sellerId;
+  const approved = listing.isApproved ?? listing.approved;
+  const showPending = isOwner && (approved === false || approved === 0) && !listing.moderatorMessage;
 
   return (
     <div>
-      <h2>{listing.title || 'Untitled'}</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <h2 style={{ margin: 0 }}>{listing.title || 'Untitled'}</h2>
+        {showPending && (
+          <span style={{ padding: '0.25rem 0.6rem', backgroundColor: '#f2f2f2', color: '#666', borderRadius: '999px', fontSize: '0.85rem' }}>
+            На модерации
+          </span>
+        )}
+        {isOwner && listing.moderatorMessage && (
+          <span style={{ padding: '0.25rem 0.6rem', backgroundColor: '#fdecea', color: '#c0392b', borderRadius: '999px', fontSize: '0.85rem' }}>
+            Отклонено
+          </span>
+        )}
+      </div>
+      {isOwner && listing.moderatorMessage && (
+        <p style={{ marginTop: '0.5rem', color: '#c0392b' }}>
+          Объявление не одобрено модератором: {listing.moderatorMessage}
+        </p>
+      )}
       {listing?.sellerId && (
         <div className="card" style={{ marginTop: '1rem', marginBottom: '1rem' }}>
           <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'transparent' }}>

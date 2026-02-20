@@ -27,6 +27,9 @@ class Review(
     @Column(name = "created_at", nullable = false)
     var createdAt: OffsetDateTime = OffsetDateTime.now(),
 
+    @Column(name = "is_approved")
+    var isApproved: Boolean = false,
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reviewer_id", nullable = false)
     var author: User,

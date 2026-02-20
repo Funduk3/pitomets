@@ -5,7 +5,7 @@ import { useMessengerWS } from '../context/MessengerWSContext';
 import { searchAPI } from '../api/search';
 
 export const Layout = ({ children }) => {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
   const { hasUnread } = useMessengerWS();
   const navigate = useNavigate();
   const location = useLocation();
@@ -14,6 +14,9 @@ export const Layout = ({ children }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
+
+  const canCreateListing = user?.sellerProfileApproved === true;
+  const isBanned = user?.bannedUntil && new Date(user.bannedUntil) > new Date();
 
   const handleLogout = async () => {
     await logout();
@@ -76,6 +79,7 @@ export const Layout = ({ children }) => {
   const isSearchPage = location.pathname.startsWith('/search');
   const isLoggedIn = isAuthenticated();
   const isMobileGuest = !isLoggedIn && isMobileViewport;
+  const isAdmin = user?.role === 'ADMIN';
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF' }}>
@@ -105,6 +109,9 @@ export const Layout = ({ children }) => {
               )}
             </Link>
             <Link to="/profile" style={{ color: '#111111', textDecoration: 'none' }}>Профиль</Link>
+            {isAdmin && (
+              <Link to="/moderation" style={{ color: '#111111', textDecoration: 'none' }}>Модерация</Link>
+            )}
             {isMobileGuest && (
               <Link to="/login" className="nav-mobile-login">Вход</Link>
             )}
@@ -172,12 +179,14 @@ export const Layout = ({ children }) => {
         <div className="nav-actions">
           {isLoggedIn ? (
             <>
-              <Link
-                to="/listings/create"
-                className="nav-create"
-              >
-                Создать объявление
-              </Link>
+              {canCreateListing && (
+                <Link
+                  to="/listings/create"
+                  className="nav-create"
+                >
+                  Создать объявление
+                </Link>
+              )}
               <button
                 onClick={handleLogout}
                 className="nav-logout"
@@ -192,6 +201,11 @@ export const Layout = ({ children }) => {
           ) : null}
         </div>
       </nav>
+      {isBanned && (
+        <div style={{ background: '#fdecea', color: '#c0392b', padding: '0.75rem 1rem', borderBottom: '1px solid #f5c6cb' }}>
+          Ваш профиль был заблокирован модератором
+        </div>
+      )}
       <main className="main-content">
         {children}
       </main>

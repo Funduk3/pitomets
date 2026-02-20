@@ -259,6 +259,7 @@ class PhotoTest : BaseContainers() {
         // Получаем список фото
         RestAssured
             .given()
+            .auth().oauth2(sellerToken.accessToken)
             .get("/listings/$listingId/photos")
             .then()
             .statusCode(200)
@@ -471,6 +472,7 @@ class PhotoTest : BaseContainers() {
         // Проверяем порядок
         val photos = RestAssured
             .given()
+            .auth().oauth2(sellerToken.accessToken)
             .get("/listings/$listingId/photos")
             .then()
             .statusCode(200)
