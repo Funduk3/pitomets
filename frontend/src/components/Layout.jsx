@@ -15,6 +15,9 @@ export const Layout = ({ children }) => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
 
+  const canCreateListing = user?.sellerProfileApproved === true;
+  const isBanned = user?.bannedUntil && new Date(user.bannedUntil) > new Date();
+
   const handleLogout = async () => {
     await logout();
     navigate('/login');
@@ -176,12 +179,14 @@ export const Layout = ({ children }) => {
         <div className="nav-actions">
           {isLoggedIn ? (
             <>
-              <Link
-                to="/listings/create"
-                className="nav-create"
-              >
-                Создать объявление
-              </Link>
+              {canCreateListing && (
+                <Link
+                  to="/listings/create"
+                  className="nav-create"
+                >
+                  Создать объявление
+                </Link>
+              )}
               <button
                 onClick={handleLogout}
                 className="nav-logout"
@@ -196,6 +201,11 @@ export const Layout = ({ children }) => {
           ) : null}
         </div>
       </nav>
+      {isBanned && (
+        <div style={{ background: '#fdecea', color: '#c0392b', padding: '0.75rem 1rem', borderBottom: '1px solid #f5c6cb' }}>
+          Ваш профиль был заблокирован модератором
+        </div>
+      )}
       <main className="main-content">
         {children}
       </main>

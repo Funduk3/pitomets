@@ -19,6 +19,8 @@ class DbInitRunner(
 ) : ApplicationRunner {
     @Suppress("LongMethod")
     override fun run(args: ApplicationArguments) {
+        backfillUserApproval()
+        backfillSellerProfileApproval()
         if (!tableExists("regions")) {
             importService.importFromFileRegion("data/regions.txt")
         }
@@ -101,6 +103,22 @@ class DbInitRunner(
         }
 
         metroRepository.saveAll(allLines)
+    }
+
+    private fun backfillUserApproval() {
+        try {
+            jdbcTemplate.update("UPDATE users SET is_approved = false WHERE is_approved IS NULL")
+        } catch (_: DataAccessException) {
+            // Table or column might not exist yet in a fresh DB
+        }
+    }
+
+    private fun backfillSellerProfileApproval() {
+        try {
+            jdbcTemplate.update("UPDATE seller_profiles SET is_approved = false WHERE is_approved IS NULL")
+        } catch (_: DataAccessException) {
+            // Table or column might not exist yet in a fresh DB
+        }
     }
 
     private fun getHexColorForLine(cityId: Long, colorName: String): String {

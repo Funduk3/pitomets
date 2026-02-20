@@ -51,7 +51,7 @@ class User(
     @Column(name = "is_confirmed", nullable = false, columnDefinition = "boolean default false")
     var isConfirmed: Boolean = false,
 
-    @Column(name = "is_approved")
+    @Column(name = "is_approved", nullable = false, columnDefinition = "boolean default false")
     var isApproved: Boolean = false,
 
     @Column(name = "confirmation_token")

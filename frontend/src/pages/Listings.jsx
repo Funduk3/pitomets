@@ -4,9 +4,11 @@ import { listingsAPI } from '../api/listings';
 import { resolveApiUrl } from '../api/axios';
 import { photosAPI } from '../api/photos';
 import { ProtectedRoute } from '../components/ProtectedRoute';
+import { useAuth } from '../context/AuthContext';
 
 export const Listings = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [listings, setListings] = useState([]);
   const [listingsPhotos, setListingsPhotos] = useState({});
   const [loading, setLoading] = useState(true);
@@ -75,13 +77,21 @@ export const Listings = () => {
         {listings.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem' }}>
             <p>У вас пока нет объявлений.</p>
-            <Link to="/listings/create" style={{ color: '#3498db' }}>Создать первое объявление</Link>
+            {user?.sellerProfileApproved === true ? (
+              <Link to="/listings/create" style={{ color: '#3498db' }}>Создать первое объявление</Link>
+            ) : (
+              <p className="small-muted" style={{ marginTop: '0.5rem' }}>
+                Профиль продавца на модерации. Создание объявлений будет доступно после одобрения.
+              </p>
+            )}
           </div>
         ) : (
           <div className="listings-grid" style={{ marginTop: '2rem' }}>
             {listings.map((listing) => {
               const listingPhotos = listingsPhotos[listing.listingsId] || [];
               const firstPhoto = listingPhotos[0];
+              const approved = listing.isApproved ?? listing.approved;
+              const showPending = (approved === false || approved === 0) && !listing.moderatorMessage;
               
               return (
                 <Link key={listing.listingsId} to={`/listings/${listing.listingsId}`} className="listing-card">
@@ -97,11 +107,28 @@ export const Listings = () => {
                     </div>
                   )}
                   <div className="listing-content">
-                    <h3>{listing.title || 'Без названия'}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <h3 style={{ margin: 0 }}>{listing.title || 'Без названия'}</h3>
+                      {showPending && (
+                        <span style={{ padding: '0.2rem 0.5rem', backgroundColor: '#f2f2f2', color: '#666', borderRadius: '999px', fontSize: '0.8rem' }}>
+                          На модерации
+                        </span>
+                      )}
+                      {listing.moderatorMessage && (
+                        <span style={{ padding: '0.2rem 0.5rem', backgroundColor: '#fdecea', color: '#c0392b', borderRadius: '999px', fontSize: '0.8rem' }}>
+                          Отклонено
+                        </span>
+                      )}
+                    </div>
                     <p>
                       {listing.description?.substring(0, 90)}
                       {listing.description && listing.description.length > 90 ? '...' : ''}
                     </p>
+                    {listing.moderatorMessage && (
+                      <p style={{ margin: '0.5rem 0', color: '#c0392b', fontSize: '0.9rem' }}>
+                        Объявление не одобрено модератором: {listing.moderatorMessage}
+                      </p>
+                    )}
                     <p>
                       <strong>Цена:</strong> <span className="tag-price">{listing.price} ₽</span>
                     </p>
@@ -136,24 +163,6 @@ export const Listings = () => {
                       >
                         Удалить
                       </button>
-                   <div style={{ padding: '1rem' }}>
-                     <h3 style={{ margin: '0 0 0.5rem 0' }}>{listing.title || 'Untitled'}</h3>
-                   <p style={{ margin: '0.5rem 0', color: '#666', fontSize: '0.9rem' }}>
-                     {listing.description?.substring(0, 100)}
-                     {listing.description && listing.description.length > 100 ? '...' : ''}
-                   </p>
-                   {listing.moderatorMessage && (
-                     <p style={{ margin: '0.5rem 0', color: '#c0392b', fontSize: '0.9rem' }}>
-                       Объявление не одобрено модератором: {listing.moderatorMessage}
-                     </p>
-                   )}
-                    <p><strong>Цена:</strong> {listing.price} ₽</p>
-                    <p><strong>Вид:</strong> {listing.species}</p>
-                    {listing.breed && <p><strong>Порода:</strong> {listing.breed}</p>}
-                    <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <Link to={`/listings/${listing.listingsId}`} className="btn btn-secondary" style={{ fontSize: '0.9rem' }}>Посмотреть</Link>
-                      <Link to={`/listings/${listing.listingsId}/edit`} className="btn" style={{ backgroundColor: '#f39c12', color: '#fff', fontSize: '0.9rem' }}>Изменить</Link>
-                      <button onClick={() => handleDelete(listing.listingsId)} className="btn btn-danger" style={{ fontSize: '0.9rem' }}>Удалить</button>
                     </div>
                   </div>
                 </Link>

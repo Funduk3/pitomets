@@ -13,4 +13,6 @@ interface ReviewsRepo : JpaRepository<Review, Long> {
     fun findByListingIdAndAuthorId(listingId: Long, authorId: Long): Review?
     fun findByIsApprovedFalse(): List<Review>
     fun findByIdAndIsApprovedFalse(id: Long): Review?
+    fun deleteByListingId(listingId: Long)
+    fun deleteBySellerProfileId(sellerProfileId: Long)
 }

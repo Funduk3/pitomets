@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository
 @Repository
 interface SellerProfileRepo : JpaRepository<SellerProfile, Long> {
     fun findBySellerId(sellerId: Long): SellerProfile?
+    fun findByIsApprovedFalse(): List<SellerProfile>
+    fun findByIdAndIsApprovedFalse(id: Long): SellerProfile?
 }

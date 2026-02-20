@@ -64,7 +64,7 @@ jwt:
   refresh-token-ttl: 168
 
 admin:
-  login: ${ADMIN_LOGIN:admin}
+  login: ${ADMIN_LOGIN:admin@admin.com}
   password: ${ADMIN_PASSWORD:pitomets_admin_1488}
 
 management:

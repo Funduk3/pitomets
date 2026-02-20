@@ -42,5 +42,7 @@ data class ListingsResponse(
 
     val likesCount: Long,
 
+    val isApproved: Boolean,
+
     val moderatorMessage: String? = null
 )

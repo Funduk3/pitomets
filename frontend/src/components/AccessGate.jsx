@@ -24,6 +24,16 @@ export const SellerRequired = () => (
   </div>
 );
 
+export const SellerApprovalRequired = () => (
+  <div style={{ maxWidth: '520px', margin: '0 auto', textAlign: 'center' }}>
+    <h2 style={{ marginBottom: '0.5rem' }}>Профиль на модерации</h2>
+    <p style={{ marginBottom: '1.5rem', color: '#555' }}>
+      Доступ к созданию объявлений появится после одобрения модератором.
+    </p>
+    <Link to="/" className="btn btn-secondary">На главную</Link>
+  </div>
+);
+
 export const AdminRequired = () => (
   <div style={{ maxWidth: '520px', margin: '0 auto', textAlign: 'center' }}>
     <h2 style={{ marginBottom: '0.5rem' }}>Недостаточно прав</h2>
@@ -41,8 +51,10 @@ export const RequireAuth = ({ children }) => {
 export const RequireSeller = ({ children }) => {
   const { isAuthenticated, user } = useAuth();
   const isSeller = Boolean(user?.shopName || user?.isSeller);
+  const isApprovedSeller = user?.sellerProfileApproved === true;
   if (!isAuthenticated()) return <AuthRequired />;
   if (!isSeller) return <SellerRequired />;
+  if (!isApprovedSeller) return <SellerApprovalRequired />;
   return children;
 };
 

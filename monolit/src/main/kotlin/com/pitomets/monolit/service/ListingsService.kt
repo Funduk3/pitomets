@@ -60,6 +60,9 @@ class ListingsService(
         }
 
         val seller = findSellerProfile(userId, sellerProfileRepo, log)
+        if (!seller.isApproved) {
+            throw AccessDeniedException("Seller profile is pending approval")
+        }
         val (father, mother) = findParentPets(request, petsRepo, log)
 
         val listing = createListingEntity(
@@ -109,6 +112,9 @@ class ListingsService(
             response.mother
         )
     }
+
+    fun getListingEntity(listingId: Long): Listing =
+        listingsRepo.findListingOrThrow(listingId)
 
     fun getListingWithView(
         listingId: Long,
@@ -212,6 +218,7 @@ class ListingsService(
         request: UpdateListingRequest
     ): ListingsResponse {
         val listing = requireOwnerAndReturnListing(listingId, sellerId)
+        val wasApproved = listing.isApproved
 
         request.title?.let { listing.title = it }
         request.description?.let { listing.description = it }
@@ -240,25 +247,21 @@ class ListingsService(
             listing.metroStation = metroRepo.findById(it).orElseThrow()
         }
 
+        listing.isApproved = false
+        listing.moderatorMessage = null
+
         val saved = listingsRepo.save(listing)
 
-        val shouldIndex = (request.title != null || request.description != null) && listing.isApproved
-
-        if (shouldIndex) {
+        if (wasApproved) {
             outboxRepo.save(
                 ListingOutbox(
                     listingId = listingId,
-                    eventType = EventType.UPDATE,
-                    title = saved.title,
-                    description = saved.description,
-                    species = saved.species,
-                    breed = saved.breed,
-                    gender = saved.gender,
-                    ageEnum = AgeEnum.entries.getOrNull(saved.ageMonths)?.name,
-                    cityTitle = saved.city.title,
-                    city = saved.city.id,
-                    metro = saved.metroStation?.id,
-                    price = saved.price,
+                    eventType = EventType.DELETE,
+                    title = null,
+                    description = null,
+                    city = 0,
+                    metro = null,
+                    price = 0.toBigDecimal(),
                 )
             )
         }
@@ -296,6 +299,7 @@ class ListingsService(
             },
             viewsCount = saved.viewsCount,
             likesCount = saved.likesCount,
+            isApproved = saved.isApproved,
             moderatorMessage = saved.moderatorMessage
         )
     }
@@ -446,6 +450,8 @@ class ListingsService(
         price = request.price,
         sellerProfile = seller,
         title = request.title,
+        isApproved = false,
+        moderatorMessage = null,
         city = cityRepo.findById(cityId)
             .orElseThrow(),
         metroStation = metroId?.let {
@@ -493,6 +499,7 @@ class ListingsService(
         },
         viewsCount = viewsCount,
         likesCount = likesCount,
+        isApproved = savedListing.isApproved,
         moderatorMessage = savedListing.moderatorMessage
     )
 

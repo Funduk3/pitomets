@@ -6,14 +6,12 @@ import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingReviewRequest
 import com.pitomets.monolit.model.dto.response.ReviewResponse
 import com.pitomets.monolit.model.dto.response.TokenResponse
-import com.pitomets.monolit.repository.SellerProfileRepo
 import com.pitomets.monolit.testContainers.BaseContainers
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertNotNull
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.junit.jupiter.Testcontainers
@@ -28,8 +26,6 @@ import kotlin.test.assertTrue
 @ActiveProfiles("test")
 class ReviewsTest : BaseContainers() {
 
-    @Autowired
-    private lateinit var sellerProfileRepo: SellerProfileRepo
 
     @Test
     fun `should create and retrieve listing review successfully`() {
@@ -66,8 +62,11 @@ class ReviewsTest : BaseContainers() {
         val sellerToken = createBaseSeller()
         val listingId = createListing(sellerToken)
 
-        createListingReview(buyer1Token, listingId, 5, "Excellent!")
-        createListingReview(buyer2Token, listingId, 4, "Very good")
+        val review1 = createListingReview(buyer1Token, listingId, 5, "Excellent!")
+        val review2 = createListingReview(buyer2Token, listingId, 4, "Very good")
+        val adminToken = loginAdmin()
+        approveReview(adminToken, review1.id)
+        approveReview(adminToken, review2.id)
 
         val reviews = RestAssured.given()
             .contentType(ContentType.JSON)
@@ -215,7 +214,10 @@ class ReviewsTest : BaseContainers() {
         val listingId = createListing(sellerToken)
 
         val review1 = createListingReview(buyer1Token, listingId, 5, "Great listing!")
-        createListingReview(buyer2Token, listingId, 5, "Great listing!")
+        val review2 = createListingReview(buyer2Token, listingId, 5, "Great listing!")
+        val adminToken = loginAdmin()
+        approveReview(adminToken, review1.id)
+        approveReview(adminToken, review2.id)
 
         val reviews = RestAssured.given()
             .contentType(ContentType.JSON)
@@ -237,7 +239,9 @@ class ReviewsTest : BaseContainers() {
         val listingId = createListing(sellerToken)
         val sellerProfileId = getSellerProfileId(sellerToken)
 
-        createListingReview(buyerToken, listingId, 5, "Great listing!")
+        val review = createListingReview(buyerToken, listingId, 5, "Great listing!")
+        val adminToken = loginAdmin()
+        approveReview(adminToken, review.id)
 
         val sellerReviews = RestAssured.given()
             .contentType(ContentType.JSON)
@@ -314,5 +318,13 @@ class ReviewsTest : BaseContainers() {
             .jsonPath()
             .getLong("id")
         return sellerProfileRepo.findBySellerId(userId)?.id!!
+    }
+
+    private fun approveReview(adminToken: TokenResponse, reviewId: Long) {
+        RestAssured.given()
+            .auth().oauth2(adminToken.accessToken)
+            .post("/admin/review/$reviewId/approve")
+            .then()
+            .statusCode(200)
     }
 }

@@ -25,6 +25,7 @@ class ElasticTest : BaseContainers() {
     @Test
     fun `Create a lot of listings and search should return most similar`() {
         val tokenSeller = createBaseSeller()
+        val adminToken = loginAdmin()
 
         // уникальный токен, по которому будем искать
         val token = "unique-search-token-${System.currentTimeMillis()}"
@@ -46,13 +47,16 @@ class ElasticTest : BaseContainers() {
             metroId = null,
             gender = Gender.M,
         )
-        RestAssured.given()
+        val listingId1 = RestAssured.given()
             .contentType(ContentType.JSON)
             .auth().oauth2(tokenSeller.accessToken)
             .body(targetReq1)
             .post("/listings/")
             .then()
             .statusCode(200)
+            .extract()
+            .jsonPath()
+            .getLong("listingsId")
 
         val targetReq2 = ListingsRequest(
             description = "This is the best match B for $token",
@@ -65,11 +69,26 @@ class ElasticTest : BaseContainers() {
             metroId = null,
             gender = Gender.M,
         )
-        RestAssured.given()
+        val listingId2 = RestAssured.given()
             .contentType(ContentType.JSON)
             .auth().oauth2(tokenSeller.accessToken)
             .body(targetReq2)
             .post("/listings/")
+            .then()
+            .statusCode(200)
+            .extract()
+            .jsonPath()
+            .getLong("listingsId")
+
+        RestAssured.given()
+            .auth().oauth2(adminToken.accessToken)
+            .post("/admin/listing/$listingId1/approve")
+            .then()
+            .statusCode(200)
+
+        RestAssured.given()
+            .auth().oauth2(adminToken.accessToken)
+            .post("/admin/listing/$listingId2/approve")
             .then()
             .statusCode(200)
 
@@ -101,6 +120,7 @@ class ElasticTest : BaseContainers() {
     @Test
     fun `should create listing and fetch similar listings`() {
         val sellerTokens = createBaseSeller()
+        val adminToken = loginAdmin()
 
         val token = "SIMILAR-${System.currentTimeMillis()}"
 
@@ -138,13 +158,29 @@ class ElasticTest : BaseContainers() {
             .then()
             .statusCode(200)
             .extract()
-            .path("listingsId")
+            .jsonPath()
+            .getLong("listingsId")
 
-        RestAssured.given()
+        val similarListingId: Long = RestAssured.given()
             .contentType(ContentType.JSON)
             .auth().oauth2(sellerTokens.accessToken)
             .body(similarListingRequest)
             .post("/listings/")
+            .then()
+            .statusCode(200)
+            .extract()
+            .jsonPath()
+            .getLong("listingsId")
+
+        RestAssured.given()
+            .auth().oauth2(adminToken.accessToken)
+            .post("/admin/listing/$createdListingId/approve")
+            .then()
+            .statusCode(200)
+
+        RestAssured.given()
+            .auth().oauth2(adminToken.accessToken)
+            .post("/admin/listing/$similarListingId/approve")
             .then()
             .statusCode(200)
 

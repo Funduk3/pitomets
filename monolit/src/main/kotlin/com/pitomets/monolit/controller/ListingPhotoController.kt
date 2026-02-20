@@ -52,11 +52,16 @@ class ListingPhotoController(
         @PathVariable listingId: Long,
         @AuthenticationPrincipal user: UserPrincipal?
     ): ListingPhotoResponse {
-        val listing = listingsService.getListing(listingId, user?.id)
+        val isAdmin = user?.authorities?.any { it.authority == "ROLE_ADMIN" } == true
+        val title = if (isAdmin) {
+            listingsService.getListingEntity(listingId).title
+        } else {
+            listingsService.getListing(listingId, user?.id).title
+        }
         val photos = listingPhotoService.getListingPhotos(listingId)
 
         return ListingPhotoResponse(
-            title = listing.title,
+            title = title,
             photos = photos.map { "/listings/$listingId/photos/${it.id}" }
         )
     }

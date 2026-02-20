@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Suppress("TooManyFunction")
 class UserService(
     private val jwtService: JWTService,
     private val notificationPublisher: NotificationPublisher,
@@ -87,7 +88,7 @@ class UserService(
         )
     }
 
-    @Suppress("ThrowsCount")
+    @Suppress("ThrowsCount", "CyclomaticComplexMethod")
     fun login(email: String, rawPassword: String): TokenResponse {
         if (email == adminLogin) {
             if (rawPassword != adminPassword) {
