@@ -55,4 +55,3 @@ The frontend is configured to communicate with the backend API. CORS is already 
 - `/search/listings` - Search listings
 - `/favourites` - Favourites management
 - `/users/photos/avatar` - User avatar management
-
