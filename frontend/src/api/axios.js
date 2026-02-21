@@ -1,10 +1,15 @@
 import axios from 'axios';
 
-export const API_BASE_URL = 'http://localhost:8080';
-//export const API_BASE_URL = 'https://pitomets.com/api';
+const normalizeBase = (base) => {
+  if (!base) return base;
+  return base.endsWith('/') ? base.slice(0, -1) : base;
+};
 
-const normalizeBase = (base) => (base.endsWith('/') ? base.slice(0, -1) : base);
-const API_BASE = normalizeBase(API_BASE_URL);
+export const API_BASE_URL = normalizeBase(
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+);
+
+const API_BASE = API_BASE_URL;
 
 export const resolveApiUrl = (path) => {
     if (!path) return path;
