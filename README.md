@@ -40,4 +40,4 @@ docker stop $(docker ps -aq) 2>/dev/null && docker rm $(docker ps -aq) 2>/dev/nu
 9628
 
 a
-локи логи {container=~".+"ты}
+локи логи {container=~".+"}
