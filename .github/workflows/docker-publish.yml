@@ -60,6 +60,8 @@ jobs:
         with:
           context: ./frontend
           file: ./frontend/Dockerfile
+          build-args: |
+            VITE_API_BASE_URL=https://pitomets.com/api
           platforms: linux/amd64
           push: true
           tags: |
