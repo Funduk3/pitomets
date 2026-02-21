@@ -58,4 +58,3 @@ docker-compose up -d
 - `DATABASE_URL` - URL базы данных (по умолчанию: `jdbc:postgresql://localhost:5432/messenger`)
 - `DATABASE_USER` - Пользователь БД (по умолчанию: `user`)
 - `DATABASE_PASSWORD` - Пароль БД (по умолчанию: `password`)
-
