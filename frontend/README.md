@@ -29,7 +29,10 @@ The app will run on http://localhost:3001
 
 ## Backend Configuration
 
-Make sure your Spring Boot backend is running on http://localhost:8080
+API base URL is provided at build time via Docker build arg `VITE_API_BASE_URL`.
+
+For Docker builds from `frontend/`, pass API URL explicitly:
+`docker buildx build --build-arg VITE_API_BASE_URL=https://pitomets.com/api ...`
 
 The frontend is configured to communicate with the backend API. CORS is already configured in the backend to allow requests from localhost:3001.
 
@@ -55,4 +58,3 @@ The frontend is configured to communicate with the backend API. CORS is already 
 - `/search/listings` - Search listings
 - `/favourites` - Favourites management
 - `/users/photos/avatar` - User avatar management
-

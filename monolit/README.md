@@ -13,3 +13,4 @@ password: password
 prometheus: http://host.docker.internal:9090
 
 minio: admin admin
+
