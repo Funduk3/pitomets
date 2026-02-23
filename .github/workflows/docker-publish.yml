@@ -60,11 +60,12 @@ jobs:
         with:
           context: ./frontend
           file: ./frontend/Dockerfile
+          build-args: |
+            VITE_API_BASE_URL=https://pitomets.com/api
           platforms: linux/amd64
           push: true
           tags: |
-            artshar/frontend:latest
-            artshar/frontend:${{ github.sha }}
+            artshar/frontend:1.0.0
           cache-from: type=registry,ref=artshar/frontend:buildcache
           cache-to: type=registry,ref=artshar/frontend:buildcache,mode=max
 
@@ -94,8 +95,7 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            artshar/monolit:latest
-            artshar/monolit:${{ github.sha }}
+            artshar/monolit:1.0.0
           cache-from: type=registry,ref=artshar/monolit:buildcache
           cache-to: type=registry,ref=artshar/monolit:buildcache,mode=max
 
@@ -125,8 +125,7 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            artshar/messenger:latest
-            artshar/messenger:${{ github.sha }}
+            artshar/messenger:1.0.0
           cache-from: type=registry,ref=artshar/messenger:buildcache
           cache-to: type=registry,ref=artshar/messenger:buildcache,mode=max
 
@@ -156,7 +155,6 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            artshar/notifications:latest
-            artshar/notifications:${{ github.sha }}
+            artshar/notifications:1.0.0
           cache-from: type=registry,ref=artshar/notifications:buildcache
           cache-to: type=registry,ref=artshar/notifications:buildcache,mode=max
