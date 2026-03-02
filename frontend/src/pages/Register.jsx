@@ -29,11 +29,10 @@ export const Register = () => {
     setLoading(true);
 
     try {
-      // Note: In production, password should be hashed on client or sent securely
       const response = await register(email, password, fullName);
       setSuccess(
         response?.message ||
-          'на вашу почту отправлено письмо с подтверждением, проверьте свой почтовый ящик и перейдите по ссылке, чтобы подтвердить почту'
+          'На вашу почту отправлено письмо с подтверждением. Перейдите по ссылке из письма, чтобы войти в аккаунт.'
       );
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');

@@ -32,7 +32,8 @@ export const authAPI = {
   },
 
   confirm: async (token) => {
-    await api.get(`/confirm?token=${token}`);
+    const response = await api.get(`/confirm?token=${token}`);
+    return response.data;
   },
 
   forgotPassword: async (email) => {

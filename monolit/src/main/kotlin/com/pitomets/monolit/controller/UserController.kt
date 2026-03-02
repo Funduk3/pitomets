@@ -57,9 +57,8 @@ class UserController(
     ) = service.logout(refreshToken)
 
     @GetMapping("/confirm")
-    fun confirm(@RequestParam token: String) {
+    fun confirm(@RequestParam token: String): TokenResponse =
         service.confirmEmail(token)
-    }
 
     @PostMapping("/forgot-password")
     fun forgotPassword(@RequestBody request: com.pitomets.monolit.model.dto.request.ForgotPasswordRequest) {
