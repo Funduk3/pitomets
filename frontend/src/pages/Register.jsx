@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getAuthErrorMessage } from '../util/authErrors';
 
 export const Register = () => {
   const [email, setEmail] = useState('');
@@ -35,7 +36,7 @@ export const Register = () => {
           'На вашу почту отправлено письмо с подтверждением. Перейдите по ссылке из письма, чтобы войти в аккаунт.'
       );
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      setError(getAuthErrorMessage(err, 'register'));
     } finally {
       setLoading(false);
     }

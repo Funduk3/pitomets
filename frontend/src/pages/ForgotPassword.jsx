@@ -1,18 +1,24 @@
 import { useState } from 'react';
 import { authAPI } from '../api/auth';
+import { getAuthErrorMessage } from '../util/authErrors';
 
 export const ForgotPassword = () => {
     const [email, setEmail] = useState('');
     const [sent, setSent] = useState(false);
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
+        setLoading(true);
         try {
             await authAPI.forgotPassword(email);
             setSent(true);
-        } catch (e) {
-            console.error(e);
-            alert('Ошибка запроса. Возможно, пользователь не найден.');
+        } catch (err) {
+            setError(getAuthErrorMessage(err, 'forgotPassword'));
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -30,8 +36,13 @@ export const ForgotPassword = () => {
                     required
                     className="border p-2 rounded"
                 />
-                <button type="submit" className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
-                    Сбросить пароль
+                {error && <div className="text-red-600 text-sm">{error}</div>}
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:opacity-60"
+                >
+                    {loading ? 'Отправляем...' : 'Сбросить пароль'}
                 </button>
             </form>
         </div>
