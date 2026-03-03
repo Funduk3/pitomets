@@ -3,6 +3,10 @@ services:
     image: ${MONOLIT_IMAGE}
     container_name: monolit
     restart: unless-stopped
+    mem_limit: 2g
+    cpus: 2.0
+    environment:
+      - JAVA_OPTS=-Xms1g -Xmx768m -XX:MaxMetaspaceSize=128m
     env_file:
       - .env
     networks:
@@ -21,6 +25,10 @@ services:
     image: ${MESSENGER_IMAGE}
     container_name: messenger
     restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.0
+    environment:
+      - JAVA_OPTS=-Xms512m -Xmx768m -XX:MaxMetaspaceSize=128m
     env_file:
       - .env
     networks:
@@ -37,6 +45,10 @@ services:
     image: ${NOTIFICATIONS_IMAGE}
     container_name: notifications
     restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.0
+    environment:
+      - JAVA_OPTS=-Xms512m -Xmx768m -XX:MaxMetaspaceSize=128m
     env_file:
       - .env
       - .env.prod
@@ -47,6 +59,10 @@ services:
     image: ${FRONTEND_IMAGE}
     container_name: frontend
     restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.0
+    environment:
+      - JAVA_OPTS=-Xms512m -Xmx768m -XX:MaxMetaspaceSize=128m
     networks:
       - web
     labels:
