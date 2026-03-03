@@ -122,13 +122,7 @@ class UserService(
 
             repo.save(admin)
 
-            val accessToken = jwtService.generateAccessToken(adminLogin)
-            val refreshToken = jwtService.createRefreshToken(adminLogin)
-
-            return TokenResponse(
-                accessToken = accessToken,
-                refreshToken = refreshToken,
-            )
+            return createTokenPair(adminLogin)
         }
 
         try {
@@ -143,13 +137,7 @@ class UserService(
                     throw AuthenticationException("подтвердите электронную почту")
                 }
 
-                val accessToken = jwtService.generateAccessToken(email)
-                val refreshToken = jwtService.createRefreshToken(email)
-
-                return TokenResponse(
-                    accessToken = accessToken,
-                    refreshToken = refreshToken,
-                )
+                return createTokenPair(email)
             }
         } catch (ex: BadCredentialsException) { // todo посмотри Федя можно ли удалить это
             log.warn("Authentication failed for user {}: {}", email, ex.message)
@@ -165,13 +153,7 @@ class UserService(
         repo.findByEmail(email)
             ?: throw UserNotFoundException("User not found")
 
-        val newAccessToken = jwtService.generateAccessToken(email)
-        val newRefreshToken = jwtService.createRefreshToken(email)
-
-        return TokenResponse(
-            accessToken = newAccessToken,
-            refreshToken = newRefreshToken,
-        )
+        return createTokenPair(email)
     }
 
     fun logout(refreshToken: String) {
@@ -179,7 +161,7 @@ class UserService(
     }
 
     @Transactional
-    fun confirmEmail(token: String) {
+    fun confirmEmail(token: String): TokenResponse {
         log.info("Confirm email requested with token={}", token)
         val user = repo.findByConfirmationToken(token)
         if (user == null) {
@@ -191,6 +173,7 @@ class UserService(
         user.confirmationToken = null
         repo.save(user)
         log.info("Confirm email success for user id={}", user.id)
+        return createTokenPair(user.email)
     }
 
     fun forgotPassword(email: String) {
@@ -281,5 +264,13 @@ class UserService(
         )
     }
 
+    private fun createTokenPair(email: String): TokenResponse {
+        val accessToken = jwtService.generateAccessToken(email)
+        val refreshToken = jwtService.createRefreshToken(email)
+        return TokenResponse(
+            accessToken = accessToken,
+            refreshToken = refreshToken,
+        )
+    }
 
 }
