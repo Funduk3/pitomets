@@ -45,5 +45,20 @@ class SellerProfile(
     var isVerified: Boolean = false,
 
     @Column(name = "is_approved", nullable = false, columnDefinition = "boolean default false")
-    var isApproved: Boolean = false
+    var isApproved: Boolean = false,
+
+    @Column(name = "ai_moderation_status")
+    var aiModerationStatus: String? = null,
+
+    @Column(name = "ai_moderation_reason", columnDefinition = "text")
+    var aiModerationReason: String? = null,
+
+    @Column(name = "ai_toxicity_score")
+    var aiToxicityScore: Double? = null,
+
+    @Column(name = "ai_source_action")
+    var aiSourceAction: String? = null,
+
+    @Column(name = "ai_model_version")
+    var aiModelVersion: String? = null
 )

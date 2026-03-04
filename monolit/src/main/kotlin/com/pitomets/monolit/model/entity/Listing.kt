@@ -53,6 +53,21 @@ class Listing(
     @Column(name = "moderator_message", columnDefinition = "text")
     var moderatorMessage: String? = null,
 
+    @Column(name = "ai_moderation_status")
+    var aiModerationStatus: String? = null,
+
+    @Column(name = "ai_moderation_reason", columnDefinition = "text")
+    var aiModerationReason: String? = null,
+
+    @Column(name = "ai_toxicity_score")
+    var aiToxicityScore: Double? = null,
+
+    @Column(name = "ai_source_action")
+    var aiSourceAction: String? = null,
+
+    @Column(name = "ai_model_version")
+    var aiModelVersion: String? = null,
+
     @Column(name = "is_archived")
     var isArchived: Boolean = false,
 

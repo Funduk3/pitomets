@@ -44,5 +44,6 @@ data class ListingsResponse(
 
     val isApproved: Boolean,
 
-    val moderatorMessage: String? = null
+    val moderatorMessage: String? = null,
+    val moderationHint: ModerationHintResponse? = null
 )

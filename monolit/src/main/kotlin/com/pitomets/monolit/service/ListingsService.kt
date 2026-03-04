@@ -11,6 +11,7 @@ import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.CityDto
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.pitomets.monolit.model.dto.request.AdminMessage
+import com.pitomets.monolit.model.kafka.moderation.ModerationOperation
 import com.pitomets.monolit.model.dto.response.ListingsCursorResponse
 import com.pitomets.monolit.model.dto.response.ListingsResponse
 import com.pitomets.monolit.model.dto.response.MetroDto
@@ -47,6 +48,7 @@ class ListingsService(
     private val metroRepo: MetroStationRepo,
     private val redisTemplate: RedisTemplate<String, String>,
     private val metricsService: ListingMetricsService,
+    private val moderationRequestService: ModerationRequestService,
 ) {
     // Controller functions
 
@@ -74,6 +76,7 @@ class ListingsService(
             request.metroId,
         )
         val saved = listingsRepo.save(listing)
+        moderationRequestService.publishListing(saved, ModerationOperation.CREATE)
 
         if (saved.isApproved) {
             outboxRepo.save(
@@ -251,6 +254,7 @@ class ListingsService(
         listing.moderatorMessage = null
 
         val saved = listingsRepo.save(listing)
+        moderationRequestService.publishListing(saved, ModerationOperation.UPDATE)
 
         if (wasApproved) {
             outboxRepo.save(
@@ -500,7 +504,14 @@ class ListingsService(
         viewsCount = viewsCount,
         likesCount = likesCount,
         isApproved = savedListing.isApproved,
-        moderatorMessage = savedListing.moderatorMessage
+        moderatorMessage = savedListing.moderatorMessage,
+        moderationHint = moderationHint(
+            status = savedListing.aiModerationStatus,
+            reason = savedListing.aiModerationReason,
+            toxicityScore = savedListing.aiToxicityScore,
+            sourceAction = savedListing.aiSourceAction,
+            modelVersion = savedListing.aiModelVersion
+        )
     )
 
     private val log = LoggerFactory.getLogger(ListingsService::class.java)

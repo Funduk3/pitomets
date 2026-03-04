@@ -14,5 +14,6 @@ data class SellerProfileResponse(
     @JsonAlias("isVerified")
     val isVerified: Boolean,
     val createdAt: OffsetDateTime,
-    val avatarKey: String?
+    val avatarKey: String?,
+    val moderationHint: ModerationHintResponse? = null
 )

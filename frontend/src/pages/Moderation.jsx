@@ -115,6 +115,80 @@ export const Moderation = () => {
     setSellerProfiles((prev) => prev.filter((p) => p.id !== id));
   };
 
+  const renderModerationHint = (hint) => {
+    if (!hint) {
+      return null;
+    }
+
+    const statusLabel = {
+      APPROVED: 'Оценка AI: одобрить',
+      REJECTED: 'Оценка AI: отклонить',
+      REVIEW: 'Оценка AI: ручная проверка',
+      ERROR: 'Оценка AI: ошибка анализа',
+    }[hint.status] || 'Оценка AI';
+
+    const statusColor = {
+      APPROVED: '#0f766e',
+      REJECTED: '#b91c1c',
+      REVIEW: '#92400e',
+      ERROR: '#7c3aed',
+    }[hint.status] || '#374151';
+
+    const hasToxicity = typeof hint.toxicityScore === 'number';
+    const toxicityValue = hasToxicity ? Math.max(0, Math.min(1, hint.toxicityScore)) : null;
+    const toxicityText = hasToxicity ? toxicityValue.toFixed(2) : 'н/д';
+    const toxicityTone = !hasToxicity
+      ? { label: 'Нет данных', color: '#6b7280', bg: '#f3f4f6' }
+      : toxicityValue >= 0.7
+        ? { label: 'Высокий', color: '#b91c1c', bg: '#fee2e2' }
+        : toxicityValue >= 0.4
+          ? { label: 'Средний', color: '#92400e', bg: '#fef3c7' }
+          : { label: 'Низкий', color: '#065f46', bg: '#d1fae5' };
+
+    return (
+      <div style={{ marginTop: '0.6rem', padding: '0.55rem 0.7rem', borderRadius: '8px', background: '#f8fafc', border: `1px solid ${statusColor}33` }}>
+        <div style={{ fontSize: '0.85rem', color: statusColor, fontWeight: 600 }}>
+          {statusLabel}
+        </div>
+        <div style={{ marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+          <div style={{ fontSize: '0.85rem', color: '#374151' }}>
+            Уровень токсичности: <strong>{toxicityText}</strong>
+          </div>
+          <span
+            style={{
+              fontSize: '0.74rem',
+              fontWeight: 600,
+              color: toxicityTone.color,
+              background: toxicityTone.bg,
+              border: `1px solid ${toxicityTone.color}33`,
+              borderRadius: '999px',
+              padding: '0.12rem 0.45rem',
+            }}
+          >
+            {toxicityTone.label}
+          </span>
+        </div>
+        {hasToxicity && (
+          <div style={{ marginTop: '0.35rem', height: '7px', width: '100%', borderRadius: '999px', background: '#e5e7eb', overflow: 'hidden' }}>
+            <div
+              style={{
+                width: `${Math.round(toxicityValue * 100)}%`,
+                height: '100%',
+                background: toxicityTone.color,
+                transition: 'width 180ms ease',
+              }}
+            />
+          </div>
+        )}
+        {hint.reason && (
+          <div style={{ marginTop: '0.2rem', fontSize: '0.82rem', color: '#4b5563' }}>
+            Причина: {hint.reason}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return <div>Грузим...</div>;
   }
@@ -155,6 +229,7 @@ export const Moderation = () => {
                     <div style={{ marginTop: '0.5rem' }}>
                       <strong>Цена:</strong> {listing.price} ₽
                     </div>
+                    {renderModerationHint(listing.moderationHint)}
                   </div>
                 </div>
                 <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -207,6 +282,7 @@ export const Moderation = () => {
                     {profile.userId && (
                       <div style={{ marginTop: '0.25rem', color: '#999' }}>User ID: {profile.userId}</div>
                     )}
+                    {renderModerationHint(profile.moderationHint)}
                   </div>
                 </div>
                 <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -238,6 +314,7 @@ export const Moderation = () => {
               <div key={review.id} style={{ border: '1px solid #eee', borderRadius: '8px', padding: '1rem' }}>
                 <div><strong>Оценка:</strong> {review.rating}</div>
                 <div style={{ color: '#666', marginTop: '0.25rem' }}>{review.text || 'Без текста'}</div>
+                {renderModerationHint(review.moderationHint)}
                 <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                   <button className="btn btn-primary" onClick={() => handleApproveReview(review.id)}>Одобрить</button>
                   <div style={{ display: 'flex', gap: '0.5rem', flex: 1, minWidth: '260px' }}>
