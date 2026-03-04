@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { authAPI } from '../api/auth';
+import { getAuthErrorMessage } from '../util/authErrors';
 
 export const ResetPassword = () => {
     const [searchParams] = useSearchParams();
@@ -9,6 +10,7 @@ export const ResetPassword = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -17,13 +19,15 @@ export const ResetPassword = () => {
             setError('Пароли не совпадают');
             return;
         }
+        setLoading(true);
         try {
             await authAPI.resetPassword(token, password, confirmPassword);
             alert('Пароль успешно изменен');
             navigate('/login');
-        } catch (e) {
-            console.error(e);
-            alert('Ошибка сброса пароля');
+        } catch (err) {
+            setError(getAuthErrorMessage(err, 'resetPassword'));
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -50,8 +54,12 @@ export const ResetPassword = () => {
                     className="border p-2 rounded"
                 />
                 {error && <div className="text-red-600 text-sm">{error}</div>}
-                <button type="submit" className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
-                    Сохранить
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:opacity-60"
+                >
+                    {loading ? 'Сохраняем...' : 'Сохранить'}
                 </button>
             </form>
         </div>
