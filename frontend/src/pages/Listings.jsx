@@ -42,7 +42,7 @@ export const Listings = () => {
       });
       setListingsPhotos(photosMap);
     } catch (err) {
-      setError('Failed to load listings');
+      setError('Не удалось загрузить объявления');
       console.error('Error loading listings:', err);
     } finally {
       setLoading(false);
@@ -50,13 +50,13 @@ export const Listings = () => {
   };
 
   const handleDelete = async (listingId) => {
-    if (!window.confirm('Are you sure you want to delete this listing?')) return;
+    if (!window.confirm('Удалить объявление?')) return;
 
     try {
       await listingsAPI.deleteListing(listingId);
       setListings(listings.filter(l => l.listingsId !== listingId));
     } catch (err) {
-      alert('Failed to delete listing');
+      alert('Не удалось удалить объявление');
     }
   };
 
@@ -71,7 +71,7 @@ export const Listings = () => {
         {error && (
           <div style={{ color: 'red', marginBottom: '1rem', padding: '1rem', backgroundColor: '#ffe6e6', borderRadius: '4px' }}>
             {error}
-            <button onClick={loadListings} style={{ marginLeft: '1rem', padding: '0.5rem 1rem', cursor: 'pointer' }}>Retry</button>
+            <button onClick={loadListings} style={{ marginLeft: '1rem', padding: '0.5rem 1rem', cursor: 'pointer' }}>Повторить</button>
           </div>
         )}
         {listings.length === 0 ? (
@@ -126,7 +126,7 @@ export const Listings = () => {
                     </p>
                     {listing.moderatorMessage && (
                       <p style={{ margin: '0.5rem 0', color: '#c0392b', fontSize: '0.9rem' }}>
-                        Объявление не одобрено модератором: {listing.moderatorMessage}
+                        Сообщение модератора: {listing.moderatorMessage}
                       </p>
                     )}
                     <p>

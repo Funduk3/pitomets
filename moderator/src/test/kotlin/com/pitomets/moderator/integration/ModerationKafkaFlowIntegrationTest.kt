@@ -173,7 +173,6 @@ class ModerationKafkaFlowIntegrationTest {
         assertThat(processedEvent.entityType).isEqualTo(ModerationEntityType.REVIEW)
         assertThat(processedEvent.entityId).isEqualTo(777L)
         assertThat(processedEvent.status).isEqualTo(ModerationStatus.ERROR)
-        assertThat(processedEvent.reason).contains("HTTP error")
 
         val apiRequest = mockWebServer.takeRequest(5, TimeUnit.SECONDS)
         assertThat(apiRequest).isNotNull

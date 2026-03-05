@@ -56,6 +56,12 @@ class SellerProfile(
     @Column(name = "ai_toxicity_score")
     var aiToxicityScore: Double? = null,
 
+    @Column(name = "ai_profanity_detected")
+    var aiProfanityDetected: Boolean? = null,
+
+    @Column(name = "ai_sexual_content_detected")
+    var aiSexualContentDetected: Boolean? = null,
+
     @Column(name = "ai_source_action")
     var aiSourceAction: String? = null,
 

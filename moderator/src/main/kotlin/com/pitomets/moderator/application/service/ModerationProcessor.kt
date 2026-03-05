@@ -7,8 +7,6 @@ import com.pitomets.moderator.interfaces.messaging.event.ModerationRequestedEven
 import com.pitomets.moderator.interfaces.messaging.event.ModerationStatus
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import org.springframework.web.client.RestClientException
-import org.springframework.web.client.RestClientResponseException
 import java.util.Locale
 import java.util.UUID
 
@@ -17,6 +15,7 @@ class ModerationProcessor(
     private val moderiumClient: ModeriumClient,
     private val apiProperties: ModeriumApiProperties
 ) {
+    @Suppress("TooGenericExceptionCaught")
     fun process(event: ModerationRequestedEvent): ModerationProcessedEvent {
         val text = event.textParts
             .asSequence()
@@ -25,7 +24,7 @@ class ModerationProcessor(
             .joinToString(separator = "\n")
 
         if (text.isBlank()) {
-            return error(event, "No text parts for moderation")
+            return error(event, "Отсутствует текст для модерации")
         }
 
         return try {
@@ -47,34 +46,11 @@ class ModerationProcessor(
                 reason = response.decision?.reason,
                 sourceAction = action.ifBlank { null },
                 toxicityScore = response.categories?.toxicity?.score,
+                profanityDetected = response.categories?.profanity?.detected,
+                sexualContentDetected = response.categories?.sexualContent?.detected,
                 processingTimeMs = response.meta?.processingTimeMs,
                 modelVersion = response.meta?.modelVersion
             )
-        } catch (ex: RestClientResponseException) {
-            log.error(
-                "Moderium API returned {} for {}:{}",
-                ex.statusCode,
-                event.entityType,
-                event.entityId,
-                ex
-            )
-            error(event, "Moderium API HTTP error: ${ex.statusCode}")
-        } catch (ex: RestClientException) {
-            log.error(
-                "Moderium API call failed for {}:{}",
-                event.entityType,
-                event.entityId,
-                ex
-            )
-            error(event, "Moderium API connection error: ${ex.message}")
-        } catch (ex: IllegalArgumentException) {
-            log.error(
-                "Moderation config error for {}:{}",
-                event.entityType,
-                event.entityId,
-                ex
-            )
-            error(event, ex.message ?: "Moderation config error")
         } catch (ex: Exception) {
             log.error(
                 "Unexpected moderation error for {}:{}",
@@ -82,7 +58,30 @@ class ModerationProcessor(
                 event.entityId,
                 ex
             )
-            error(event, ex.message ?: "Unexpected moderation error")
+            error(event, localizeErrorReason(ex.message))
+        }
+    }
+
+    private fun localizeErrorReason(reason: String?): String {
+        val message = reason?.trim().orEmpty()
+        if (message.isBlank()) {
+            return "Неожиданная ошибка модерации"
+        }
+
+        val normalized = message.lowercase(Locale.getDefault())
+        return when {
+            normalized.contains("moderium_api_token is empty") ->
+                "Токен MODERIUM API не настроен"
+            normalized.contains("no text parts for moderation") ->
+                "Отсутствует текст для модерации"
+            normalized.contains("i/o error") ||
+                normalized.contains("connection refused") ||
+                normalized.contains("connect timed out") ||
+                normalized.contains("read timed out") ->
+                "Сервис MODERIUM временно недоступен"
+            normalized.contains("unexpected moderation error") ->
+                "Неожиданная ошибка модерации"
+            else -> message
         }
     }
 

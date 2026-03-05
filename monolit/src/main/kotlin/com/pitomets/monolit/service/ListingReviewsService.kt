@@ -84,6 +84,8 @@ class ListingReviewsService(
                 status = saved.aiModerationStatus,
                 reason = saved.aiModerationReason,
                 toxicityScore = saved.aiToxicityScore,
+                profanityDetected = saved.aiProfanityDetected,
+                sexualContentDetected = saved.aiSexualContentDetected,
                 sourceAction = saved.aiSourceAction,
                 modelVersion = saved.aiModelVersion
             )
@@ -104,6 +106,8 @@ class ListingReviewsService(
                     status = r.aiModerationStatus,
                     reason = r.aiModerationReason,
                     toxicityScore = r.aiToxicityScore,
+                    profanityDetected = r.aiProfanityDetected,
+                    sexualContentDetected = r.aiSexualContentDetected,
                     sourceAction = r.aiSourceAction,
                     modelVersion = r.aiModelVersion
                 )
@@ -124,6 +128,8 @@ class ListingReviewsService(
                     status = r.aiModerationStatus,
                     reason = r.aiModerationReason,
                     toxicityScore = r.aiToxicityScore,
+                    profanityDetected = r.aiProfanityDetected,
+                    sexualContentDetected = r.aiSexualContentDetected,
                     sourceAction = r.aiSourceAction,
                     modelVersion = r.aiModelVersion
                 )
@@ -146,6 +152,8 @@ class ListingReviewsService(
                 status = review.aiModerationStatus,
                 reason = review.aiModerationReason,
                 toxicityScore = review.aiToxicityScore,
+                profanityDetected = review.aiProfanityDetected,
+                sexualContentDetected = review.aiSexualContentDetected,
                 sourceAction = review.aiSourceAction,
                 modelVersion = review.aiModelVersion
             )
@@ -242,6 +250,8 @@ class ListingReviewsService(
                 status = updated.aiModerationStatus,
                 reason = updated.aiModerationReason,
                 toxicityScore = updated.aiToxicityScore,
+                profanityDetected = updated.aiProfanityDetected,
+                sexualContentDetected = updated.aiSexualContentDetected,
                 sourceAction = updated.aiSourceAction,
                 modelVersion = updated.aiModelVersion
             )

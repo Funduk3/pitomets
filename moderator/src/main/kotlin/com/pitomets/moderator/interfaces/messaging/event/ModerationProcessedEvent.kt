@@ -13,6 +13,8 @@ data class ModerationProcessedEvent(
     val reason: String? = null,
     val sourceAction: String? = null,
     val toxicityScore: Double? = null,
+    val profanityDetected: Boolean? = null,
+    val sexualContentDetected: Boolean? = null,
     val processingTimeMs: Long? = null,
     val modelVersion: String? = null,
     val processedAt: Instant = Instant.now()

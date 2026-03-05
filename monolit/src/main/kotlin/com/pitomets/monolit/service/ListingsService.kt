@@ -251,6 +251,7 @@ class ListingsService(
         }
 
         listing.isApproved = false
+        listing.manualModerationPending = true
         listing.moderatorMessage = null
 
         val saved = listingsRepo.save(listing)
@@ -334,6 +335,7 @@ class ListingsService(
     fun approveListing(id: Long) {
         val listing = listingsRepo.findListingOrThrow(id)
         listing.isApproved = true
+        listing.manualModerationPending = false
         listing.moderatorMessage = null
         val saved = listingsRepo.save(listing)
 
@@ -359,7 +361,12 @@ class ListingsService(
     fun declineListing(id: Long, message: AdminMessage) {
         val listing = listingsRepo.findListingOrThrow(id)
         listing.isApproved = false
-        listing.moderatorMessage = message.message
+        listing.manualModerationPending = false
+        listing.moderatorMessage = buildDeclineMessage(
+            moderatorMessage = message.message,
+            profanityDetected = listing.aiProfanityDetected == true,
+            sexualContentDetected = listing.aiSexualContentDetected == true
+        )
         listingsRepo.save(listing)
 
         outboxRepo.save(
@@ -376,15 +383,25 @@ class ListingsService(
     }
 
     fun getPendingListings(): List<ListingsResponse> {
-        return listingsRepo.findByIsApprovedFalse().map { listing ->
-            buildListingsResponse(listing, listing.father, listing.mother)
+        return listingsRepo.findByManualModerationPendingTrue().map { listing ->
+            buildListingsResponse(
+                listing,
+                listing.father,
+                listing.mother,
+                includeModerationHint = true
+            )
         }
     }
 
     fun getPendingListing(listingId: Long): ListingsResponse {
-        val listing = listingsRepo.findByIdAndIsApprovedFalse(listingId)
+        val listing = listingsRepo.findByIdAndManualModerationPendingTrue(listingId)
             ?: throw ListingNotFoundException("Pending listing with id $listingId not found")
-        return buildListingsResponse(listing, listing.father, listing.mother)
+        return buildListingsResponse(
+            listing,
+            listing.father,
+            listing.mother,
+            includeModerationHint = true
+        )
     }
 
     // use it in any class
@@ -455,6 +472,7 @@ class ListingsService(
         sellerProfile = seller,
         title = request.title,
         isApproved = false,
+        manualModerationPending = true,
         moderatorMessage = null,
         city = cityRepo.findById(cityId)
             .orElseThrow(),
@@ -469,7 +487,8 @@ class ListingsService(
         father: Pet?,
         mother: Pet?,
         viewsCount: Long = savedListing.viewsCount,
-        likesCount: Long = savedListing.likesCount
+        likesCount: Long = savedListing.likesCount,
+        includeModerationHint: Boolean = false
     ) = ListingsResponse(
         description = savedListing.description,
         sellerId = requireNotNull(savedListing.sellerProfile.seller?.id),
@@ -505,13 +524,19 @@ class ListingsService(
         likesCount = likesCount,
         isApproved = savedListing.isApproved,
         moderatorMessage = savedListing.moderatorMessage,
-        moderationHint = moderationHint(
-            status = savedListing.aiModerationStatus,
-            reason = savedListing.aiModerationReason,
-            toxicityScore = savedListing.aiToxicityScore,
-            sourceAction = savedListing.aiSourceAction,
-            modelVersion = savedListing.aiModelVersion
-        )
+        moderationHint = if (includeModerationHint) {
+            moderationHint(
+                status = savedListing.aiModerationStatus,
+                reason = savedListing.aiModerationReason,
+                toxicityScore = savedListing.aiToxicityScore,
+                profanityDetected = savedListing.aiProfanityDetected,
+                sexualContentDetected = savedListing.aiSexualContentDetected,
+                sourceAction = savedListing.aiSourceAction,
+                modelVersion = savedListing.aiModelVersion
+            )
+        } else {
+            null
+        }
     )
 
     private val log = LoggerFactory.getLogger(ListingsService::class.java)
@@ -527,5 +552,27 @@ class ListingsService(
     companion object {
         private const val HOME_PAGE_SIZE = 10
         private val CACHE_TTL = Duration.ofSeconds(30)
+    }
+
+    private fun buildDeclineMessage(
+        moderatorMessage: String,
+        profanityDetected: Boolean,
+        sexualContentDetected: Boolean
+    ): String {
+        val base = moderatorMessage.trim()
+        val recommendations = mutableListOf<String>()
+
+        if (profanityDetected) {
+            recommendations += "уберите нецензурные выражения"
+        }
+        if (sexualContentDetected) {
+            recommendations += "уберите контент 18+"
+        }
+
+        if (recommendations.isEmpty()) {
+            return base
+        }
+
+        return "$base. Рекомендации: ${recommendations.joinToString("; ")}."
     }
 }

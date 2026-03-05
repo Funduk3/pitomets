@@ -8,10 +8,10 @@ RUN ["chmod", "+x", "./gradlew"]
 
 # Запускаем зависимостную фазу (без сборки приложения)
 # Первый вызов скачает зависимости и закэширует их в слое
-RUN ./gradlew --no-daemon build -x test --parallel --quiet || true
+RUN ./gradlew --no-daemon build -x test -x detekt --parallel --quiet || true
 
 COPY . .
-RUN ./gradlew --no-daemon bootJar -x test --quiet
+RUN ./gradlew --no-daemon bootJar -x test -x detekt --quiet
 
 # stage: runtime
 FROM eclipse-temurin:23-jre

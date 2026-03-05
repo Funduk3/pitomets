@@ -87,7 +87,6 @@ services:
       MODERIUM_API_BASE_URL: https://moderium-ai.ru
       MODERIUM_API_MODE: strong
       MODERIUM_API_WITH_ANIMAL: "true"
-      MODERIUM_API_TOKEN: ${MODERIUM_API_TOKEN:-}
     networks:
       - web
 

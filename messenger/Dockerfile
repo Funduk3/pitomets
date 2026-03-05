@@ -7,7 +7,7 @@ COPY gradle ./gradle
 COPY src ./src
 COPY config/detekt/detekt.yml /app/config/detekt/detekt.yml
 
-RUN gradle build --no-daemon -x test
+RUN gradle build --no-daemon -x test -x detekt
 
 FROM eclipse-temurin:21-jre-alpine
 

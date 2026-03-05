@@ -50,6 +50,9 @@ class Listing(
     @Column(name = "is_approved")
     var isApproved: Boolean = false,
 
+    @Column(name = "manual_moderation_pending", nullable = false, columnDefinition = "boolean default false")
+    var manualModerationPending: Boolean = false,
+
     @Column(name = "moderator_message", columnDefinition = "text")
     var moderatorMessage: String? = null,
 
@@ -61,6 +64,12 @@ class Listing(
 
     @Column(name = "ai_toxicity_score")
     var aiToxicityScore: Double? = null,
+
+    @Column(name = "ai_profanity_detected")
+    var aiProfanityDetected: Boolean? = null,
+
+    @Column(name = "ai_sexual_content_detected")
+    var aiSexualContentDetected: Boolean? = null,
 
     @Column(name = "ai_source_action")
     var aiSourceAction: String? = null,

@@ -79,6 +79,8 @@ class ProfileService(
                 status = saved.aiModerationStatus,
                 reason = saved.aiModerationReason,
                 toxicityScore = saved.aiToxicityScore,
+                profanityDetected = saved.aiProfanityDetected,
+                sexualContentDetected = saved.aiSexualContentDetected,
                 sourceAction = saved.aiSourceAction,
                 modelVersion = saved.aiModelVersion
             )
@@ -165,6 +167,8 @@ class ProfileService(
                 status = updated.aiModerationStatus,
                 reason = updated.aiModerationReason,
                 toxicityScore = updated.aiToxicityScore,
+                profanityDetected = updated.aiProfanityDetected,
+                sexualContentDetected = updated.aiSexualContentDetected,
                 sourceAction = updated.aiSourceAction,
                 modelVersion = updated.aiModelVersion
             )
@@ -188,6 +192,8 @@ class ProfileService(
                 status = sellerProfile.aiModerationStatus,
                 reason = sellerProfile.aiModerationReason,
                 toxicityScore = sellerProfile.aiToxicityScore,
+                profanityDetected = sellerProfile.aiProfanityDetected,
+                sexualContentDetected = sellerProfile.aiSexualContentDetected,
                 sourceAction = sellerProfile.aiSourceAction,
                 modelVersion = sellerProfile.aiModelVersion
             )
@@ -211,6 +217,8 @@ class ProfileService(
                 status = sellerProfile.aiModerationStatus,
                 reason = sellerProfile.aiModerationReason,
                 toxicityScore = sellerProfile.aiToxicityScore,
+                profanityDetected = sellerProfile.aiProfanityDetected,
+                sexualContentDetected = sellerProfile.aiSexualContentDetected,
                 sourceAction = sellerProfile.aiSourceAction,
                 modelVersion = sellerProfile.aiModelVersion
             )
@@ -233,6 +241,8 @@ class ProfileService(
                         status = profile.aiModerationStatus,
                         reason = profile.aiModerationReason,
                         toxicityScore = profile.aiToxicityScore,
+                        profanityDetected = profile.aiProfanityDetected,
+                        sexualContentDetected = profile.aiSexualContentDetected,
                         sourceAction = profile.aiSourceAction,
                         modelVersion = profile.aiModelVersion
                     )
@@ -256,6 +266,8 @@ class ProfileService(
                 status = profile.aiModerationStatus,
                 reason = profile.aiModerationReason,
                 toxicityScore = profile.aiToxicityScore,
+                profanityDetected = profile.aiProfanityDetected,
+                sexualContentDetected = profile.aiSexualContentDetected,
                 sourceAction = profile.aiSourceAction,
                 modelVersion = profile.aiModelVersion
             )

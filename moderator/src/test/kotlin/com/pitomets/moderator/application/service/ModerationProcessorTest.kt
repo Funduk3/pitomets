@@ -1,9 +1,9 @@
 package com.pitomets.moderator.application.service
 
 import com.pitomets.moderator.config.ModeriumApiProperties
-import com.pitomets.moderator.infrastructure.client.ModeriumAnalyzeResponse
 import com.pitomets.moderator.infrastructure.client.ModeriumClient
-import com.pitomets.moderator.infrastructure.client.ModeriumDecision
+import com.pitomets.moderator.infrastructure.dto.ModeriumAnalyzeResponse
+import com.pitomets.moderator.infrastructure.dto.ModeriumDecision
 import com.pitomets.moderator.interfaces.messaging.event.ModerationEntityType
 import com.pitomets.moderator.interfaces.messaging.event.ModerationOperation
 import com.pitomets.moderator.interfaces.messaging.event.ModerationRequestedEvent

@@ -115,17 +115,46 @@ export const Moderation = () => {
     setSellerProfiles((prev) => prev.filter((p) => p.id !== id));
   };
 
+  const localizeModerationReason = (reason) => {
+    if (!reason) {
+      return '';
+    }
+
+    const normalized = reason.toLowerCase();
+    if (normalized.includes('moderium_api_token is empty')) {
+      return 'Токен MODERIUM API не настроен';
+    }
+    if (normalized.includes('no text parts for moderation')) {
+      return 'Отсутствует текст для модерации';
+    }
+    if (normalized.includes('unexpected moderation error')) {
+      return 'Неожиданная ошибка модерации';
+    }
+    if (normalized.includes('toxicity >= 0.8 or explicit profanity detected')) {
+      return 'Токсичность >= 0.8 или обнаружена явная нецензурная лексика';
+    }
+    if (
+      normalized.includes('i/o error') ||
+      normalized.includes('connection refused') ||
+      normalized.includes('connect timed out') ||
+      normalized.includes('read timed out')
+    ) {
+      return 'Сервис MODERIUM временно недоступен';
+    }
+    return reason;
+  };
+
   const renderModerationHint = (hint) => {
     if (!hint) {
       return null;
     }
 
     const statusLabel = {
-      APPROVED: 'Оценка AI: одобрить',
-      REJECTED: 'Оценка AI: отклонить',
-      REVIEW: 'Оценка AI: ручная проверка',
-      ERROR: 'Оценка AI: ошибка анализа',
-    }[hint.status] || 'Оценка AI';
+      APPROVED: 'Оценка ИИ: одобрить',
+      REJECTED: 'Оценка ИИ: отклонить',
+      REVIEW: 'Оценка ИИ: ручная проверка',
+      ERROR: 'Оценка ИИ: ошибка анализа',
+    }[hint.status] || 'Оценка ИИ';
 
     const statusColor = {
       APPROVED: '#0f766e',
@@ -137,13 +166,25 @@ export const Moderation = () => {
     const hasToxicity = typeof hint.toxicityScore === 'number';
     const toxicityValue = hasToxicity ? Math.max(0, Math.min(1, hint.toxicityScore)) : null;
     const toxicityText = hasToxicity ? toxicityValue.toFixed(2) : 'н/д';
-    const toxicityTone = !hasToxicity
+    const profanityDetected = hint.profanityDetected;
+    const sexualContentDetected = hint.sexualContentDetected;
+    const hasBadContent = profanityDetected === true || sexualContentDetected === true;
+
+    const toxicityTone = (!hasToxicity && !hasBadContent)
       ? { label: 'Нет данных', color: '#6b7280', bg: '#f3f4f6' }
-      : toxicityValue >= 0.7
-        ? { label: 'Высокий', color: '#b91c1c', bg: '#fee2e2' }
-        : toxicityValue >= 0.4
-          ? { label: 'Средний', color: '#92400e', bg: '#fef3c7' }
-          : { label: 'Низкий', color: '#065f46', bg: '#d1fae5' };
+      : hasBadContent
+        ? { label: 'Высокий риск', color: '#b91c1c', bg: '#fee2e2' }
+        : toxicityValue < 0.4
+          ? { label: 'Низкий риск', color: '#065f46', bg: '#d1fae5' }
+          : toxicityValue < 0.7
+            ? { label: 'Средний риск', color: '#92400e', bg: '#fef3c7' }
+            : { label: 'Высокий риск', color: '#b91c1c', bg: '#fee2e2' };
+
+    const formatDetected = (value) => {
+      if (value === true) return 'Да';
+      if (value === false) return 'Нет';
+      return 'н/д';
+    };
 
     return (
       <div style={{ marginTop: '0.6rem', padding: '0.55rem 0.7rem', borderRadius: '8px', background: '#f8fafc', border: `1px solid ${statusColor}33` }}>
@@ -153,6 +194,12 @@ export const Moderation = () => {
         <div style={{ marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
           <div style={{ fontSize: '0.85rem', color: '#374151' }}>
             Уровень токсичности: <strong>{toxicityText}</strong>
+          </div>
+          <div style={{ fontSize: '0.85rem', color: '#374151' }}>
+            Мат: <strong>{formatDetected(profanityDetected)}</strong>
+          </div>
+          <div style={{ fontSize: '0.85rem', color: '#374151' }}>
+            18+: <strong>{formatDetected(sexualContentDetected)}</strong>
           </div>
           <span
             style={{
@@ -182,7 +229,7 @@ export const Moderation = () => {
         )}
         {hint.reason && (
           <div style={{ marginTop: '0.2rem', fontSize: '0.82rem', color: '#4b5563' }}>
-            Причина: {hint.reason}
+            Причина: {localizeModerationReason(hint.reason)}
           </div>
         )}
       </div>
