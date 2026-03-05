@@ -10,4 +10,5 @@ data class ReviewResponse(
     val listingId: Long,
     val sellerProfileId: Long,
     val createdAt: OffsetDateTime,
+    val moderationHint: ModerationHintResponse? = null,
 )

@@ -6,6 +6,7 @@ import com.pitomets.monolit.model.dto.request.CreateReviewRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingReviewRequest
 import com.pitomets.monolit.model.dto.response.ReviewResponse
 import com.pitomets.monolit.model.entity.Review
+import com.pitomets.monolit.model.kafka.moderation.ModerationOperation
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.ReviewsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
@@ -23,6 +24,7 @@ class ListingReviewsService(
     private val userRepo: UserRepo,
     private val listingsRepo: ListingsRepo,
     private val sellerProfileRepo: SellerProfileRepo,
+    private val moderationRequestService: ModerationRequestService,
 ) {
     private val log = LoggerFactory.getLogger(ListingReviewsService::class.java)
 
@@ -61,6 +63,7 @@ class ListingReviewsService(
         )
 
         val saved = reviewsRepo.save(review)
+        moderationRequestService.publishReview(saved, ModerationOperation.CREATE)
 
         sellerProfile.sumReviews += request.rating
         sellerProfile.countReviews += 1
@@ -77,6 +80,15 @@ class ListingReviewsService(
             listingId = requireNotNull(listing.id),
             sellerProfileId = requireNotNull(sellerProfile.id),
             createdAt = saved.createdAt,
+            moderationHint = moderationHint(
+                status = saved.aiModerationStatus,
+                reason = saved.aiModerationReason,
+                toxicityScore = saved.aiToxicityScore,
+                profanityDetected = saved.aiProfanityDetected,
+                sexualContentDetected = saved.aiSexualContentDetected,
+                sourceAction = saved.aiSourceAction,
+                modelVersion = saved.aiModelVersion
+            )
         )
     }
 
@@ -89,7 +101,16 @@ class ListingReviewsService(
                 authorId = requireNotNull(r.author.id),
                 listingId = requireNotNull(r.listing?.id),
                 sellerProfileId = requireNotNull(r.sellerProfile.id),
-                createdAt = r.createdAt
+                createdAt = r.createdAt,
+                moderationHint = moderationHint(
+                    status = r.aiModerationStatus,
+                    reason = r.aiModerationReason,
+                    toxicityScore = r.aiToxicityScore,
+                    profanityDetected = r.aiProfanityDetected,
+                    sexualContentDetected = r.aiSexualContentDetected,
+                    sourceAction = r.aiSourceAction,
+                    modelVersion = r.aiModelVersion
+                )
             )
         }
 
@@ -102,7 +123,16 @@ class ListingReviewsService(
                 authorId = requireNotNull(r.author.id),
                 listingId = requireNotNull(r.listing?.id),
                 sellerProfileId = requireNotNull(r.sellerProfile.id),
-                createdAt = r.createdAt
+                createdAt = r.createdAt,
+                moderationHint = moderationHint(
+                    status = r.aiModerationStatus,
+                    reason = r.aiModerationReason,
+                    toxicityScore = r.aiToxicityScore,
+                    profanityDetected = r.aiProfanityDetected,
+                    sexualContentDetected = r.aiSexualContentDetected,
+                    sourceAction = r.aiSourceAction,
+                    modelVersion = r.aiModelVersion
+                )
             )
         }
     }
@@ -117,7 +147,16 @@ class ListingReviewsService(
             authorId = requireNotNull(review.author.id),
             listingId = requireNotNull(review.listing?.id),
             sellerProfileId = requireNotNull(review.sellerProfile.id),
-            createdAt = review.createdAt
+            createdAt = review.createdAt,
+            moderationHint = moderationHint(
+                status = review.aiModerationStatus,
+                reason = review.aiModerationReason,
+                toxicityScore = review.aiToxicityScore,
+                profanityDetected = review.aiProfanityDetected,
+                sexualContentDetected = review.aiSexualContentDetected,
+                sourceAction = review.aiSourceAction,
+                modelVersion = review.aiModelVersion
+            )
         )
     }
 
@@ -196,15 +235,26 @@ class ListingReviewsService(
         review.text = request.text
         review.rating = request.rating
         review.createdAt = OffsetDateTime.now()
+        val updated = reviewsRepo.save(review)
+        moderationRequestService.publishReview(updated, ModerationOperation.UPDATE)
 
         return ReviewResponse(
-            id = review.id!!,
-            rating = review.rating,
-            text = review.text,
+            id = updated.id!!,
+            rating = updated.rating,
+            text = updated.text,
             authorId = currentUserId,
-            listingId = review.listing!!.id!!,
-            sellerProfileId = review.sellerProfile.id!!,
-            createdAt = review.createdAt
+            listingId = updated.listing!!.id!!,
+            sellerProfileId = updated.sellerProfile.id!!,
+            createdAt = updated.createdAt,
+            moderationHint = moderationHint(
+                status = updated.aiModerationStatus,
+                reason = updated.aiModerationReason,
+                toxicityScore = updated.aiToxicityScore,
+                profanityDetected = updated.aiProfanityDetected,
+                sexualContentDetected = updated.aiSexualContentDetected,
+                sourceAction = updated.aiSourceAction,
+                modelVersion = updated.aiModelVersion
+            )
         )
     }
 }

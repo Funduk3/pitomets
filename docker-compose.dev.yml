@@ -74,6 +74,22 @@ services:
     networks:
       - web
 
+  moderator-service:
+    build: ./moderator
+    container_name: moderator-service
+    env_file:
+      - .env.dev
+    depends_on:
+      kafka:
+        condition: service_started
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      MODERIUM_API_BASE_URL: https://moderium-ai.ru
+      MODERIUM_API_MODE: strong
+      MODERIUM_API_WITH_ANIMAL: "true"
+    networks:
+      - web
+
   messenger:
     build: ./messenger
     container_name: messenger-app

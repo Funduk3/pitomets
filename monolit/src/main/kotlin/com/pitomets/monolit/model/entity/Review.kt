@@ -30,6 +30,27 @@ class Review(
     @Column(name = "is_approved")
     var isApproved: Boolean = false,
 
+    @Column(name = "ai_moderation_status")
+    var aiModerationStatus: String? = null,
+
+    @Column(name = "ai_moderation_reason", columnDefinition = "text")
+    var aiModerationReason: String? = null,
+
+    @Column(name = "ai_toxicity_score")
+    var aiToxicityScore: Double? = null,
+
+    @Column(name = "ai_profanity_detected")
+    var aiProfanityDetected: Boolean? = null,
+
+    @Column(name = "ai_sexual_content_detected")
+    var aiSexualContentDetected: Boolean? = null,
+
+    @Column(name = "ai_source_action")
+    var aiSourceAction: String? = null,
+
+    @Column(name = "ai_model_version")
+    var aiModelVersion: String? = null,
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reviewer_id", nullable = false)
     var author: User,

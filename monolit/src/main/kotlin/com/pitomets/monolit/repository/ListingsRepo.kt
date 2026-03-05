@@ -20,8 +20,8 @@ interface ListingsRepo : JpaRepository<Listing, Long> {
     fun findByIsArchivedFalseAndIdLessThanOrderByIdDesc(id: Long, pageable: Pageable): List<Listing>
     fun findByIsArchivedFalseAndIsApprovedTrueOrderByIdDesc(pageable: Pageable): List<Listing>
     fun findByIsArchivedFalseAndIsApprovedTrueAndIdLessThanOrderByIdDesc(id: Long, pageable: Pageable): List<Listing>
-    fun findByIdAndIsApprovedFalse(id: Long): Listing?
-    fun findByIsApprovedFalse(): List<Listing>
+    fun findByIdAndManualModerationPendingTrue(id: Long): Listing?
+    fun findByManualModerationPendingTrue(): List<Listing>
 }
 
 fun ListingsRepo.findListingOrThrow(listingId: Long): Listing =

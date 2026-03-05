@@ -92,3 +92,10 @@ notification:
       notification-send: notification.send
       notification-sent: notification.sent
       notification-failed: notification.failed
+
+moderation:
+  with-animal: ${MODERATION_WITH_ANIMAL:true}
+  kafka:
+    topics:
+      moderation-requested: moderation.requested
+      moderation-processed: moderation.processed

@@ -13,6 +13,7 @@ import com.pitomets.monolit.model.entity.User
 import com.pitomets.monolit.model.entity.UserRole
 import com.pitomets.monolit.model.entity.ListingOutbox
 import com.pitomets.monolit.model.EventType
+import com.pitomets.monolit.model.kafka.moderation.ModerationOperation
 import com.pitomets.monolit.repository.SellerProfileRepo
 import com.pitomets.monolit.repository.UserRepo
 import com.pitomets.monolit.repository.ListingsRepo
@@ -37,6 +38,7 @@ class ProfileService(
     private val listingPhotoRepo: ListingPhotoRepo,
     private val favouritesRepo: FavouritesRepo,
     private val listingOutboxRepo: ListingOutboxRepository,
+    private val moderationRequestService: ModerationRequestService,
 ) {
     private val log = LoggerFactory.getLogger(ProfileService::class.java)
 
@@ -58,6 +60,7 @@ class ProfileService(
             isApproved = false
         )
         val saved = sellerProfileRepo.save(sellerProfile)
+        moderationRequestService.publishSellerProfile(saved, ModerationOperation.CREATE)
 
         updateSecurityContext(user)
 
@@ -71,7 +74,16 @@ class ProfileService(
             rating = saved.rating,
             isVerified = saved.isVerified,
             createdAt = saved.createdAt,
-            avatarKey = saved.seller?.avatarKey
+            avatarKey = saved.seller?.avatarKey,
+            moderationHint = moderationHint(
+                status = saved.aiModerationStatus,
+                reason = saved.aiModerationReason,
+                toxicityScore = saved.aiToxicityScore,
+                profanityDetected = saved.aiProfanityDetected,
+                sexualContentDetected = saved.aiSexualContentDetected,
+                sourceAction = saved.aiSourceAction,
+                modelVersion = saved.aiModelVersion
+            )
         )
     }
 
@@ -138,6 +150,7 @@ class ProfileService(
         sellerProfile.isVerified = false
 
         val updated = sellerProfileRepo.save(sellerProfile)
+        moderationRequestService.publishSellerProfile(updated, ModerationOperation.UPDATE)
 
         log.info("Seller profile updated for user ID: {}", userId)
 
@@ -149,7 +162,16 @@ class ProfileService(
             rating = updated.rating,
             isVerified = updated.isVerified,
             createdAt = updated.createdAt,
-            avatarKey = updated.seller?.avatarKey
+            avatarKey = updated.seller?.avatarKey,
+            moderationHint = moderationHint(
+                status = updated.aiModerationStatus,
+                reason = updated.aiModerationReason,
+                toxicityScore = updated.aiToxicityScore,
+                profanityDetected = updated.aiProfanityDetected,
+                sexualContentDetected = updated.aiSexualContentDetected,
+                sourceAction = updated.aiSourceAction,
+                modelVersion = updated.aiModelVersion
+            )
         )
     }
 
@@ -165,7 +187,16 @@ class ProfileService(
             rating = sellerProfile.rating,
             isVerified = sellerProfile.isVerified,
             createdAt = sellerProfile.createdAt,
-            avatarKey = sellerProfile.seller?.avatarKey
+            avatarKey = sellerProfile.seller?.avatarKey,
+            moderationHint = moderationHint(
+                status = sellerProfile.aiModerationStatus,
+                reason = sellerProfile.aiModerationReason,
+                toxicityScore = sellerProfile.aiToxicityScore,
+                profanityDetected = sellerProfile.aiProfanityDetected,
+                sexualContentDetected = sellerProfile.aiSexualContentDetected,
+                sourceAction = sellerProfile.aiSourceAction,
+                modelVersion = sellerProfile.aiModelVersion
+            )
         )
     }
 
@@ -181,7 +212,16 @@ class ProfileService(
             rating = sellerProfile.rating,
             isVerified = sellerProfile.isVerified,
             createdAt = sellerProfile.createdAt,
-            avatarKey = sellerProfile.seller?.avatarKey
+            avatarKey = sellerProfile.seller?.avatarKey,
+            moderationHint = moderationHint(
+                status = sellerProfile.aiModerationStatus,
+                reason = sellerProfile.aiModerationReason,
+                toxicityScore = sellerProfile.aiToxicityScore,
+                profanityDetected = sellerProfile.aiProfanityDetected,
+                sexualContentDetected = sellerProfile.aiSexualContentDetected,
+                sourceAction = sellerProfile.aiSourceAction,
+                modelVersion = sellerProfile.aiModelVersion
+            )
         )
     }
 
@@ -196,7 +236,16 @@ class ProfileService(
                     rating = profile.rating,
                     isVerified = profile.isVerified,
                     createdAt = profile.createdAt,
-                    avatarKey = profile.seller?.avatarKey
+                    avatarKey = profile.seller?.avatarKey,
+                    moderationHint = moderationHint(
+                        status = profile.aiModerationStatus,
+                        reason = profile.aiModerationReason,
+                        toxicityScore = profile.aiToxicityScore,
+                        profanityDetected = profile.aiProfanityDetected,
+                        sexualContentDetected = profile.aiSexualContentDetected,
+                        sourceAction = profile.aiSourceAction,
+                        modelVersion = profile.aiModelVersion
+                    )
                 )
             }
     }
@@ -212,7 +261,16 @@ class ProfileService(
             rating = profile.rating,
             isVerified = profile.isVerified,
             createdAt = profile.createdAt,
-            avatarKey = profile.seller?.avatarKey
+            avatarKey = profile.seller?.avatarKey,
+            moderationHint = moderationHint(
+                status = profile.aiModerationStatus,
+                reason = profile.aiModerationReason,
+                toxicityScore = profile.aiToxicityScore,
+                profanityDetected = profile.aiProfanityDetected,
+                sexualContentDetected = profile.aiSexualContentDetected,
+                sourceAction = profile.aiSourceAction,
+                modelVersion = profile.aiModelVersion
+            )
         )
     }
 

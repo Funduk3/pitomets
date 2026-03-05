@@ -67,7 +67,7 @@ export const ListingDetail = () => {
         setMetroStation(data.metro);
       }
     } catch (err) {
-      setError('Failed to load listing');
+      setError('Не удалось загрузить объявление');
     } finally {
       setLoading(false);
     }
@@ -115,7 +115,7 @@ export const ListingDetail = () => {
       cancelEditReview();
       loadReviews();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update review');
+      alert(err.response?.data?.message || 'Не удалось обновить отзыв');
     } finally {
       setReviewActionLoading(false);
     }
@@ -128,7 +128,7 @@ export const ListingDetail = () => {
       await listingsAPI.deleteReview(reviewId);
       loadReviews();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete review');
+      alert(err.response?.data?.message || 'Не удалось удалить отзыв');
     } finally {
       setReviewActionLoading(false);
     }
@@ -195,7 +195,7 @@ export const ListingDetail = () => {
 
   const handleToggleFavourite = async () => {
     if (!isAuthenticated()) {
-      alert('Please login to add favourites');
+      alert('Войдите в аккаунт, чтобы добавить в избранное');
       return;
     }
 
@@ -220,10 +220,10 @@ export const ListingDetail = () => {
       const status = err.response?.status;
       if (!isFavourite && (status === 409 || (msg && msg.toLowerCase().includes('already')))) {
         setIsFavourite(true);
-        alert('This listing is already in your favourites.');
+        alert('Это объявление уже в избранном.');
         return;
       }
-      alert(msg || 'Failed to update favourites');
+      alert(msg || 'Не удалось обновить избранное');
     }
   };
 
@@ -234,12 +234,12 @@ export const ListingDetail = () => {
     }
 
     if (!listing || !listing.sellerId) {
-      alert('Seller information not available');
+      alert('Информация о продавце недоступна');
       return;
     }
 
     if (user?.id === listing.sellerId) {
-      alert('You cannot message yourself');
+      alert('Нельзя написать самому себе');
       return;
     }
 
@@ -252,7 +252,7 @@ export const ListingDetail = () => {
       navigate(`/chats/${chat.id}`);
     } catch (err) {
       console.error('Failed to create chat:', err);
-      alert('Failed to start conversation with seller');
+      alert('Не удалось начать диалог с продавцом');
     }
   };
 
@@ -298,7 +298,7 @@ export const ListingDetail = () => {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-        <h2 style={{ margin: 0 }}>{listing.title || 'Untitled'}</h2>
+        <h2 style={{ margin: 0 }}>{listing.title || 'Без названия'}</h2>
         {showPending && (
           <span style={{ padding: '0.25rem 0.6rem', backgroundColor: '#f2f2f2', color: '#666', borderRadius: '999px', fontSize: '0.85rem' }}>
             На модерации
@@ -312,7 +312,7 @@ export const ListingDetail = () => {
       </div>
       {isOwner && listing.moderatorMessage && (
         <p style={{ marginTop: '0.5rem', color: '#c0392b' }}>
-          Объявление не одобрено модератором: {listing.moderatorMessage}
+          Сообщение модератора: {listing.moderatorMessage}
         </p>
       )}
       {listing?.sellerId && (
@@ -350,7 +350,7 @@ export const ListingDetail = () => {
       )}
       <p className="small-muted">
         <strong>Рейтинг:</strong>{' '}
-        {listing.sellerRating != null ? `${listing.sellerRating.toFixed(2)} / 5` : 'No ratings yet'}
+        {listing.sellerRating != null ? `${listing.sellerRating.toFixed(2)} / 5` : 'Пока нет оценок'}
         {listing.sellerReviewsCount != null && ` (${listing.sellerReviewsCount} отзывов)`}
       </p>
       <p className="small-muted" style={{ marginTop: '0.25rem' }}>
@@ -396,8 +396,8 @@ export const ListingDetail = () => {
             )}
           </p>
           <p><strong>Цена:</strong> <span className="tag-price">{listing.price} ₽</span></p>
-          <p><strong>Вид:</strong> {listing.species || 'N/A'}</p>
-          {listing.breed && <p><strong>Breed:</strong> {listing.breed}</p>}
+          <p><strong>Вид:</strong> {listing.species || 'Не указан'}</p>
+          {listing.breed && <p><strong>Порода:</strong> {listing.breed}</p>}
           <p>
             <strong>Возраст:</strong>{' '}
             {listing.ageMonths != null ? (AGE_LABELS[listing.ageMonths] || 'Не указан') : 'Не указан'}
