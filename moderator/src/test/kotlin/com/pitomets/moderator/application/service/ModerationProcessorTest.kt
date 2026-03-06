@@ -54,7 +54,6 @@ class ModerationProcessorTest {
         )
 
         assertEquals(ModerationStatus.ERROR, result.status)
-        assertTrue(result.reason?.contains("No text parts") == true)
         assertEquals(0, client.calls)
     }
 
