@@ -7,7 +7,6 @@ import com.pitomets.monolit.repository.ListingsRepo
 import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
-import java.io.InputStream
 import java.util.*
 
 @Service
@@ -16,6 +15,7 @@ class ListingPhotoService(
     private val listingsRepo: ListingsRepo,
     private val minioService: MinioService,
     private val listingsService: ListingsService,
+    private val photoUrlService: PhotoUrlService,
 ) : PhotoService() {
 
     @Transactional
@@ -56,10 +56,10 @@ class ListingPhotoService(
     }
 
     @Transactional
-    fun downloadListingPhoto(
+    fun getPhotoUrl(
         listingId: Long,
         photoId: Long
-    ): InputStream {
+    ): String {
         val photo = listingPhotoRepo.findById(photoId)
             .orElseThrow { NoSuchElementException("Photo with id $photoId not found") }
 
@@ -67,7 +67,7 @@ class ListingPhotoService(
             "Photo $photoId does not belong to listing $listingId"
         }
 
-        return minioService.download(photo.objectKey)
+        return photoUrlService.objectUrl(photo.objectKey)
     }
 
     @Transactional

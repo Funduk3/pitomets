@@ -24,19 +24,7 @@ export const Profile = () => {
   useEffect(() => {
     loadProfile();
     loadAvatar();
-    return () => {
-      if (avatarUrl && avatarUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(avatarUrl);
-      }
-    };
   }, []);
-
-  const setAvatarWithRevoke = (newUrl) => {
-    if (avatarUrl && avatarUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(avatarUrl);
-    }
-    setAvatarUrl(newUrl);
-  };
 
   const loadProfile = async () => {
     try {
@@ -53,19 +41,11 @@ export const Profile = () => {
 
   const loadAvatar = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        const response = await fetch(photosAPI.getAvatar(), {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const blob = await response.blob();
-          const url = URL.createObjectURL(blob);
-          setAvatarWithRevoke(url);
-        }
-      }
+      const data = await photosAPI.getAvatar();
+      setAvatarUrl(data?.url || null);
     } catch (err) {
       console.error('Failed to load avatar:', err);
+      setAvatarUrl(null);
     }
   };
 
@@ -75,10 +55,6 @@ export const Profile = () => {
 
     try {
       await photosAPI.uploadAvatar(file);
-      // Clean up old blob URL if exists and reload new avatar
-      if (avatarUrl && avatarUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(avatarUrl);
-      }
       await loadAvatar();
     } catch (err) {
       alert('Не удалось загрузить аватар');
@@ -88,9 +64,6 @@ export const Profile = () => {
   const handleDeleteAvatar = async () => {
     try {
       await photosAPI.deleteAvatar();
-      if (avatarUrl && avatarUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(avatarUrl);
-      }
       setAvatarUrl(null);
     } catch (err) {
       alert('Не удалось удалить аватар');

@@ -9,6 +9,7 @@ export const ListingPhotos = () => {
   const { id } = useParams();
   const { isAuthenticated } = useAuth();
   const [photos, setPhotos] = useState([]);
+  const [photoIds, setPhotoIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
@@ -20,6 +21,7 @@ export const ListingPhotos = () => {
     try {
       const data = await photosAPI.getListingPhotos(parseInt(id));
       setPhotos(data.photos || []);
+      setPhotoIds(data.photoIds || []);
     } catch (err) {
       console.error('Failed to load photos:', err);
     } finally {
@@ -42,13 +44,11 @@ export const ListingPhotos = () => {
     }
   };
 
-  const handleDelete = async (photoUrl) => {
-    // Extract photoId from URL
-    const photoId = photoUrl.split('/').pop();
+  const handleDelete = async (photoId) => {
     if (!window.confirm('Are you sure you want to delete this photo?')) return;
 
     try {
-      await photosAPI.deleteListingPhoto(parseInt(id), parseInt(photoId));
+      await photosAPI.deleteListingPhoto(parseInt(id), photoId);
       loadPhotos();
     } catch (err) {
       alert('Failed to delete photo');
@@ -83,6 +83,7 @@ export const ListingPhotos = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
           {photos.map((photoUrl, index) => {
             const fullUrl = resolveApiUrl(photoUrl);
+            const photoId = photoIds[index];
             return (
               <div key={index} style={{ position: 'relative' }}>
                 <img
@@ -92,7 +93,8 @@ export const ListingPhotos = () => {
                 />
                 {isAuthenticated() && (
                   <button
-                    onClick={() => handleDelete(photoUrl)}
+                    onClick={() => handleDelete(photoId)}
+                    disabled={!photoId}
                     style={{
                       position: 'absolute',
                       top: '0.5rem',

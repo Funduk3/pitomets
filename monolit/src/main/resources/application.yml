@@ -82,6 +82,9 @@ minio:
   access-key: minioadmin
   secret-key: minioadmin
 
+photos:
+  public-base-url: ${PHOTOS_PUBLIC_BASE_URL}
+
 messenger:
   url: http://messenger:8081
 

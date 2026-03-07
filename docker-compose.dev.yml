@@ -31,10 +31,27 @@ services:
       ELASTICSEARCH_PORT: 9200
 
       MINIO_URL: http://minio:9000
+      PHOTOS_PUBLIC_BASE_URL: http://localhost:8083/objects
       # messenger1 runs separately; from inside Docker use host.docker.internal to reach host-mapped 8081
       MESSENGER_URL: http://host.docker.internal:8081
 
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092  # ✅ Внутренний адрес в Docker-сети
+    networks:
+      - web
+
+  photos-service:
+    build: ./photos
+    container_name: photos-service
+    ports:
+      - "8083:8080"
+    depends_on:
+      minio:
+        condition: service_started
+    environment:
+      MINIO_URL: http://minio:9000
+      MINIO_BUCKET: pitomets-images
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
     networks:
       - web
 

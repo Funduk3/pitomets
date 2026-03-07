@@ -254,16 +254,11 @@ export const Chat = () => {
     let cancelled = false;
     (async () => {
       try {
-        const token = localStorage.getItem('accessToken');
-        if (!token) return;
-        const response = await fetch(photosAPI.getAvatarByUserId(otherUserId), { headers: { Authorization: `Bearer ${token}` } });
-        if (!response.ok) { if (!cancelled) setOtherAvatarUrl(null); return; }
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        if (!cancelled) setOtherAvatarUrl(url);
+        const data = await photosAPI.getAvatarByUserId(otherUserId);
+        if (!cancelled) setOtherAvatarUrl(data?.url || null);
       } catch (_) { if (!cancelled) setOtherAvatarUrl(null); }
     })();
-    return () => { cancelled = true; if (otherAvatarUrl && otherAvatarUrl.startsWith('blob:')) URL.revokeObjectURL(otherAvatarUrl); };
+    return () => { cancelled = true; };
   }, [chat?.id, chat?.user1Id, chat?.user2Id, user?.id]);
 
   useEffect(() => {

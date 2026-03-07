@@ -1,13 +1,11 @@
 package com.pitomets.monolit.controller
 
 import com.pitomets.monolit.model.UserPrincipal
+import com.pitomets.monolit.model.dto.response.AvatarUrlResponse
 import com.pitomets.monolit.model.dto.response.DeleteAvatarResponse
 import com.pitomets.monolit.model.dto.response.UploadAvatarResponse
 import com.pitomets.monolit.service.UserPhotoService
-import org.springframework.core.io.InputStreamResource
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
-import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -38,23 +36,17 @@ class UserPhotoController(
     @GetMapping("/avatar")
     fun getAvatar(
         @AuthenticationPrincipal user: UserPrincipal
-    ): ResponseEntity<InputStreamResource> {
-        val inputStream = userPhotoService.downloadAvatar(user.id)
-
-        return ResponseEntity.ok()
-            .contentType(MediaType.IMAGE_JPEG)
-            .body(InputStreamResource(inputStream))
+    ): AvatarUrlResponse {
+        val url = userPhotoService.getAvatarUrl(user.id)
+        return AvatarUrlResponse(url = url)
     }
 
     @GetMapping("/avatar/{userId}")
     fun getAvatarByUserId(
         @PathVariable userId: Long
-    ): ResponseEntity<InputStreamResource> {
-        val inputStream = userPhotoService.downloadAvatar(userId)
-
-        return ResponseEntity.ok()
-            .contentType(MediaType.IMAGE_JPEG)
-            .body(InputStreamResource(inputStream))
+    ): AvatarUrlResponse {
+        val url = userPhotoService.getAvatarUrl(userId)
+        return AvatarUrlResponse(url = url)
     }
 
     @DeleteMapping("/avatar")

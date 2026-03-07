@@ -104,7 +104,7 @@ export const Home = () => {
                 <Link key={listing.listingsId} to={`/listings/${listing.listingsId}`} className="listing-card">
                   {listing.coverPhotoId ? (
                     <img
-                      src={resolveApiUrl(`/listings/${listing.listingsId}/photos/${listing.coverPhotoId}`)}
+                      src={resolveApiUrl(`/listings/${listing.listingsId}/photos/${listing.coverPhotoId}.jpg`)}
                       alt="Listing cover"
                       className="listing-image"
                     />

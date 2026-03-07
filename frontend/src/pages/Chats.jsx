@@ -74,10 +74,7 @@ export const Chats = () => {
                 try {
                   const profile = await userAPI.getUserProfile(otherUserId);
                   setProfilesByUserId((prev) => ({ ...prev, [otherUserId]: profile }));
-                  const token = localStorage.getItem('accessToken');
-                  if (token) {
-                    loadAvatarForUserId(otherUserId, token);
-                  }
+                  loadAvatarForUserId(otherUserId);
                 } catch (_) {
                   setProfilesByUserId((prev) => ({ ...prev, [otherUserId]: null }));
                 }
@@ -156,10 +153,7 @@ export const Chats = () => {
       // Подтягиваем аватары собеседников
       const avatarMissingIds = otherIds.filter((id) => avatarByUserId[id] == null);
       if (avatarMissingIds.length) {
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-          avatarMissingIds.forEach((id) => loadAvatarForUserId(id, token));
-        }
+        avatarMissingIds.forEach((id) => loadAvatarForUserId(id));
       }
 
       // Подтягиваем фото объявлений
@@ -196,30 +190,14 @@ export const Chats = () => {
     }
   };
 
-  const loadAvatarForUserId = async (userId, token) => {
+  const loadAvatarForUserId = async (userId) => {
     try {
-      const response = await fetch(photosAPI.getAvatarByUserId(userId), {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) {
-        setAvatarByUserId((prev) => ({ ...prev, [userId]: null }));
-        return;
-      }
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      setAvatarByUserId((prev) => ({ ...prev, [userId]: url }));
+      const data = await photosAPI.getAvatarByUserId(userId);
+      setAvatarByUserId((prev) => ({ ...prev, [userId]: data?.url || null }));
     } catch (_) {
       setAvatarByUserId((prev) => ({ ...prev, [userId]: null }));
     }
   };
-
-  useEffect(() => {
-    return () => {
-      Object.values(avatarByUserId).forEach((url) => {
-        if (url && url.startsWith('blob:')) URL.revokeObjectURL(url);
-      });
-    };
-  }, [avatarByUserId]);
 
   const getUserDisplayName = (profile, fallbackUserId) => {
     if (!profile) return `Пользователь #${fallbackUserId}`;
