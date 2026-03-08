@@ -1,9 +1,9 @@
-FROM gradle:8.14.2-jdk25 AS build
+FROM gradle:8.14.2-jdk21 AS build
 WORKDIR /app
 COPY . .
 RUN gradle --no-daemon bootJar -x test
 
-FROM eclipse-temurin:25-jre
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/build/libs/*.jar app.jar
 EXPOSE 8080
