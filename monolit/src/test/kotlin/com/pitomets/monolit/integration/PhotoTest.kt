@@ -4,6 +4,7 @@ import com.pitomets.monolit.model.Gender
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.testContainers.BaseContainers
 import io.restassured.RestAssured
+import io.restassured.config.RedirectConfig
 import io.restassured.http.ContentType
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.CoreMatchers.notNullValue
@@ -75,17 +76,18 @@ class PhotoTest : BaseContainers() {
             .statusCode(201)
 
         // Скачиваем аватар
-        val downloadedImage = RestAssured
+        val avatarUrl = RestAssured
             .given()
             .auth().oauth2(token.accessToken)
             .get("/users/photos/avatar")
             .then()
             .statusCode(200)
-            .contentType("image/jpeg")
+            .contentType(ContentType.JSON)
             .extract()
-            .asByteArray()
+            .path<String>("url")
 
-        assert(downloadedImage.isNotEmpty())
+        assert(!avatarUrl.isNullOrBlank())
+        assert(avatarUrl.contains("/objects/avatars/"))
     }
 
     @Test
@@ -299,16 +301,20 @@ class PhotoTest : BaseContainers() {
             .path<Int>("photoId")
 
         // Скачиваем фото (без аутентификации - публичный доступ)
-        val downloadedImage = RestAssured
+        val redirectLocation = RestAssured
             .given()
+            .config(
+                RestAssured.config()
+                    .redirect(RedirectConfig.redirectConfig().followRedirects(false))
+            )
             .get("/listings/$listingId/photos/$photoId")
             .then()
-            .statusCode(200)
-            .contentType("image/jpeg")
+            .statusCode(302)
             .extract()
-            .asByteArray()
+            .header("Location")
 
-        assert(downloadedImage.isNotEmpty())
+        assert(!redirectLocation.isNullOrBlank())
+        assert(redirectLocation.contains("/objects/listings/$listingId/"))
     }
 
     @Test
@@ -470,7 +476,7 @@ class PhotoTest : BaseContainers() {
         }
 
         // Проверяем порядок
-        val photos = RestAssured
+        val response = RestAssured
             .given()
             .auth().oauth2(sellerToken.accessToken)
             .get("/listings/$listingId/photos")
@@ -479,11 +485,14 @@ class PhotoTest : BaseContainers() {
             .body("title", equalTo(createListingRequest.title))
             .body("photos.size()", equalTo(5))
             .extract()
-            .path<List<String>>("photos")
+        val photos = response.path<List<String>>("photos")
+        val returnedPhotoIds = response.path<List<Int>>("photoIds")
 
-        // Проверяем что фото в правильном порядке
-        for (i in photoIds.indices) {
-            assert(photos[i].contains("/listings/$listingId/photos/${photoIds[i]}"))
+        // Проверяем порядок id
+        assert(returnedPhotoIds == photoIds)
+        // Проверяем, что ссылки ведут к объектам листинга
+        for (photoUrl in photos) {
+            assert(photoUrl.contains("/objects/listings/$listingId/"))
         }
     }
 }
