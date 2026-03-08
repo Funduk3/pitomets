@@ -50,8 +50,9 @@ class UserPhotoService(
     }
 
     @Transactional
-    fun getAvatarUrl(userId: Long): String {
-        val avatarKey = getAvatarKey(userId)
+    fun getAvatarUrlOrNull(userId: Long): String? {
+        val user = userRepo.findUserOrThrow(userId)
+        val avatarKey = user.avatarKey ?: return null
         return photoUrlService.objectUrl(avatarKey)
     }
 

@@ -29,9 +29,13 @@ class ObjectController(
 
     private fun extractObjectKey(requestUri: String): String {
         val prefix = "/objects/"
-        require(requestUri.startsWith(prefix)) { "Invalid object URI: $requestUri" }
+        require(requestUri.startsWith(prefix)) { "Object key is required" }
 
         val encoded = requestUri.removePrefix(prefix)
-        return URLDecoder.decode(encoded, StandardCharsets.UTF_8)
+        require(encoded.isNotBlank()) { "Object key is required" }
+
+        val decoded = URLDecoder.decode(encoded, StandardCharsets.UTF_8)
+        require(decoded.isNotBlank()) { "Object key is required" }
+        return decoded
     }
 }

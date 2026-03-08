@@ -105,6 +105,7 @@ class SecurityConfig(
                 it.requestMatchers(HttpMethod.GET, "/seller/profile/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/animal/types").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/seller/{sellerId}/reviews/**").permitAll()
+                it.requestMatchers(HttpMethod.GET, "/users/photos/avatar/*").permitAll()
                 it.requestMatchers("/seller/{sellerProfileId}/reviews/**").authenticated()
                 it.requestMatchers("/seller/profile").authenticated() // Создание профиля для всех
                 it.requestMatchers("/admin/**").hasRole("ADMIN")

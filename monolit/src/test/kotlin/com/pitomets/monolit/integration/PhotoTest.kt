@@ -123,7 +123,9 @@ class PhotoTest : BaseContainers() {
             .auth().oauth2(token.accessToken)
             .get("/users/photos/avatar")
             .then()
-            .statusCode(404)
+            .statusCode(200)
+            .contentType(ContentType.JSON)
+            .body("url", equalTo(null))
     }
 
     @Test
@@ -179,7 +181,7 @@ class PhotoTest : BaseContainers() {
     }
 
     @Test
-    fun `download avatar without upload should fail`() {
+    fun `download avatar without upload should return null url`() {
         val email = faker.internet().emailAddress()
         val password = "Password123!"
 
@@ -191,7 +193,9 @@ class PhotoTest : BaseContainers() {
             .auth().oauth2(token.accessToken)
             .get("/users/photos/avatar")
             .then()
-            .statusCode(404)
+            .statusCode(200)
+            .contentType(ContentType.JSON)
+            .body("url", equalTo(null))
     }
 
     @Test
