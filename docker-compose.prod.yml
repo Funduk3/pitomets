@@ -22,31 +22,6 @@ services:
       - "traefik.http.middlewares.monolit-strip.stripprefix.prefixes=/api"
       - "traefik.http.services.monolit.loadbalancer.server.port=8080"
 
-  photos:
-    image: ${PHOTOS_IMAGE}
-    container_name: photos
-    restart: unless-stopped
-    mem_limit: 512m
-    cpus: 0.5
-    env_file:
-      - .env
-    environment:
-      - MINIO_URL=http://minio:9000
-      - MINIO_BUCKET=pitomets-images
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
-    networks:
-      - web
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.photos.rule=(Host(`pitomets.com`) || Host(`www.pitomets.com`)) && PathPrefix(`/media`)"
-      - "traefik.http.routers.photos.entrypoints=websecure"
-      - "traefik.http.routers.photos.tls.certresolver=le"
-      - "traefik.http.routers.photos.priority=95"
-      - "traefik.http.routers.photos.middlewares=photos-strip"
-      - "traefik.http.middlewares.photos-strip.stripprefix.prefixes=/media"
-      - "traefik.http.services.photos.loadbalancer.server.port=8080"
-
   messenger:
     image: ${MESSENGER_IMAGE}
     container_name: messenger

@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class PhotoUrlService(
-    @Value("\${photos.public-base-url}") rawBaseUrl: String
+    @Value("\${photos.public-base-url:/objects}") rawBaseUrl: String
 ) {
     private val baseUrl = rawBaseUrl.trimEnd('/')
 
