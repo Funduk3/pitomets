@@ -4,7 +4,6 @@ import com.pitomets.monolit.model.Gender
 import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.testContainers.BaseContainers
 import io.restassured.RestAssured
-import io.restassured.config.RedirectConfig
 import io.restassured.http.ContentType
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.CoreMatchers.notNullValue
@@ -273,7 +272,7 @@ class PhotoTest : BaseContainers() {
     }
 
     @Test
-    fun `download listing photo test`() {
+    fun `get listing photo url test`() {
         val sellerToken = createBaseSeller()
 
         // Создаем листинг
@@ -304,21 +303,19 @@ class PhotoTest : BaseContainers() {
             .extract()
             .path<Int>("photoId")
 
-        // Скачиваем фото (без аутентификации - публичный доступ)
-        val redirectLocation = RestAssured
+        // Получаем список фото и проверяем, что вернулся URL загруженного фото
+        val response = RestAssured
             .given()
-            .config(
-                RestAssured.config()
-                    .redirect(RedirectConfig.redirectConfig().followRedirects(false))
-            )
-            .get("/listings/$listingId/photos/$photoId")
+            .auth().oauth2(sellerToken.accessToken)
+            .get("/listings/$listingId/photos")
             .then()
-            .statusCode(302)
+            .statusCode(200)
             .extract()
-            .header("Location")
 
-        assert(!redirectLocation.isNullOrBlank())
-        assert(redirectLocation.contains("/objects/listings/$listingId/"))
+        val photos = response.path<List<String>>("photos")
+        val photoIds = response.path<List<Int>>("photoIds")
+        assert(photoIds.contains(photoId))
+        assert(photos.any { it.contains("/listings/$listingId/") })
     }
 
     @Test
@@ -361,12 +358,17 @@ class PhotoTest : BaseContainers() {
             .then()
             .statusCode(204)
 
-        // Пытаемся скачать удаленное фото - вернет 404
-        RestAssured
+        // Проверяем, что удаленного фото больше нет в выдаче
+        val response = RestAssured
             .given()
-            .get("/listings/$listingId/photos/$photoId")
+            .auth().oauth2(sellerToken.accessToken)
+            .get("/listings/$listingId/photos")
             .then()
-            .statusCode(404)
+            .statusCode(200)
+            .extract()
+
+        val remainingPhotoIds = response.path<List<Int>>("photoIds")
+        assert(!remainingPhotoIds.contains(photoId))
     }
 
     @Test
