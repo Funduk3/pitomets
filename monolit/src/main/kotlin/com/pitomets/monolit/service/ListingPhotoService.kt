@@ -15,7 +15,6 @@ class ListingPhotoService(
     private val listingsRepo: ListingsRepo,
     private val minioService: MinioService,
     private val listingsService: ListingsService,
-    private val photoUrlService: PhotoUrlService,
 ) : PhotoService() {
 
     @Transactional
@@ -53,21 +52,6 @@ class ListingPhotoService(
             listingsRepo.save(listing)
         }
         return saved
-    }
-
-    @Transactional
-    fun getPhotoUrl(
-        listingId: Long,
-        photoId: Long
-    ): String {
-        val photo = listingPhotoRepo.findById(photoId)
-            .orElseThrow { NoSuchElementException("Photo with id $photoId not found") }
-
-        require(photo.listingId == listingId) {
-            "Photo $photoId does not belong to listing $listingId"
-        }
-
-        return photoUrlService.objectUrl(photo.objectKey)
     }
 
     @Transactional

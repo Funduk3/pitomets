@@ -4,7 +4,6 @@ import io.minio.GetObjectArgs
 import io.minio.MinioClient
 import io.minio.PutObjectArgs
 import io.minio.RemoveObjectArgs
-import io.minio.StatObjectArgs
 import io.minio.errors.ErrorResponseException
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -40,21 +39,6 @@ class MinioService(
                     .`object`(objectName)
                     .build()
             )
-        } catch (ex: ErrorResponseException) {
-            if (ex.errorResponse().code() == "NoSuchKey") {
-                throw NoSuchElementException("Object '$objectName' not found")
-            }
-            throw ex
-        }
-
-    fun contentType(objectName: String): String? =
-        try {
-            minioClient.statObject(
-                StatObjectArgs.builder()
-                    .bucket(bucket)
-                    .`object`(objectName)
-                    .build()
-            ).contentType()
         } catch (ex: ErrorResponseException) {
             if (ex.errorResponse().code() == "NoSuchKey") {
                 throw NoSuchElementException("Object '$objectName' not found")

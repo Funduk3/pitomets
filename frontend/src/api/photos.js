@@ -18,10 +18,6 @@ export const photosAPI = {
     return response.data;
   },
 
-  getListingPhoto: (listingId, photoId) => {
-    return `${api.defaults.baseURL}/listings/${listingId}/photos/${photoId}.jpg`;
-  },
-
   deleteListingPhoto: async (listingId, photoId) => {
     await api.delete(`/listings/${listingId}/photos/${photoId}`);
   },

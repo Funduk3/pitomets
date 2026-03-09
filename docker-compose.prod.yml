@@ -1,4 +1,13 @@
 services:
+  minio:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minio.rule=Host(`minio.pitomets`)"
+      - "traefik.http.routers.minio.entrypoints=websecure"
+      - "traefik.http.routers.minio.tls.certresolver=le"
+      - "traefik.http.routers.minio.priority=100"
+      - "traefik.http.services.minio.loadbalancer.server.port=9000"
+
   monolit:
     image: ${MONOLIT_IMAGE}
     container_name: monolit
