@@ -47,8 +47,12 @@ export const Moderation = () => {
       const avatarPromises = sellerProfilesData
         .filter((profile) => profile.userId != null)
         .map(async (profile) => {
-          const url = photosAPI.getAvatarByUserId(profile.userId);
-          return { userId: profile.userId, url };
+          try {
+            const data = await photosAPI.getAvatarByUserId(profile.userId);
+            return { userId: profile.userId, url: data?.url || null };
+          } catch (_) {
+            return { userId: profile.userId, url: null };
+          }
         });
       const avatarResults = await Promise.all(avatarPromises);
       const avatarMap = {};

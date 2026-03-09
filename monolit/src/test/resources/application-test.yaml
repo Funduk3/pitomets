@@ -42,3 +42,6 @@ spring:
 logging:
   level:
     root: error
+
+photos:
+  public-base-url: https://minio.pitomets/objects

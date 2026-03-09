@@ -44,7 +44,7 @@ jobs:
     name: Build & Push frontend
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.frontend == 'true'
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.frontend == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -76,7 +76,7 @@ jobs:
     name: Build & Push monolit
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.monolit == 'true'
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.monolit == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -106,7 +106,7 @@ jobs:
     name: Build & Push messenger
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.messenger == 'true'
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.messenger == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -136,7 +136,7 @@ jobs:
     name: Build & Push notifications
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.notifications == 'true'
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.notifications == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -166,7 +166,7 @@ jobs:
     name: Build & Push moderator
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.moderator == 'true'
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.moderator == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

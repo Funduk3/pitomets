@@ -138,9 +138,9 @@ services:
         mc alias set myminio http://minio:9000 minioadmin minioadmin &&
         mc mb myminio/pitomets-images --ignore-existing &&
         mc mb myminio/pitomets-avatars --ignore-existing &&
-        mc policy set public myminio/pitomets-images &&
-        mc policy set public myminio/pitomets-avatars &&
-        echo '✅ Бакеты созданы: pitomets-images, pitomets-avatars'
+        mc anonymous set download myminio/pitomets-images &&
+        mc anonymous set download myminio/pitomets-avatars &&
+        echo '✅ Бакеты созданы и открыты на чтение: pitomets-images, pitomets-avatars'
       "
     networks:
       - web

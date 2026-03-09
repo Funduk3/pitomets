@@ -75,17 +75,18 @@ class PhotoTest : BaseContainers() {
             .statusCode(201)
 
         // Скачиваем аватар
-        val downloadedImage = RestAssured
+        val avatarUrl = RestAssured
             .given()
             .auth().oauth2(token.accessToken)
             .get("/users/photos/avatar")
             .then()
             .statusCode(200)
-            .contentType("image/jpeg")
+            .contentType(ContentType.JSON)
             .extract()
-            .asByteArray()
+            .path<String>("url")
 
-        assert(downloadedImage.isNotEmpty())
+        assert(!avatarUrl.isNullOrBlank())
+        assert(avatarUrl.contains("/objects/avatars/"))
     }
 
     @Test
@@ -121,7 +122,9 @@ class PhotoTest : BaseContainers() {
             .auth().oauth2(token.accessToken)
             .get("/users/photos/avatar")
             .then()
-            .statusCode(404)
+            .statusCode(200)
+            .contentType(ContentType.JSON)
+            .body("url", equalTo(null))
     }
 
     @Test
@@ -177,7 +180,7 @@ class PhotoTest : BaseContainers() {
     }
 
     @Test
-    fun `download avatar without upload should fail`() {
+    fun `download avatar without upload should return null url`() {
         val email = faker.internet().emailAddress()
         val password = "Password123!"
 
@@ -189,7 +192,9 @@ class PhotoTest : BaseContainers() {
             .auth().oauth2(token.accessToken)
             .get("/users/photos/avatar")
             .then()
-            .statusCode(404)
+            .statusCode(200)
+            .contentType(ContentType.JSON)
+            .body("url", equalTo(null))
     }
 
     @Test
@@ -267,7 +272,7 @@ class PhotoTest : BaseContainers() {
     }
 
     @Test
-    fun `download listing photo test`() {
+    fun `get listing photo url test`() {
         val sellerToken = createBaseSeller()
 
         // Создаем листинг
@@ -298,17 +303,19 @@ class PhotoTest : BaseContainers() {
             .extract()
             .path<Int>("photoId")
 
-        // Скачиваем фото (без аутентификации - публичный доступ)
-        val downloadedImage = RestAssured
+        // Получаем список фото и проверяем, что вернулся URL загруженного фото
+        val response = RestAssured
             .given()
-            .get("/listings/$listingId/photos/$photoId")
+            .auth().oauth2(sellerToken.accessToken)
+            .get("/listings/$listingId/photos")
             .then()
             .statusCode(200)
-            .contentType("image/jpeg")
             .extract()
-            .asByteArray()
 
-        assert(downloadedImage.isNotEmpty())
+        val photos = response.path<List<String>>("photos")
+        val photoIds = response.path<List<Int>>("photoIds")
+        assert(photoIds.contains(photoId))
+        assert(photos.any { it.contains("/listings/$listingId/") })
     }
 
     @Test
@@ -351,12 +358,17 @@ class PhotoTest : BaseContainers() {
             .then()
             .statusCode(204)
 
-        // Пытаемся скачать удаленное фото - вернет 404
-        RestAssured
+        // Проверяем, что удаленного фото больше нет в выдаче
+        val response = RestAssured
             .given()
-            .get("/listings/$listingId/photos/$photoId")
+            .auth().oauth2(sellerToken.accessToken)
+            .get("/listings/$listingId/photos")
             .then()
-            .statusCode(404)
+            .statusCode(200)
+            .extract()
+
+        val remainingPhotoIds = response.path<List<Int>>("photoIds")
+        assert(!remainingPhotoIds.contains(photoId))
     }
 
     @Test
@@ -470,7 +482,7 @@ class PhotoTest : BaseContainers() {
         }
 
         // Проверяем порядок
-        val photos = RestAssured
+        val response = RestAssured
             .given()
             .auth().oauth2(sellerToken.accessToken)
             .get("/listings/$listingId/photos")
@@ -479,11 +491,14 @@ class PhotoTest : BaseContainers() {
             .body("title", equalTo(createListingRequest.title))
             .body("photos.size()", equalTo(5))
             .extract()
-            .path<List<String>>("photos")
+        val photos = response.path<List<String>>("photos")
+        val returnedPhotoIds = response.path<List<Int>>("photoIds")
 
-        // Проверяем что фото в правильном порядке
-        for (i in photoIds.indices) {
-            assert(photos[i].contains("/listings/$listingId/photos/${photoIds[i]}"))
+        // Проверяем порядок id
+        assert(returnedPhotoIds == photoIds)
+        // Проверяем, что ссылки ведут к объектам листинга
+        for (photoUrl in photos) {
+            assert(photoUrl.contains("/objects/listings/$listingId/"))
         }
     }
 }

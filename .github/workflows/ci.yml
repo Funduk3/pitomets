@@ -62,6 +62,7 @@ jobs:
         env:
           # Increase timeouts for CI environment
           GRADLE_OPTS: "-Dorg.gradle.daemon=false -Xmx2g"
+          PHOTOS_PUBLIC_BASE_URL: "https://minio.pitomets/objects"
 
       - name: Upload test results (JUnit XML)
         if: steps.tests.outcome == 'failure'

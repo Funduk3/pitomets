@@ -6,13 +6,13 @@ import com.pitomets.monolit.repository.findUserOrThrow
 import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
-import java.io.InputStream
 import java.util.UUID
 
 @Service
 class UserPhotoService(
     private val minioService: MinioService,
-    private val userRepo: UserRepo
+    private val userRepo: UserRepo,
+    private val photoUrlService: PhotoUrlService
 ) : PhotoService() {
 
     @Transactional
@@ -42,13 +42,18 @@ class UserPhotoService(
     }
 
     @Transactional
-    fun downloadAvatar(userId: Long): InputStream {
+    fun getAvatarKey(userId: Long): String {
         val user = userRepo.findUserOrThrow(userId)
 
-        val avatarKey = user.avatarKey
+        return user.avatarKey
             ?: throw AvatarNotFoundException("User $userId has no avatar")
+    }
 
-        return minioService.download(avatarKey)
+    @Transactional
+    fun getAvatarUrlOrNull(userId: Long): String? {
+        val user = userRepo.findUserOrThrow(userId)
+        val avatarKey = user.avatarKey ?: return null
+        return photoUrlService.objectUrl(avatarKey)
     }
 
     @Transactional

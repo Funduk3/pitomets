@@ -34,11 +34,6 @@ export const SellerProfileView = () => {
     if (profile?.userId) {
       loadAvatar(profile.userId);
     }
-    return () => {
-      if (avatarUrl && avatarUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(avatarUrl);
-      }
-    };
   }, [profile]);
 
   const loadProfile = async () => {
@@ -84,21 +79,8 @@ export const SellerProfileView = () => {
 
   const loadAvatar = async (userId) => {
     try {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        const response = await fetch(photosAPI.getAvatarByUserId(userId), {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const blob = await response.blob();
-          const url = URL.createObjectURL(blob);
-          setAvatarUrl(url);
-        } else {
-          setAvatarUrl(null);
-        }
-      }
+      const data = await photosAPI.getAvatarByUserId(userId);
+      setAvatarUrl(data?.url || null);
     } catch (err) {
       console.error('Failed to load avatar:', err);
       setAvatarUrl(null);

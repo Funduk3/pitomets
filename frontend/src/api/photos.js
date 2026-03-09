@@ -18,10 +18,6 @@ export const photosAPI = {
     return response.data;
   },
 
-  getListingPhoto: (listingId, photoId) => {
-    return `${api.defaults.baseURL}/listings/${listingId}/photos/${photoId}`;
-  },
-
   deleteListingPhoto: async (listingId, photoId) => {
     await api.delete(`/listings/${listingId}/photos/${photoId}`);
   },
@@ -38,12 +34,14 @@ export const photosAPI = {
     return response.data;
   },
 
-  getAvatar: () => {
-    return `${api.defaults.baseURL}/users/photos/avatar`;
+  getAvatar: async () => {
+    const response = await api.get('/users/photos/avatar');
+    return response.data;
   },
 
-  getAvatarByUserId: (userId) => {
-    return `${api.defaults.baseURL}/users/photos/avatar/${userId}`;
+  getAvatarByUserId: async (userId) => {
+    const response = await api.get(`/users/photos/avatar/${userId}`);
+    return response.data;
   },
 
   deleteAvatar: async () => {
@@ -51,4 +49,3 @@ export const photosAPI = {
     return response.data;
   },
 };
-

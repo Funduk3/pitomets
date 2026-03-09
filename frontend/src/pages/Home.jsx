@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { listingsAPI } from '../api/listings';
+import { photosAPI } from '../api/photos';
 import { resolveApiUrl } from '../api/axios';
 
 export const Home = () => {
@@ -11,12 +12,41 @@ export const Home = () => {
   const [nextCursor, setNextCursor] = useState(null);
   const [hasMore, setHasMore] = useState(false);
   const [history, setHistory] = useState([]);
+  const [listingPhotos, setListingPhotos] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     loadPage(null);
   }, []);
+
+  useEffect(() => {
+    if (!items.length) {
+      setListingPhotos({});
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      const results = await Promise.all(
+        items.map(async (listing) => {
+          try {
+            const data = await photosAPI.getListingPhotos(listing.listingsId);
+            return { id: listing.listingsId, photo: data?.photos?.[0] || null };
+          } catch (_) {
+            return { id: listing.listingsId, photo: null };
+          }
+        })
+      );
+
+      if (cancelled) return;
+      const next = {};
+      results.forEach(({ id, photo }) => { next[id] = photo; });
+      setListingPhotos(next);
+    })();
+
+    return () => { cancelled = true; };
+  }, [items]);
 
   const typeButtons = [
     { label: 'Собаки', icon: '🐶' },
@@ -102,9 +132,9 @@ export const Home = () => {
             <div className="listings-grid">
               {items.map((listing) => (
                 <Link key={listing.listingsId} to={`/listings/${listing.listingsId}`} className="listing-card">
-                  {listing.coverPhotoId ? (
+                  {listingPhotos[listing.listingsId] ? (
                     <img
-                      src={resolveApiUrl(`/listings/${listing.listingsId}/photos/${listing.coverPhotoId}`)}
+                      src={resolveApiUrl(listingPhotos[listing.listingsId])}
                       alt="Listing cover"
                       className="listing-image"
                     />
