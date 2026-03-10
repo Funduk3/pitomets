@@ -5,12 +5,15 @@ import org.springframework.stereotype.Service
 
 @Service
 class PhotoUrlService(
-    @Value("\${photos.public-base-url:/objects}") rawBaseUrl: String
+    @Value("\${photos.public-base-url-images:/objects}") rawImagesBaseUrl: String,
+    @Value("\${photos.public-base-url-avatars:/objects}") rawAvatarsBaseUrl: String
 ) {
-    private val baseUrl = rawBaseUrl.trimEnd('/')
+    private val imagesBaseUrl = rawImagesBaseUrl.trimEnd('/')
+    private val avatarsBaseUrl = rawAvatarsBaseUrl.trimEnd('/')
 
     fun objectUrl(objectKey: String): String {
         val normalizedKey = objectKey.trimStart('/')
-        return "$baseUrl/$normalizedKey"
+        val base = if (normalizedKey.startsWith("avatars/")) avatarsBaseUrl else imagesBaseUrl
+        return "$base/$normalizedKey"
     }
 }
