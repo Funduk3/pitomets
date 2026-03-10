@@ -2,21 +2,21 @@ services:
   minio:
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.minio.rule=Host(`minio.pitomets`)"
+      - "traefik.http.routers.minio.rule=(Host(`pitomets.com`) || Host(`www.pitomets.com`)) && PathPrefix(`/media`)"
       - "traefik.http.routers.minio.entrypoints=websecure"
       - "traefik.http.routers.minio.tls.certresolver=le"
-      - "traefik.http.routers.minio.priority=100"
+      - "traefik.http.routers.minio.priority=95"
+      - "traefik.http.routers.minio.middlewares=minio-strip"
+      - "traefik.http.middlewares.minio-strip.stripprefix.prefixes=/media"
       - "traefik.http.services.minio.loadbalancer.server.port=9000"
 
   monolit:
     image: ${MONOLIT_IMAGE}
     container_name: monolit
     restart: unless-stopped
-    mem_limit: 2g
-    cpus: 2.0
     environment:
-      - JAVA_OPTS=-Xms1g -Xmx768m -XX:MaxMetaspaceSize=128m
-      - PHOTOS_PUBLIC_BASE_URL=${PHOTOS_PUBLIC_BASE_URL}
+      - PHOTOS_PUBLIC_BASE_URL_IMAGES=${PHOTOS_PUBLIC_BASE_URL_IMAGES}
+      - PHOTOS_PUBLIC_BASE_URL_AVATARS=${PHOTOS_PUBLIC_BASE_URL_AVATARS}
     env_file:
       - .env
     networks:
