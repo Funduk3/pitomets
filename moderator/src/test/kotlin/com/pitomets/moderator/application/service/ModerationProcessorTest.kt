@@ -2,14 +2,13 @@ package com.pitomets.moderator.application.service
 
 import com.pitomets.moderator.config.ModeriumApiProperties
 import com.pitomets.moderator.infrastructure.client.ModeriumClient
-import com.pitomets.moderator.infrastructure.dto.ModeriumAnalyzeResponse
-import com.pitomets.moderator.infrastructure.dto.ModeriumDecision
+import com.pitomets.moderator.infrastructure.dto.moderiumAPI.text.ModeriumAnalyzeResponse
+import com.pitomets.moderator.infrastructure.dto.moderiumAPI.ModeriumDecision
 import com.pitomets.moderator.interfaces.messaging.event.ModerationEntityType
 import com.pitomets.moderator.interfaces.messaging.event.ModerationOperation
 import com.pitomets.moderator.interfaces.messaging.event.ModerationRequestedEvent
 import com.pitomets.moderator.interfaces.messaging.event.ModerationStatus
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class ModerationProcessorTest {

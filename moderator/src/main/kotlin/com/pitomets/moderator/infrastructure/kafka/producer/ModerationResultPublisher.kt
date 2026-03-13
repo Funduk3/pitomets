@@ -1,4 +1,4 @@
-package com.pitomets.moderator.infrastructure.kafka
+package com.pitomets.moderator.infrastructure.kafka.producer
 
 import com.pitomets.moderator.interfaces.messaging.event.ModerationProcessedEvent
 import org.slf4j.LoggerFactory

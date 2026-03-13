@@ -1,4 +1,4 @@
-package com.pitomets.moderator.infrastructure.dto
+package com.pitomets.moderator.infrastructure.dto.moderiumAPI.text
 
 import com.fasterxml.jackson.annotation.JsonProperty
 

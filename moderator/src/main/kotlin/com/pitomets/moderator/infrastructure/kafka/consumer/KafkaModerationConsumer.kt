@@ -1,7 +1,7 @@
-package com.pitomets.moderator.interfaces.messaging
+package com.pitomets.moderator.infrastructure.kafka.consumer
 
 import com.pitomets.moderator.application.service.ModerationProcessor
-import com.pitomets.moderator.infrastructure.kafka.ModerationResultPublisher
+import com.pitomets.moderator.infrastructure.kafka.producer.ModerationResultPublisher
 import com.pitomets.moderator.interfaces.messaging.event.ModerationRequestedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.annotation.KafkaListener

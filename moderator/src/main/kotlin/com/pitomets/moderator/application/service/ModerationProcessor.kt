@@ -1,10 +1,13 @@
 package com.pitomets.moderator.application.service
 
 import com.pitomets.moderator.config.ModeriumApiProperties
+import com.pitomets.moderator.infrastructure.client.HttpModeriumPhotoClient
 import com.pitomets.moderator.infrastructure.client.ModeriumClient
 import com.pitomets.moderator.interfaces.messaging.event.ModerationProcessedEvent
 import com.pitomets.moderator.interfaces.messaging.event.ModerationRequestedEvent
 import com.pitomets.moderator.interfaces.messaging.event.ModerationStatus
+import com.pitomets.moderator.interfaces.messaging.event.photo.ModerationPhotoProcessedEvent
+import com.pitomets.moderator.interfaces.messaging.event.photo.ModerationPhotoRequestedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.Locale
@@ -13,6 +16,7 @@ import java.util.UUID
 @Service
 class ModerationProcessor(
     private val moderiumClient: ModeriumClient,
+    private val moderiumPhotoClient: HttpModeriumPhotoClient,
     private val apiProperties: ModeriumApiProperties
 ) {
     @Suppress("TooGenericExceptionCaught")
@@ -24,7 +28,7 @@ class ModerationProcessor(
             .joinToString(separator = "\n")
 
         if (text.isBlank()) {
-            return error(event, "Отсутствует текст для модерации")
+            return errorText(event, "Отсутствует текст для модерации")
         }
 
         return try {
@@ -58,7 +62,41 @@ class ModerationProcessor(
                 event.entityId,
                 ex
             )
-            error(event, localizeErrorReason(ex.message))
+            errorText(event, localizeErrorReason(ex.message))
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    fun processPhoto(event: ModerationPhotoRequestedEvent): ModerationPhotoProcessedEvent {
+        try {
+            val response = moderiumPhotoClient.analyze(
+                photoURI = event.photoURI
+            )
+
+            val action = response.decision?.action.orEmpty()
+            val status = mapActionToStatus(action)
+
+            return ModerationPhotoProcessedEvent(
+                requestEventId = event.eventId,
+                status = status,
+                reason = response.decision?.reason,
+                sourceAction = action.ifBlank { null },
+                toxicityScore = response.categories?.nsfw?.score,
+                labels = response.categories?.nsfw?.labels,
+                detectedText = response.categories?.ocr?.detectedText,
+                preview = response.categories?.ocr?.preview,
+                toxicTextDetected = response.categories?.ocr?.toxicTextDetected,
+                toxicMatches = response.categories?.ocr?.toxicMatches,
+                processingTimeMs = response.meta?.processingTimeMs,
+                modelVersion = response.meta?.modelVersion
+            )
+        } catch (ex: Exception) {
+            log.error(
+                "Unexpected moderation error for {}:{}",
+                event.eventId,
+                event.photoURI
+            )
+            return errorPhoto(event, localizeErrorReason(ex.message))
         }
     }
 
@@ -94,13 +132,21 @@ class ModerationProcessor(
         }
     }
 
-    private fun error(event: ModerationRequestedEvent, reason: String): ModerationProcessedEvent =
+    private fun errorText(event: ModerationRequestedEvent, reason: String): ModerationProcessedEvent =
         ModerationProcessedEvent(
             eventId = UUID.randomUUID(),
             requestEventId = event.eventId,
             entityType = event.entityType,
             entityId = event.entityId,
             operation = event.operation,
+            status = ModerationStatus.ERROR,
+            reason = reason
+        )
+
+    private fun errorPhoto(event: ModerationPhotoRequestedEvent, reason: String): ModerationPhotoProcessedEvent =
+        ModerationPhotoProcessedEvent(
+            eventId = UUID.randomUUID(),
+            requestEventId = event.eventId,
             status = ModerationStatus.ERROR,
             reason = reason
         )
