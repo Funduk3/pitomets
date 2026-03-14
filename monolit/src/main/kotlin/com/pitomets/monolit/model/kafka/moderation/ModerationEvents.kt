@@ -5,7 +5,7 @@ import java.util.UUID
 
 enum class ModerationEntityType {
     LISTING,
-    SELLER_PROFILE,
+    USER,
     REVIEW
 }
 

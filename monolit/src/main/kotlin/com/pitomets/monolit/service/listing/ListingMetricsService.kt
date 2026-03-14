@@ -1,4 +1,4 @@
-package com.pitomets.monolit.service
+package com.pitomets.monolit.service.listing
 
 import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.JdbcTemplate

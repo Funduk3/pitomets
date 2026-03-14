@@ -37,7 +37,7 @@ class UserPhotoController(
     fun getAvatar(
         @AuthenticationPrincipal user: UserPrincipal
     ): AvatarUrlResponse {
-        val url = userPhotoService.getAvatarUrlOrNull(user.id)
+        val url = userPhotoService.getAvatarUrlOrNull(user.id, includeUnapproved = true)
         return AvatarUrlResponse(url = url)
     }
 
@@ -45,7 +45,7 @@ class UserPhotoController(
     fun getAvatarByUserId(
         @PathVariable userId: Long
     ): AvatarUrlResponse {
-        val url = userPhotoService.getAvatarUrlOrNull(userId)
+        val url = userPhotoService.getAvatarUrlOrNull(userId, includeUnapproved = false)
         return AvatarUrlResponse(url = url)
     }
 

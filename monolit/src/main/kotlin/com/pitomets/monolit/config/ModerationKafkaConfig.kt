@@ -22,8 +22,7 @@ class ModerationKafkaConfig(
         props[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
         props[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = JsonDeserializer::class.java
         props[JsonDeserializer.TRUSTED_PACKAGES] = "com.pitomets.monolit.model.kafka.moderation"
-        props[JsonDeserializer.USE_TYPE_INFO_HEADERS] = false
-        props[JsonDeserializer.VALUE_DEFAULT_TYPE] = ModerationProcessedEvent::class.java.name
+        props[JsonDeserializer.USE_TYPE_INFO_HEADERS] = true
 
         return DefaultKafkaConsumerFactory(props)
     }

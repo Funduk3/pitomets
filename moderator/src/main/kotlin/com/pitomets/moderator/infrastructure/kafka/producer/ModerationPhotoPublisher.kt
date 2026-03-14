@@ -18,7 +18,7 @@ class ModerationPhotoPublisher(
             event.eventId,
             event.status
         )
-        kafkaTemplate.send(topic, "PHOTO", event)
+        kafkaTemplate.send(topic, "photo", event)
     }
 
     companion object {

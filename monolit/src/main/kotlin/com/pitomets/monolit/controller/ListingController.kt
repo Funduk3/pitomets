@@ -5,7 +5,7 @@ import com.pitomets.monolit.model.dto.request.ListingsRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingRequest
 import com.pitomets.monolit.model.dto.response.ListingsCursorResponse
 import com.pitomets.monolit.model.dto.response.ListingsResponse
-import com.pitomets.monolit.service.ListingsService
+import com.pitomets.monolit.service.listing.ListingsService
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping

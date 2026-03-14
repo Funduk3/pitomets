@@ -1,9 +1,17 @@
-package com.pitomets.monolit.service
+package com.pitomets.monolit.service.listing
 
 import com.pitomets.monolit.exceptions.ListingNotFoundException
+import com.pitomets.monolit.kafka.moderation.producer.ModerationPhotoPublisher
 import com.pitomets.monolit.model.entity.ListingPhoto
+import com.pitomets.monolit.model.kafka.moderation.ModerationEntityType
+import com.pitomets.monolit.model.kafka.moderation.ModerationStatus
+import com.pitomets.monolit.model.kafka.moderation.ModerationPhotoRequestedEvent
+import com.pitomets.monolit.repository.AiPhotoReportRepo
 import com.pitomets.monolit.repository.ListingPhotoRepo
 import com.pitomets.monolit.repository.ListingsRepo
+import com.pitomets.monolit.service.MinioService
+import com.pitomets.monolit.service.PhotoService
+import com.pitomets.monolit.service.PhotoUrlService
 import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
@@ -15,6 +23,9 @@ class ListingPhotoService(
     private val listingsRepo: ListingsRepo,
     private val minioService: MinioService,
     private val listingsService: ListingsService,
+    private val moderationPhotoPublisher: ModerationPhotoPublisher,
+    private val aiPhotoReportRepo: AiPhotoReportRepo,
+    private val photoUrlService: PhotoUrlService,
 ) : PhotoService() {
 
     @Transactional
@@ -47,6 +58,14 @@ class ListingPhotoService(
         )
 
         val saved = listingPhotoRepo.save(photo)
+
+        moderationPhotoPublisher.publish(
+            ModerationPhotoRequestedEvent(
+                entityType = ModerationEntityType.LISTING,
+                entityId = listingId,
+                photoURI = photoUrlService.objectUrl(objectKey)
+        ))
+
         if (position == 0) {
             listing.coverPhotoId = saved.id
             listingsRepo.save(listing)
@@ -55,10 +74,23 @@ class ListingPhotoService(
     }
 
     @Transactional
-    fun getListingPhotos(listingId: Long): List<ListingPhoto> {
+    fun getListingPhotos(listingId: Long, includeUnapproved: Boolean): List<ListingPhoto> {
         listingsRepo.findById(listingId)
             .orElseThrow { ListingNotFoundException("Listing with id $listingId not found") }
-        return listingPhotoRepo.findByListingIdOrderByPosition(listingId)
+        val photos = listingPhotoRepo.findByListingIdOrderByPosition(listingId)
+        if (includeUnapproved) {
+            return photos
+        }
+
+        val reportByUri = aiPhotoReportRepo.findByPhotoUriIn(
+            photos.map { photoUrlService.objectUrl(it.objectKey) }
+        )
+            .associateBy { it.photoUri }
+
+        return photos.filter { photo ->
+            val photoUrl = photoUrlService.objectUrl(photo.objectKey)
+            reportByUri[photoUrl]?.aiModerationStatus == ModerationStatus.APPROVED.name
+        }
     }
 
     @Transactional

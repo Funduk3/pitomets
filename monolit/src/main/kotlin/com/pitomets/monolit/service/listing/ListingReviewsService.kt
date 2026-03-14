@@ -1,4 +1,4 @@
-package com.pitomets.monolit.service
+package com.pitomets.monolit.service.listing
 
 import com.pitomets.monolit.exceptions.BadReviewException
 import com.pitomets.monolit.model.dto.request.AdminMessage
@@ -13,6 +13,8 @@ import com.pitomets.monolit.repository.SellerProfileRepo
 import com.pitomets.monolit.repository.UserRepo
 import com.pitomets.monolit.repository.findListingOrThrow
 import com.pitomets.monolit.repository.findUserOrThrow
+import com.pitomets.monolit.service.moderation.ModerationRequestService
+import com.pitomets.monolit.service.moderationHint
 import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service

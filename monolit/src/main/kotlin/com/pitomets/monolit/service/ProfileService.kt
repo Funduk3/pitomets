@@ -13,8 +13,11 @@ import com.pitomets.monolit.model.entity.User
 import com.pitomets.monolit.model.entity.UserRole
 import com.pitomets.monolit.model.entity.ListingOutbox
 import com.pitomets.monolit.model.EventType
+import com.pitomets.monolit.model.entity.AiTextModerationReport
+import com.pitomets.monolit.model.kafka.moderation.ModerationEntityType
 import com.pitomets.monolit.model.kafka.moderation.ModerationOperation
 import com.pitomets.monolit.repository.SellerProfileRepo
+import com.pitomets.monolit.repository.AiTextReportRepo
 import com.pitomets.monolit.repository.UserRepo
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.ReviewsRepo
@@ -22,6 +25,7 @@ import com.pitomets.monolit.repository.ListingPhotoRepo
 import com.pitomets.monolit.repository.FavouritesRepo
 import com.pitomets.monolit.repository.ListingOutboxRepository
 import com.pitomets.monolit.repository.findUserOrThrow
+import com.pitomets.monolit.service.moderation.ModerationRequestService
 import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
@@ -39,6 +43,7 @@ class ProfileService(
     private val favouritesRepo: FavouritesRepo,
     private val listingOutboxRepo: ListingOutboxRepository,
     private val moderationRequestService: ModerationRequestService,
+    private val aiTextReportRepo: AiTextReportRepo,
 ) {
     private val log = LoggerFactory.getLogger(ProfileService::class.java)
 
@@ -66,6 +71,7 @@ class ProfileService(
 
         log.info("Seller profile created for user ID: {}, shop name: {}", userId, request.shopName)
 
+        val report = getSellerProfileReport(requireNotNull(saved.id))
         return SellerProfileResponse(
             id = requireNotNull(saved.id) { "Seller profile ID cannot be null" },
             userId = saved.seller?.id,
@@ -75,15 +81,7 @@ class ProfileService(
             isVerified = saved.isVerified,
             createdAt = saved.createdAt,
             avatarKey = saved.seller?.avatarKey,
-            moderationHint = moderationHint(
-                status = saved.aiModerationStatus,
-                reason = saved.aiModerationReason,
-                toxicityScore = saved.aiToxicityScore,
-                profanityDetected = saved.aiProfanityDetected,
-                sexualContentDetected = saved.aiSexualContentDetected,
-                sourceAction = saved.aiSourceAction,
-                modelVersion = saved.aiModelVersion
-            )
+            moderationHint = toModerationHint(report)
         )
     }
 
@@ -154,6 +152,7 @@ class ProfileService(
 
         log.info("Seller profile updated for user ID: {}", userId)
 
+        val report = getSellerProfileReport(requireNotNull(updated.id))
         return SellerProfileResponse(
             id = requireNotNull(updated.id),
             userId = updated.seller?.id,
@@ -163,15 +162,7 @@ class ProfileService(
             isVerified = updated.isVerified,
             createdAt = updated.createdAt,
             avatarKey = updated.seller?.avatarKey,
-            moderationHint = moderationHint(
-                status = updated.aiModerationStatus,
-                reason = updated.aiModerationReason,
-                toxicityScore = updated.aiToxicityScore,
-                profanityDetected = updated.aiProfanityDetected,
-                sexualContentDetected = updated.aiSexualContentDetected,
-                sourceAction = updated.aiSourceAction,
-                modelVersion = updated.aiModelVersion
-            )
+            moderationHint = toModerationHint(report)
         )
     }
 
@@ -179,6 +170,7 @@ class ProfileService(
         val sellerProfile = sellerProfileRepo.findBySellerId(sellerId)
             ?: throw UserNotFoundException("Seller profile not found for user ID: $sellerId")
 
+        val report = getSellerProfileReport(requireNotNull(sellerProfile.id))
         return SellerProfileResponse(
             id = requireNotNull(sellerProfile.id) { "Seller profile ID cannot be null" },
             userId = sellerProfile.seller?.id,
@@ -188,15 +180,7 @@ class ProfileService(
             isVerified = sellerProfile.isVerified,
             createdAt = sellerProfile.createdAt,
             avatarKey = sellerProfile.seller?.avatarKey,
-            moderationHint = moderationHint(
-                status = sellerProfile.aiModerationStatus,
-                reason = sellerProfile.aiModerationReason,
-                toxicityScore = sellerProfile.aiToxicityScore,
-                profanityDetected = sellerProfile.aiProfanityDetected,
-                sexualContentDetected = sellerProfile.aiSexualContentDetected,
-                sourceAction = sellerProfile.aiSourceAction,
-                modelVersion = sellerProfile.aiModelVersion
-            )
+            moderationHint = toModerationHint(report)
         )
     }
 
@@ -204,6 +188,7 @@ class ProfileService(
         val sellerProfile = sellerProfileRepo.findById(sellerProfileId)
             .orElseThrow { UserNotFoundException("Seller profile not found for id: $sellerProfileId") }
 
+        val report = getSellerProfileReport(requireNotNull(sellerProfile.id))
         return SellerProfileResponse(
             id = requireNotNull(sellerProfile.id) { "Seller profile ID cannot be null" },
             userId = sellerProfile.seller?.id,
@@ -213,21 +198,14 @@ class ProfileService(
             isVerified = sellerProfile.isVerified,
             createdAt = sellerProfile.createdAt,
             avatarKey = sellerProfile.seller?.avatarKey,
-            moderationHint = moderationHint(
-                status = sellerProfile.aiModerationStatus,
-                reason = sellerProfile.aiModerationReason,
-                toxicityScore = sellerProfile.aiToxicityScore,
-                profanityDetected = sellerProfile.aiProfanityDetected,
-                sexualContentDetected = sellerProfile.aiSexualContentDetected,
-                sourceAction = sellerProfile.aiSourceAction,
-                modelVersion = sellerProfile.aiModelVersion
-            )
+            moderationHint = toModerationHint(report)
         )
     }
 
     fun getPendingSellerProfiles(): List<SellerProfileResponse> {
         return sellerProfileRepo.findByIsApprovedFalse()
             .map { profile ->
+                val report = getSellerProfileReport(requireNotNull(profile.id))
                 SellerProfileResponse(
                     id = requireNotNull(profile.id) { "Seller profile ID cannot be null" },
                     userId = profile.seller?.id,
@@ -237,15 +215,7 @@ class ProfileService(
                     isVerified = profile.isVerified,
                     createdAt = profile.createdAt,
                     avatarKey = profile.seller?.avatarKey,
-                    moderationHint = moderationHint(
-                        status = profile.aiModerationStatus,
-                        reason = profile.aiModerationReason,
-                        toxicityScore = profile.aiToxicityScore,
-                        profanityDetected = profile.aiProfanityDetected,
-                        sexualContentDetected = profile.aiSexualContentDetected,
-                        sourceAction = profile.aiSourceAction,
-                        modelVersion = profile.aiModelVersion
-                    )
+                    moderationHint = toModerationHint(report)
                 )
             }
     }
@@ -253,6 +223,7 @@ class ProfileService(
     fun getPendingSellerProfile(id: Long): SellerProfileResponse {
         val profile = sellerProfileRepo.findByIdAndIsApprovedFalse(id)
             ?: throw UserNotFoundException("Pending seller profile with id $id not found")
+        val report = getSellerProfileReport(requireNotNull(profile.id))
         return SellerProfileResponse(
             id = requireNotNull(profile.id) { "Seller profile ID cannot be null" },
             userId = profile.seller?.id,
@@ -262,17 +233,23 @@ class ProfileService(
             isVerified = profile.isVerified,
             createdAt = profile.createdAt,
             avatarKey = profile.seller?.avatarKey,
-            moderationHint = moderationHint(
-                status = profile.aiModerationStatus,
-                reason = profile.aiModerationReason,
-                toxicityScore = profile.aiToxicityScore,
-                profanityDetected = profile.aiProfanityDetected,
-                sexualContentDetected = profile.aiSexualContentDetected,
-                sourceAction = profile.aiSourceAction,
-                modelVersion = profile.aiModelVersion
-            )
+            moderationHint = toModerationHint(report)
         )
     }
+
+    private fun getSellerProfileReport(profileId: Long): AiTextModerationReport? =
+        aiTextReportRepo.findByEntityIdAndEntityType(profileId, ModerationEntityType.USER.name)
+
+    private fun toModerationHint(report: AiTextModerationReport?) =
+        moderationHint(
+            status = report?.aiModerationStatus,
+            reason = report?.aiModerationReason,
+            toxicityScore = report?.aiToxicityScore,
+            profanityDetected = report?.aiProfanityDetected,
+            sexualContentDetected = report?.aiSexualContentDetected,
+            sourceAction = report?.aiSourceAction,
+            modelVersion = null
+        )
 
     @Transactional
     fun approveSellerProfile(id: Long) {

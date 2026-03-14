@@ -1,7 +1,6 @@
-package com.pitomets.moderator.interfaces.messaging.event.photo
+package com.pitomets.monolit.model.kafka.moderation
 
-import com.pitomets.moderator.interfaces.messaging.event.ModerationEntityType
-import com.pitomets.moderator.interfaces.messaging.event.ModerationStatus
+import com.pitomets.monolit.model.EventType
 import java.time.Instant
 import java.util.UUID
 

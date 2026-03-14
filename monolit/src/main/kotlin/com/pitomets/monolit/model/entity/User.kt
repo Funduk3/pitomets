@@ -64,5 +64,9 @@ class User(
     var address: Address? = null,
 
     @Column(name = "avatar_key")
-    var avatarKey: String? = null
-)
+    var avatarKey: String? = null,
+
+    @Column("manual_moderation_pending")
+    var manualModerationPending: Boolean = false,
+
+    )

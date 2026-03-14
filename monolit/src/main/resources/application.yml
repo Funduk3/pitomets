@@ -103,3 +103,5 @@ moderation:
     topics:
       moderation-requested: moderation.requested
       moderation-processed: moderation.processed
+      moderation-requested-photo: moderation.requested.photo
+      moderation-processed-photo: moderation.processed.photo

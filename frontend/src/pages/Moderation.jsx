@@ -9,6 +9,7 @@ export const Moderation = () => {
   const [listings, setListings] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [sellerProfiles, setSellerProfiles] = useState([]);
+  const [photos, setPhotos] = useState([]);
   const [listingPhotos, setListingPhotos] = useState({});
   const [sellerAvatars, setSellerAvatars] = useState({});
   const [messages, setMessages] = useState({});
@@ -17,14 +18,16 @@ export const Moderation = () => {
     try {
       setLoading(true);
       setError('');
-      const [listingsData, reviewsData, sellerProfilesData] = await Promise.all([
+      const [listingsData, reviewsData, sellerProfilesData, photosData] = await Promise.all([
         adminAPI.getPendingListings(),
         adminAPI.getPendingReviews(),
         adminAPI.getPendingSellerProfiles(),
+        adminAPI.getPendingPhotos(),
       ]);
       setListings(listingsData);
       setReviews(reviewsData);
       setSellerProfiles(sellerProfilesData);
+      setPhotos(photosData);
 
       // preload listing photos
       const listingPhotosPromises = listingsData.map(async (listing) => {
@@ -240,6 +243,54 @@ export const Moderation = () => {
     );
   };
 
+  const renderPhotoModerationHint = (hint) => {
+    if (!hint) {
+      return null;
+    }
+
+    const statusLabel = {
+      APPROVED: 'Оценка ИИ: одобрить',
+      REJECTED: 'Оценка ИИ: отклонить',
+      REVIEW: 'Оценка ИИ: ручная проверка',
+      ERROR: 'Оценка ИИ: ошибка анализа',
+    }[hint.status] || 'Оценка ИИ';
+
+    const statusColor = {
+      APPROVED: '#0f766e',
+      REJECTED: '#b91c1c',
+      REVIEW: '#92400e',
+      ERROR: '#7c3aed',
+    }[hint.status] || '#374151';
+
+    const hasScore = typeof hint.toxicityScore === 'number';
+    const scoreValue = hasScore ? Math.max(0, Math.min(1, hint.toxicityScore)) : null;
+    const scoreText = hasScore ? scoreValue.toFixed(2) : 'н/д';
+
+    const labels = Array.isArray(hint.labels) ? hint.labels : [];
+    const labelText = labels.length ? labels.join(', ') : 'н/д';
+
+    return (
+      <div style={{ marginTop: '0.6rem', padding: '0.55rem 0.7rem', borderRadius: '8px', background: '#f8fafc', border: `1px solid ${statusColor}33` }}>
+        <div style={{ fontSize: '0.85rem', color: statusColor, fontWeight: 600 }}>
+          {statusLabel}
+        </div>
+        <div style={{ marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+          <div style={{ fontSize: '0.85rem', color: '#374151' }}>
+            NSFW score: <strong>{scoreText}</strong>
+          </div>
+          <div style={{ fontSize: '0.85rem', color: '#374151' }}>
+            Метки: <strong>{labelText}</strong>
+          </div>
+        </div>
+        {hint.reason && (
+          <div style={{ marginTop: '0.2rem', fontSize: '0.82rem', color: '#4b5563' }}>
+            Причина: {localizeModerationReason(hint.reason)}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return <div>Грузим...</div>;
   }
@@ -377,6 +428,37 @@ export const Moderation = () => {
                       style={{ flex: 1, padding: '0.5rem' }}
                     />
                     <button className="btn btn-danger" onClick={() => handleDeclineReview(review.id)}>Отклонить</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section style={{ marginTop: '2rem' }}>
+        <h3 style={{ marginBottom: '0.75rem' }}>Фотографии на модерации</h3>
+        {photos.length === 0 ? (
+          <div style={{ color: '#666' }}>Нет фотографий на модерации</div>
+        ) : (
+          <div style={{ display: 'grid', gap: '1rem' }}>
+            {photos.map((photo) => (
+              <div key={`${photo.entityType}-${photo.entityId}-${photo.photoUri}`} style={{ border: '1px solid #eee', borderRadius: '8px', padding: '1rem' }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                  <img
+                    src={resolveApiUrl(photo.photoUrl)}
+                    alt="Moderation photo"
+                    style={{ width: '140px', height: '105px', objectFit: 'cover', borderRadius: '6px' }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600 }}>
+                      {photo.entityType === 'LISTING' ? 'Объявление' : 'Профиль пользователя'} #{photo.entityId}
+                    </div>
+                    <div style={{ color: '#666', marginTop: '0.25rem' }}>{photo.photoUri}</div>
+                    {renderPhotoModerationHint(photo.moderationHint)}
                   </div>
                 </div>
               </div>

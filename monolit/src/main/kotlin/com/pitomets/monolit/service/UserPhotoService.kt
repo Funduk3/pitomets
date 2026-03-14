@@ -1,6 +1,11 @@
 package com.pitomets.monolit.service
 
 import com.pitomets.monolit.exceptions.AvatarNotFoundException
+import com.pitomets.monolit.kafka.moderation.producer.ModerationPhotoPublisher
+import com.pitomets.monolit.model.kafka.moderation.ModerationEntityType
+import com.pitomets.monolit.model.kafka.moderation.ModerationStatus
+import com.pitomets.monolit.model.kafka.moderation.ModerationPhotoRequestedEvent
+import com.pitomets.monolit.repository.AiPhotoReportRepo
 import com.pitomets.monolit.repository.UserRepo
 import com.pitomets.monolit.repository.findUserOrThrow
 import jakarta.transaction.Transactional
@@ -12,7 +17,9 @@ import java.util.UUID
 class UserPhotoService(
     private val minioService: MinioService,
     private val userRepo: UserRepo,
-    private val photoUrlService: PhotoUrlService
+    private val photoUrlService: PhotoUrlService,
+    private val moderationPhotoPublisher: ModerationPhotoPublisher,
+    private val aiPhotoReportRepo: AiPhotoReportRepo,
 ) : PhotoService() {
 
     @Transactional
@@ -21,7 +28,6 @@ class UserPhotoService(
 
         val user = userRepo.findUserOrThrow(userId)
 
-        // Удаляем старый аватар, если есть
         user.avatarKey?.let { oldKey ->
             minioService.delete(oldKey)
         }
@@ -38,6 +44,14 @@ class UserPhotoService(
         user.avatarKey = objectKey
         userRepo.save(user)
 
+        moderationPhotoPublisher.publish(
+            ModerationPhotoRequestedEvent(
+                entityType = ModerationEntityType.USER,
+                entityId = userId,
+                photoURI = photoUrlService.objectUrl(objectKey)
+            )
+        )
+
         return objectKey
     }
 
@@ -50,10 +64,21 @@ class UserPhotoService(
     }
 
     @Transactional
-    fun getAvatarUrlOrNull(userId: Long): String? {
+    fun getAvatarUrlOrNull(userId: Long, includeUnapproved: Boolean): String? {
         val user = userRepo.findUserOrThrow(userId)
-        val avatarKey = user.avatarKey ?: return null
-        return photoUrlService.objectUrl(avatarKey)
+        val avatarKey = user.avatarKey
+        if (avatarKey == null) {
+            return null
+        }
+
+        val avatarUrl = photoUrlService.objectUrl(avatarKey)
+        val approved = if (includeUnapproved) {
+            true
+        } else {
+            val report = aiPhotoReportRepo.findByPhotoUri(avatarUrl)
+            report?.aiModerationStatus == ModerationStatus.APPROVED.name
+        }
+        return avatarUrl.takeIf { approved }
     }
 
     @Transactional

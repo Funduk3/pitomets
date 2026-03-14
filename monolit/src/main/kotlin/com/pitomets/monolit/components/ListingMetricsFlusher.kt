@@ -1,6 +1,6 @@
 package com.pitomets.monolit.components
 
-import com.pitomets.monolit.service.ListingMetricsService
+import com.pitomets.monolit.service.listing.ListingMetricsService
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 

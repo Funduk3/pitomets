@@ -2,6 +2,7 @@ package com.pitomets.monolit.kafka.moderation.consumer
 
 import com.pitomets.monolit.model.AgeEnum
 import com.pitomets.monolit.model.EventType
+import com.pitomets.monolit.model.entity.AiTextModerationReport
 import com.pitomets.monolit.model.entity.ListingOutbox
 import com.pitomets.monolit.model.entity.Review
 import com.pitomets.monolit.model.kafka.moderation.ModerationEntityType
@@ -9,10 +10,12 @@ import com.pitomets.monolit.model.kafka.moderation.ModerationProcessedEvent
 import com.pitomets.monolit.model.kafka.moderation.ModerationStatus
 import com.pitomets.monolit.model.entity.Listing
 import com.pitomets.monolit.model.entity.SellerProfile
+import com.pitomets.monolit.repository.AiTextReportRepo
 import com.pitomets.monolit.repository.ListingOutboxRepository
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.ReviewsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
+import com.pitomets.monolit.repository.UserRepo
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.stereotype.Component
@@ -21,9 +24,10 @@ import org.springframework.transaction.annotation.Transactional
 @Component
 class ModerationResultConsumer(
     private val listingsRepo: ListingsRepo,
-    private val sellerProfileRepo: SellerProfileRepo,
+    private val userRepo: UserRepo,
     private val reviewsRepo: ReviewsRepo,
-    private val outboxRepo: ListingOutboxRepository
+    private val outboxRepo: ListingOutboxRepository,
+    private val aiTextModerationRepo: AiTextReportRepo
 ) {
     @KafkaListener(
         topics = ["\${moderation.kafka.topics.moderation-processed}"],
@@ -41,7 +45,7 @@ class ModerationResultConsumer(
 
         when (event.entityType) {
             ModerationEntityType.LISTING -> handleListing(event)
-            ModerationEntityType.SELLER_PROFILE -> handleSellerProfile(event)
+            ModerationEntityType.USER -> handleSellerProfile(event)
             ModerationEntityType.REVIEW -> handleReview(event)
         }
     }
@@ -65,7 +69,6 @@ class ModerationResultConsumer(
             val autoPublish = shouldAutoPublish(event)
 
             listing.isApproved = autoPublish
-            listing.moderatorMessage = null
 
             if (!wasApproved && autoPublish) {
                 emitListingIndexUpsert(listing)
@@ -74,7 +77,8 @@ class ModerationResultConsumer(
             }
         }
 
-        applyAiResult(listing, event)
+        saveAiTextModerationReport(event)
+
         listingsRepo.save(listing)
     }
 
@@ -119,21 +123,31 @@ class ModerationResultConsumer(
     }
 
     private fun handleSellerProfile(event: ModerationProcessedEvent) {
-        val profile = sellerProfileRepo.findById(event.entityId).orElse(null) ?: run {
+        val user = userRepo.findById(event.entityId).orElse(null) ?: run {
             log.warn("Seller profile {} not found for moderation result", event.entityId)
             return
         }
 
         if (event.status == ModerationStatus.ERROR) {
             log.warn(
-                "Moderation ERROR for seller profile {}: {}",
+                "Moderation ERROR for seller user profile {}: {}",
                 event.entityId,
                 event.reason
             )
         }
 
-        applyAiResult(profile, event)
-        sellerProfileRepo.save(profile)
+        if (user.manualModerationPending) {
+            val wasApproved = user.isApproved
+            val autoPublish = shouldAutoPublish(event)
+
+            user.isApproved = autoPublish
+
+            // Listing index updates apply only to listings.
+        }
+
+        saveAiTextModerationReport(event)
+
+        userRepo.save(user)
     }
 
     private fun handleReview(event: ModerationProcessedEvent) {
@@ -146,47 +160,37 @@ class ModerationResultConsumer(
             log.warn("Moderation ERROR for review {}: {}", event.entityId, event.reason)
         }
 
-        applyAiResult(review, event)
+        if (review.manualModerationPending) {
+            val wasApproved = review.isApproved
+            val autoPublish = shouldAutoPublish(event)
+
+            review.isApproved = autoPublish
+
+            // Listing index updates apply only to listings.
+        }
+
+        saveAiTextModerationReport(event)
+
         reviewsRepo.save(review)
     }
 
-    private fun applyAiResult(
-        listing: Listing,
-        event: ModerationProcessedEvent
-    ) {
-        listing.aiModerationStatus = event.status.name
-        listing.aiModerationReason = event.reason
-        listing.aiToxicityScore = event.toxicityScore
-        listing.aiProfanityDetected = event.profanityDetected
-        listing.aiSexualContentDetected = event.sexualContentDetected
-        listing.aiSourceAction = event.sourceAction
-        listing.aiModelVersion = event.modelVersion
-    }
+    private fun saveAiTextModerationReport(event: ModerationProcessedEvent) {
+        val report = aiTextModerationRepo.findByEntityIdAndEntityType(
+            event.entityId,
+            event.entityType.name
+        ) ?: AiTextModerationReport(
+            entityId = event.entityId,
+            entityType = event.entityType.name
+        )
 
-    private fun applyAiResult(
-        profile: SellerProfile,
-        event: ModerationProcessedEvent
-    ) {
-        profile.aiModerationStatus = event.status.name
-        profile.aiModerationReason = event.reason
-        profile.aiToxicityScore = event.toxicityScore
-        profile.aiProfanityDetected = event.profanityDetected
-        profile.aiSexualContentDetected = event.sexualContentDetected
-        profile.aiSourceAction = event.sourceAction
-        profile.aiModelVersion = event.modelVersion
-    }
+        report.aiModerationStatus = event.status.name
+        report.aiModerationReason = event.reason
+        report.aiToxicityScore = event.toxicityScore
+        report.aiProfanityDetected = event.profanityDetected
+        report.aiSexualContentDetected = event.sexualContentDetected
+        report.aiSourceAction = event.sourceAction
 
-    private fun applyAiResult(
-        review: Review,
-        event: ModerationProcessedEvent
-    ) {
-        review.aiModerationStatus = event.status.name
-        review.aiModerationReason = event.reason
-        review.aiToxicityScore = event.toxicityScore
-        review.aiProfanityDetected = event.profanityDetected
-        review.aiSexualContentDetected = event.sexualContentDetected
-        review.aiSourceAction = event.sourceAction
-        review.aiModelVersion = event.modelVersion
+        aiTextModerationRepo.save(report)
     }
 
     companion object {

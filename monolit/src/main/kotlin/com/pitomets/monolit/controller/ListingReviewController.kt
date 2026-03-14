@@ -4,7 +4,7 @@ import com.pitomets.monolit.model.UserPrincipal
 import com.pitomets.monolit.model.dto.request.CreateReviewRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingReviewRequest
 import com.pitomets.monolit.model.dto.response.ReviewResponse
-import com.pitomets.monolit.service.ListingReviewsService
+import com.pitomets.monolit.service.listing.ListingReviewsService
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping

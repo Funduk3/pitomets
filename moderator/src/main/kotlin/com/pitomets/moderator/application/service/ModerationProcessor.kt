@@ -79,6 +79,9 @@ class ModerationProcessor(
             return ModerationPhotoProcessedEvent(
                 requestEventId = event.eventId,
                 status = status,
+                entityType = event.entityType,
+                entityId = event.entityId,
+                photoURI = event.photoURI,
                 reason = response.decision?.reason,
                 sourceAction = action.ifBlank { null },
                 toxicityScore = response.categories?.nsfw?.score,
@@ -148,7 +151,10 @@ class ModerationProcessor(
             eventId = UUID.randomUUID(),
             requestEventId = event.eventId,
             status = ModerationStatus.ERROR,
-            reason = reason
+            reason = reason,
+            entityType = event.entityType,
+            entityId = event.entityId,
+            photoURI = event.photoURI,
         )
 
     companion object {

@@ -1,4 +1,4 @@
-package com.pitomets.monolit.service
+package com.pitomets.monolit.service.listing
 
 import com.pitomets.monolit.exceptions.BadAgeException
 import com.pitomets.monolit.exceptions.ListingNotFoundException
@@ -16,16 +16,21 @@ import com.pitomets.monolit.model.dto.response.ListingsCursorResponse
 import com.pitomets.monolit.model.dto.response.ListingsResponse
 import com.pitomets.monolit.model.dto.response.MetroDto
 import com.pitomets.monolit.model.dto.response.MetroLineDto
+import com.pitomets.monolit.model.kafka.moderation.ModerationEntityType
 import com.pitomets.monolit.model.entity.Listing
 import com.pitomets.monolit.model.entity.ListingOutbox
 import com.pitomets.monolit.model.entity.Pet
 import com.pitomets.monolit.model.entity.SellerProfile
+import com.pitomets.monolit.model.entity.AiTextModerationReport
 import com.pitomets.monolit.repository.CitiesRepository
+import com.pitomets.monolit.repository.AiTextReportRepo
 import com.pitomets.monolit.repository.ListingOutboxRepository
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.MetroStationRepo
 import com.pitomets.monolit.repository.PetsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
+import com.pitomets.monolit.service.moderation.ModerationRequestService
+import com.pitomets.monolit.service.moderationHint
 import jakarta.transaction.Transactional
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -49,6 +54,7 @@ class ListingsService(
     private val redisTemplate: RedisTemplate<String, String>,
     private val metricsService: ListingMetricsService,
     private val moderationRequestService: ModerationRequestService,
+    private val aiTextReportRepo: AiTextReportRepo,
 ) {
     // Controller functions
 
@@ -252,7 +258,7 @@ class ListingsService(
 
         listing.isApproved = false
         listing.manualModerationPending = true
-        listing.moderatorMessage = null
+        clearListingModeratorMessage(listingId)
 
         val saved = listingsRepo.save(listing)
         moderationRequestService.publishListing(saved, ModerationOperation.UPDATE)
@@ -271,6 +277,7 @@ class ListingsService(
             )
         }
 
+        val report = getListingReport(listingId)
         return ListingsResponse(
             listingsId = listingId,
             title = saved.title,
@@ -305,7 +312,7 @@ class ListingsService(
             viewsCount = saved.viewsCount,
             likesCount = saved.likesCount,
             isApproved = saved.isApproved,
-            moderatorMessage = saved.moderatorMessage
+            moderatorMessage = report?.moderatorMessage
         )
     }
 
@@ -336,7 +343,7 @@ class ListingsService(
         val listing = listingsRepo.findListingOrThrow(id)
         listing.isApproved = true
         listing.manualModerationPending = false
-        listing.moderatorMessage = null
+        clearListingModeratorMessage(id)
         val saved = listingsRepo.save(listing)
 
         outboxRepo.save(
@@ -362,11 +369,13 @@ class ListingsService(
         val listing = listingsRepo.findListingOrThrow(id)
         listing.isApproved = false
         listing.manualModerationPending = false
-        listing.moderatorMessage = buildDeclineMessage(
+        val report = getListingReport(id)
+        val declineMessage = buildDeclineMessage(
             moderatorMessage = message.message,
-            profanityDetected = listing.aiProfanityDetected == true,
-            sexualContentDetected = listing.aiSexualContentDetected == true
+            profanityDetected = report?.aiProfanityDetected == true,
+            sexualContentDetected = report?.aiSexualContentDetected == true
         )
+        setListingModeratorMessage(id, declineMessage)
         listingsRepo.save(listing)
 
         outboxRepo.save(
@@ -473,7 +482,6 @@ class ListingsService(
         title = request.title,
         isApproved = false,
         manualModerationPending = true,
-        moderatorMessage = null,
         city = cityRepo.findById(cityId)
             .orElseThrow(),
         metroStation = metroId?.let {
@@ -489,7 +497,9 @@ class ListingsService(
         viewsCount: Long = savedListing.viewsCount,
         likesCount: Long = savedListing.likesCount,
         includeModerationHint: Boolean = false
-    ) = ListingsResponse(
+    ): ListingsResponse {
+        val report = getListingReport(requireNotNull(savedListing.id))
+        return ListingsResponse(
         description = savedListing.description,
         sellerId = requireNotNull(savedListing.sellerProfile.seller?.id),
         sellerRating = savedListing.sellerProfile.rating,
@@ -523,21 +533,14 @@ class ListingsService(
         viewsCount = viewsCount,
         likesCount = likesCount,
         isApproved = savedListing.isApproved,
-        moderatorMessage = savedListing.moderatorMessage,
+        moderatorMessage = report?.moderatorMessage,
         moderationHint = if (includeModerationHint) {
-            moderationHint(
-                status = savedListing.aiModerationStatus,
-                reason = savedListing.aiModerationReason,
-                toxicityScore = savedListing.aiToxicityScore,
-                profanityDetected = savedListing.aiProfanityDetected,
-                sexualContentDetected = savedListing.aiSexualContentDetected,
-                sourceAction = savedListing.aiSourceAction,
-                modelVersion = savedListing.aiModelVersion
-            )
+            toModerationHint(report)
         } else {
             null
         }
     )
+    }
 
     private val log = LoggerFactory.getLogger(ListingsService::class.java)
     private val mapper = jacksonObjectMapper()
@@ -574,5 +577,34 @@ class ListingsService(
         }
 
         return "$base. Рекомендации: ${recommendations.joinToString("; ")}."
+    }
+
+    private fun getListingReport(listingId: Long): AiTextModerationReport? =
+        aiTextReportRepo.findByEntityIdAndEntityType(listingId, ModerationEntityType.LISTING.name)
+
+    private fun toModerationHint(report: AiTextModerationReport?) =
+        moderationHint(
+            status = report?.aiModerationStatus,
+            reason = report?.aiModerationReason,
+            toxicityScore = report?.aiToxicityScore,
+            profanityDetected = report?.aiProfanityDetected,
+            sexualContentDetected = report?.aiSexualContentDetected,
+            sourceAction = report?.aiSourceAction,
+            modelVersion = null
+        )
+
+    private fun clearListingModeratorMessage(listingId: Long) {
+        val report = getListingReport(listingId) ?: return
+        report.moderatorMessage = null
+        aiTextReportRepo.save(report)
+    }
+
+    private fun setListingModeratorMessage(listingId: Long, message: String) {
+        val report = getListingReport(listingId) ?: AiTextModerationReport(
+            entityId = listingId,
+            entityType = ModerationEntityType.LISTING.name
+        )
+        report.moderatorMessage = message
+        aiTextReportRepo.save(report)
     }
 }

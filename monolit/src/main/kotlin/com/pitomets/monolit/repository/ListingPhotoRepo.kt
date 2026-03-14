@@ -14,4 +14,6 @@ interface ListingPhotoRepo : JpaRepository<ListingPhoto, Long> {
     fun deleteAllByListingId(listingId: Long)
 
     fun findObjectKeysByListingId(listingId: Long): List<String>
+
+    fun findByObjectKey(objectKey: String): ListingPhoto
 }

@@ -3,8 +3,8 @@ package com.pitomets.monolit.controller
 import com.pitomets.monolit.model.UserPrincipal
 import com.pitomets.monolit.model.dto.response.ListingPhotoResponse
 import com.pitomets.monolit.model.dto.response.UploadPhotoResponse
-import com.pitomets.monolit.service.ListingPhotoService
-import com.pitomets.monolit.service.ListingsService
+import com.pitomets.monolit.service.listing.ListingPhotoService
+import com.pitomets.monolit.service.listing.ListingsService
 import com.pitomets.monolit.service.PhotoUrlService
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -52,12 +52,16 @@ class ListingPhotoController(
         @AuthenticationPrincipal user: UserPrincipal?
     ): ListingPhotoResponse {
         val isAdmin = user?.authorities?.any { it.authority == "ROLE_ADMIN" } == true
-        val title = if (isAdmin) {
-            listingsService.getListingEntity(listingId).title
-        } else {
-            listingsService.getListing(listingId, user?.id).title
+        val listing = listingsService.getListingEntity(listingId)
+        if (!isAdmin) {
+            listingsService.getListing(listingId, user?.id)
         }
-        val photos = listingPhotoService.getListingPhotos(listingId)
+        val isOwner = user?.id != null && listing.sellerProfile.seller?.id == user.id
+        val title = listing.title
+        val photos = listingPhotoService.getListingPhotos(
+            listingId,
+            includeUnapproved = isAdmin || isOwner
+        )
 
         return ListingPhotoResponse(
             title = title,

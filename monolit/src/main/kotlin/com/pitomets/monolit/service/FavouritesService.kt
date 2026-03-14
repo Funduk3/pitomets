@@ -7,6 +7,7 @@ import com.pitomets.monolit.model.entity.Favourite
 import com.pitomets.monolit.repository.FavouritesRepo
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.findListingOrThrow
+import com.pitomets.monolit.service.listing.ListingMetricsService
 import org.springframework.stereotype.Service
 
 @Service
