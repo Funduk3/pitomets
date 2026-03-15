@@ -1,6 +1,7 @@
 package com.pitomets.moderator.application.service
 
 import com.pitomets.moderator.config.ModeriumApiProperties
+import com.pitomets.moderator.infrastructure.client.HttpModeriumPhotoClient
 import com.pitomets.moderator.infrastructure.client.ModeriumClient
 import com.pitomets.moderator.infrastructure.dto.moderiumAPI.text.ModeriumAnalyzeResponse
 import com.pitomets.moderator.infrastructure.dto.moderiumAPI.ModeriumDecision
@@ -19,7 +20,8 @@ class ModerationProcessorTest {
                 decision = ModeriumDecision(action = "reject", reason = "bad words")
             )
         )
-        val processor = ModerationProcessor(client, ModeriumApiProperties(mode = "strong"))
+        val props = ModeriumApiProperties(baseUrl = "http://localhost", token = "test", mode = "strong")
+        val processor = ModerationProcessor(client, HttpModeriumPhotoClient(props), props)
 
         val result = processor.process(
             ModerationRequestedEvent(
@@ -41,7 +43,8 @@ class ModerationProcessorTest {
                 decision = ModeriumDecision(action = "approve")
             )
         )
-        val processor = ModerationProcessor(client, ModeriumApiProperties(mode = "strong"))
+        val props = ModeriumApiProperties(baseUrl = "http://localhost", token = "test", mode = "strong")
+        val processor = ModerationProcessor(client, HttpModeriumPhotoClient(props), props)
 
         val result = processor.process(
             ModerationRequestedEvent(
