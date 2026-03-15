@@ -63,6 +63,6 @@ class Review(
     @JoinColumn(name = "listing_id")
     var listing: Listing? = null,
 
-    @Column("manual_moderation_pending")
-    var manualModerationPending: Boolean = false,
+    @Column(name = "manual_moderation_pending")
+    var manualModerationPending: Boolean? = false,
 )

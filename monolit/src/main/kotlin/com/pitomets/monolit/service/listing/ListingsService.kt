@@ -16,21 +16,27 @@ import com.pitomets.monolit.model.dto.response.ListingsCursorResponse
 import com.pitomets.monolit.model.dto.response.ListingsResponse
 import com.pitomets.monolit.model.dto.response.MetroDto
 import com.pitomets.monolit.model.dto.response.MetroLineDto
+import com.pitomets.monolit.model.dto.response.PhotoModerationHintResponse
 import com.pitomets.monolit.model.kafka.moderation.ModerationEntityType
 import com.pitomets.monolit.model.entity.Listing
 import com.pitomets.monolit.model.entity.ListingOutbox
 import com.pitomets.monolit.model.entity.Pet
 import com.pitomets.monolit.model.entity.SellerProfile
 import com.pitomets.monolit.model.entity.AiTextModerationReport
+import com.pitomets.monolit.model.entity.AiPhotoModerationReport
 import com.pitomets.monolit.repository.CitiesRepository
 import com.pitomets.monolit.repository.AiTextReportRepo
 import com.pitomets.monolit.repository.ListingOutboxRepository
+import com.pitomets.monolit.repository.AiPhotoReportRepo
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.MetroStationRepo
 import com.pitomets.monolit.repository.PetsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
+import com.pitomets.monolit.repository.ListingPhotoRepo
 import com.pitomets.monolit.service.moderation.ModerationRequestService
 import com.pitomets.monolit.service.moderationHint
+import com.pitomets.monolit.service.PhotoModerationUrlService
+import com.pitomets.monolit.service.PhotoUrlService
 import jakarta.transaction.Transactional
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -55,9 +61,11 @@ class ListingsService(
     private val metricsService: ListingMetricsService,
     private val moderationRequestService: ModerationRequestService,
     private val aiTextReportRepo: AiTextReportRepo,
+    private val aiPhotoReportRepo: AiPhotoReportRepo,
+    private val listingPhotoRepo: ListingPhotoRepo,
+    private val photoUrlService: PhotoUrlService,
+    private val photoModerationUrlService: PhotoModerationUrlService,
 ) {
-    // Controller functions
-
     @Transactional
     fun createListing(
         userId: Long,
@@ -278,6 +286,7 @@ class ListingsService(
         }
 
         val report = getListingReport(listingId)
+        val photoHint = getListingPhotoHint(listingId)
         return ListingsResponse(
             listingsId = listingId,
             title = saved.title,
@@ -312,7 +321,9 @@ class ListingsService(
             viewsCount = saved.viewsCount,
             likesCount = saved.likesCount,
             isApproved = saved.isApproved,
-            moderatorMessage = report?.moderatorMessage
+            manualModerationPending = saved.manualModerationPending,
+            moderatorMessage = report?.moderatorMessage,
+            photoModerationHint = photoHint
         )
     }
 
@@ -498,7 +509,9 @@ class ListingsService(
         likesCount: Long = savedListing.likesCount,
         includeModerationHint: Boolean = false
     ): ListingsResponse {
-        val report = getListingReport(requireNotNull(savedListing.id))
+        val listingId = requireNotNull(savedListing.id)
+        val report = getListingReport(listingId)
+        val photoHint = getListingPhotoHint(listingId)
         return ListingsResponse(
         description = savedListing.description,
         sellerId = requireNotNull(savedListing.sellerProfile.seller?.id),
@@ -533,12 +546,14 @@ class ListingsService(
         viewsCount = viewsCount,
         likesCount = likesCount,
         isApproved = savedListing.isApproved,
+        manualModerationPending = savedListing.manualModerationPending,
         moderatorMessage = report?.moderatorMessage,
         moderationHint = if (includeModerationHint) {
             toModerationHint(report)
         } else {
             null
-        }
+        },
+        photoModerationHint = if (includeModerationHint) photoHint else null
     )
     }
 
@@ -555,6 +570,10 @@ class ListingsService(
     companion object {
         private const val HOME_PAGE_SIZE = 10
         private val CACHE_TTL = Duration.ofSeconds(30)
+        private const val PRIORITY_REJECTED = 4
+        private const val PRIORITY_REVIEW = 3
+        private const val PRIORITY_ERROR = 2
+        private const val PRIORITY_APPROVED = 1
     }
 
     private fun buildDeclineMessage(
@@ -592,6 +611,55 @@ class ListingsService(
             sourceAction = report?.aiSourceAction,
             modelVersion = null
         )
+
+    @Suppress("ReturnCount")
+    private fun getListingPhotoHint(listingId: Long): PhotoModerationHintResponse? {
+        val photos = listingPhotoRepo.findByListingIdOrderByPosition(listingId)
+        val photoUrls = photos.map { photoUrlService.objectUrl(it.objectKey) }
+        val moderationUrls = photos.map { photoModerationUrlService.objectUrl(it.objectKey) }
+        val photoKeys = photos.map { it.objectKey }
+
+        if (photoUrls.isEmpty()) {
+            return null
+        }
+
+        val reports = aiPhotoReportRepo.findByPhotoUriIn((photoUrls + moderationUrls + photoKeys).distinct())
+        val enriched = if (reports.isNotEmpty()) {
+            reports
+        } else {
+            aiPhotoReportRepo.findByEntityIdAndEntityType(listingId, ModerationEntityType.LISTING.name)
+        }
+
+        val worst = pickWorstPhotoReport(enriched) ?: return null
+        return toPhotoHint(worst)
+    }
+
+    private fun pickWorstPhotoReport(reports: List<AiPhotoModerationReport>): AiPhotoModerationReport? {
+        if (reports.isEmpty()) {
+            return null
+        }
+
+        val priority = mapOf(
+            "REJECTED" to PRIORITY_REJECTED,
+            "REVIEW" to PRIORITY_REVIEW,
+            "ERROR" to PRIORITY_ERROR,
+            "APPROVED" to PRIORITY_APPROVED
+        )
+
+        return reports.maxByOrNull { report ->
+            priority[report.aiModerationStatus] ?: 0
+        }
+    }
+
+    private fun toPhotoHint(report: AiPhotoModerationReport) = PhotoModerationHintResponse(
+        status = report.aiModerationStatus,
+        reason = report.aiModerationReason,
+        toxicityScore = report.aiToxicityScore,
+        labels = report.aiLabels,
+        toxicTextDetected = report.aiToxicTextDetected,
+        toxicTextMatches = report.aiToxicTextMatches,
+        modelVersion = null
+    )
 
     private fun clearListingModeratorMessage(listingId: Long) {
         val report = getListingReport(listingId) ?: return

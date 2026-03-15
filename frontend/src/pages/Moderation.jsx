@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { adminAPI } from '../api/admin';
 import { photosAPI } from '../api/photos';
-import { resolveApiUrl } from '../api/axios';
+import { PhotoCarousel } from '../components/PhotoCarousel';
 
 export const Moderation = () => {
   const [loading, setLoading] = useState(true);
@@ -9,7 +9,6 @@ export const Moderation = () => {
   const [listings, setListings] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [sellerProfiles, setSellerProfiles] = useState([]);
-  const [photos, setPhotos] = useState([]);
   const [listingPhotos, setListingPhotos] = useState({});
   const [sellerAvatars, setSellerAvatars] = useState({});
   const [messages, setMessages] = useState({});
@@ -18,31 +17,28 @@ export const Moderation = () => {
     try {
       setLoading(true);
       setError('');
-      const [listingsData, reviewsData, sellerProfilesData, photosData] = await Promise.all([
+      const [listingsData, reviewsData, sellerProfilesData] = await Promise.all([
         adminAPI.getPendingListings(),
         adminAPI.getPendingReviews(),
         adminAPI.getPendingSellerProfiles(),
-        adminAPI.getPendingPhotos(),
       ]);
       setListings(listingsData);
       setReviews(reviewsData);
       setSellerProfiles(sellerProfilesData);
-      setPhotos(photosData);
 
       // preload listing photos
       const listingPhotosPromises = listingsData.map(async (listing) => {
         try {
           const photosData = await photosAPI.getListingPhotos(listing.listingsId);
-          const first = (photosData.photos || [])[0] || null;
-          return { listingId: listing.listingsId, photo: first };
+          return { listingId: listing.listingsId, photos: photosData.photos || [] };
         } catch (err) {
-          return { listingId: listing.listingsId, photo: null };
+          return { listingId: listing.listingsId, photos: [] };
         }
       });
       const listingPhotosResults = await Promise.all(listingPhotosPromises);
       const listingPhotosMap = {};
-      listingPhotosResults.forEach(({ listingId, photo }) => {
-        listingPhotosMap[listingId] = photo;
+      listingPhotosResults.forEach(({ listingId, photos }) => {
+        listingPhotosMap[listingId] = photos;
       });
       setListingPhotos(listingPhotosMap);
 
@@ -291,6 +287,48 @@ export const Moderation = () => {
     );
   };
 
+  const renderPhotoModerationBadge = (hint) => {
+    if (!hint) {
+      return null;
+    }
+
+    const statusLabel = {
+      APPROVED: 'Оценка ИИ: одобрить',
+      REJECTED: 'Оценка ИИ: отклонить',
+      REVIEW: 'Оценка ИИ: ручная проверка',
+      ERROR: 'Оценка ИИ: ошибка анализа',
+    }[hint.status] || 'Оценка ИИ';
+
+    const statusColor = {
+      APPROVED: '#0f766e',
+      REJECTED: '#b91c1c',
+      REVIEW: '#92400e',
+      ERROR: '#7c3aed',
+    }[hint.status] || '#374151';
+
+    const labels = Array.isArray(hint.labels) ? hint.labels : [];
+    const labelText = labels.length ? labels.join(', ') : 'н/д';
+
+    return (
+      <div style={{ flex: '0 0 240px', marginLeft: 'auto', minWidth: '220px', maxWidth: '240px', padding: '0.7rem', borderRadius: '10px', border: `1px solid ${statusColor}55`, background: '#f8fafc' }}>
+        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: statusColor, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+          Фото ИИ
+        </div>
+        <div style={{ marginTop: '0.35rem', fontSize: '0.86rem', fontWeight: 600, color: '#111827' }}>
+          {statusLabel}
+        </div>
+        <div style={{ marginTop: '0.35rem', fontSize: '0.8rem', color: '#374151' }}>
+          Интерпретация: <strong>{labelText}</strong>
+        </div>
+        {hint.reason && (
+          <div style={{ marginTop: '0.3rem', fontSize: '0.78rem', color: '#4b5563' }}>
+            {localizeModerationReason(hint.reason)}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return <div>Грузим...</div>;
   }
@@ -313,19 +351,13 @@ export const Moderation = () => {
           <div style={{ display: 'grid', gap: '1rem' }}>
             {listings.map((listing) => (
               <div key={listing.listingsId} style={{ border: '1px solid #eee', borderRadius: '8px', padding: '1rem' }}>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                  {listingPhotos[listing.listingsId] ? (
-                    <img
-                      src={resolveApiUrl(listingPhotos[listing.listingsId])}
-                      alt="Listing cover"
-                      style={{ width: '120px', height: '90px', objectFit: 'cover', borderRadius: '6px' }}
-                    />
-                  ) : (
-                    <div style={{ width: '120px', height: '90px', background: '#f5f5f5', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
-                      Нет фото
-                    </div>
-                  )}
-                  <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                  <PhotoCarousel
+                    photos={listingPhotos[listing.listingsId] || []}
+                    imageStyle={{ width: '120px', height: '90px', objectFit: 'cover', borderRadius: '6px' }}
+                    containerStyle={{ width: '120px', height: '90px' }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600 }}>{listing.title}</div>
                     <div style={{ color: '#666', marginTop: '0.25rem' }}>{listing.description}</div>
                     <div style={{ marginTop: '0.5rem' }}>
@@ -333,6 +365,7 @@ export const Moderation = () => {
                     </div>
                     {renderModerationHint(listing.moderationHint)}
                   </div>
+                  {renderPhotoModerationBadge(listing.photoModerationHint)}
                 </div>
                 <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                   <button className="btn btn-primary" onClick={() => handleApproveListing(listing.listingsId)}>Одобрить</button>
@@ -361,7 +394,7 @@ export const Moderation = () => {
           <div style={{ display: 'grid', gap: '1rem' }}>
             {sellerProfiles.map((profile) => (
               <div key={profile.id} style={{ border: '1px solid #eee', borderRadius: '8px', padding: '1rem' }}>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                   {profile.userId && sellerAvatars[profile.userId] ? (
                     <img
                       src={sellerAvatars[profile.userId]}
@@ -376,7 +409,7 @@ export const Moderation = () => {
                       Нет фото
                     </div>
                   )}
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600 }}>{profile.shopName || 'Без названия'}</div>
                     {profile.description && (
                       <div style={{ color: '#666', marginTop: '0.25rem' }}>{profile.description}</div>
@@ -386,6 +419,7 @@ export const Moderation = () => {
                     )}
                     {renderModerationHint(profile.moderationHint)}
                   </div>
+                  {renderPhotoModerationBadge(profile.photoModerationHint)}
                 </div>
                 <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                   <button className="btn btn-primary" onClick={() => handleApproveSellerProfile(profile.id)}>Одобрить</button>
@@ -436,36 +470,6 @@ export const Moderation = () => {
         )}
       </section>
 
-      <section style={{ marginTop: '2rem' }}>
-        <h3 style={{ marginBottom: '0.75rem' }}>Фотографии на модерации</h3>
-        {photos.length === 0 ? (
-          <div style={{ color: '#666' }}>Нет фотографий на модерации</div>
-        ) : (
-          <div style={{ display: 'grid', gap: '1rem' }}>
-            {photos.map((photo) => (
-              <div key={`${photo.entityType}-${photo.entityId}-${photo.photoUri}`} style={{ border: '1px solid #eee', borderRadius: '8px', padding: '1rem' }}>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                  <img
-                    src={resolveApiUrl(photo.photoUrl)}
-                    alt="Moderation photo"
-                    style={{ width: '140px', height: '105px', objectFit: 'cover', borderRadius: '6px' }}
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600 }}>
-                      {photo.entityType === 'LISTING' ? 'Объявление' : 'Профиль пользователя'} #{photo.entityId}
-                    </div>
-                    <div style={{ color: '#666', marginTop: '0.25rem' }}>{photo.photoUri}</div>
-                    {renderPhotoModerationHint(photo.moderationHint)}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
     </div>
   );
 };

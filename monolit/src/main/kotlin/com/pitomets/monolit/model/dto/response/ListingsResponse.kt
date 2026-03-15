@@ -43,7 +43,9 @@ data class ListingsResponse(
     val likesCount: Long,
 
     val isApproved: Boolean,
+    val manualModerationPending: Boolean = false,
 
     val moderatorMessage: String? = null,
-    val moderationHint: ModerationHintResponse? = null
+    val moderationHint: ModerationHintResponse? = null,
+    val photoModerationHint: PhotoModerationHintResponse? = null
 )

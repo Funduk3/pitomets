@@ -66,7 +66,7 @@ class User(
     @Column(name = "avatar_key")
     var avatarKey: String? = null,
 
-    @Column("manual_moderation_pending")
-    var manualModerationPending: Boolean = false,
+    @Column(name = "manual_moderation_pending")
+    var manualModerationPending: Boolean? = false,
 
     )

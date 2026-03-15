@@ -16,11 +16,6 @@ export const adminAPI = {
     return response.data;
   },
 
-  getPendingPhotos: async () => {
-    const response = await api.get('/admin/photo/all');
-    return response.data;
-  },
-
   approveListing: async (id) => {
     await api.post(`/admin/listing/${id}/approve`);
   },

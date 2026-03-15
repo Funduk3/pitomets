@@ -7,6 +7,7 @@ import { favouritesAPI } from '../api/favourites';
 import { messengerAPI } from '../api/messenger';
 import { sellerAPI } from '../api/seller';
 import { useAuth } from '../context/AuthContext';
+import { PhotoCarousel } from '../components/PhotoCarousel';
 import { AGE_LABELS } from '../util/age';
 import { GENDER_LABELS } from '../util/gender';
 
@@ -275,7 +276,8 @@ export const ListingDetail = () => {
   if (!listing) return <div>Объявление не найдено</div>;
   const isOwner = isAuthenticated() && user?.id === listing.sellerId;
   const approved = listing.isApproved ?? listing.approved;
-  const showPending = isOwner && (approved === false || approved === 0) && !listing.moderatorMessage;
+  const moderationPending = listing.manualModerationPending === true;
+  const showPending = isOwner && (moderationPending || (approved === false || approved === 0)) && !listing.moderatorMessage;
 
   return (
     <div>
@@ -343,16 +345,11 @@ export const ListingDetail = () => {
       <div className="two-col">
         <div style={{ flex: 1 }}>
           {photos.length > 0 ? (
-            <div>
-              {photos.map((photoUrl, index) => (
-                <img
-                  key={index}
-                  src={resolveApiUrl(photoUrl)}
-                  alt={`Photo ${index + 1}`}
-                  className="detail-image"
-                />
-              ))}
-            </div>
+            <PhotoCarousel
+              photos={photos}
+              imageClassName="detail-image"
+              containerStyle={{ width: '100%' }}
+            />
           ) : (
             <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div className="card-body">Нет фото</div>

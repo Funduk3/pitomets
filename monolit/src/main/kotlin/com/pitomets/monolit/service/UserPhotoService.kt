@@ -20,6 +20,7 @@ class UserPhotoService(
     private val photoUrlService: PhotoUrlService,
     private val moderationPhotoPublisher: ModerationPhotoPublisher,
     private val aiPhotoReportRepo: AiPhotoReportRepo,
+    private val photoModerationUrlService: PhotoModerationUrlService,
 ) : PhotoService() {
 
     @Transactional
@@ -48,7 +49,7 @@ class UserPhotoService(
             ModerationPhotoRequestedEvent(
                 entityType = ModerationEntityType.USER,
                 entityId = userId,
-                photoURI = photoUrlService.objectUrl(objectKey)
+                photoURI = photoModerationUrlService.objectUrl(objectKey)
             )
         )
 

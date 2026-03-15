@@ -6,6 +6,7 @@ import com.pitomets.monolit.model.UserPrincipal
 import com.pitomets.monolit.model.dto.request.AdminMessage
 import com.pitomets.monolit.model.dto.request.CreateSellerProfileRequest
 import com.pitomets.monolit.model.dto.request.UpdateUserProfileRequest
+import com.pitomets.monolit.model.dto.response.PhotoModerationHintResponse
 import com.pitomets.monolit.model.dto.response.SellerProfileResponse
 import com.pitomets.monolit.model.dto.response.UserWithProfilesResponse
 import com.pitomets.monolit.model.entity.SellerProfile
@@ -14,10 +15,12 @@ import com.pitomets.monolit.model.entity.UserRole
 import com.pitomets.monolit.model.entity.ListingOutbox
 import com.pitomets.monolit.model.EventType
 import com.pitomets.monolit.model.entity.AiTextModerationReport
+import com.pitomets.monolit.model.entity.AiPhotoModerationReport
 import com.pitomets.monolit.model.kafka.moderation.ModerationEntityType
 import com.pitomets.monolit.model.kafka.moderation.ModerationOperation
 import com.pitomets.monolit.repository.SellerProfileRepo
 import com.pitomets.monolit.repository.AiTextReportRepo
+import com.pitomets.monolit.repository.AiPhotoReportRepo
 import com.pitomets.monolit.repository.UserRepo
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.ReviewsRepo
@@ -26,6 +29,8 @@ import com.pitomets.monolit.repository.FavouritesRepo
 import com.pitomets.monolit.repository.ListingOutboxRepository
 import com.pitomets.monolit.repository.findUserOrThrow
 import com.pitomets.monolit.service.moderation.ModerationRequestService
+import com.pitomets.monolit.service.PhotoUrlService
+import com.pitomets.monolit.service.PhotoModerationUrlService
 import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
@@ -44,6 +49,9 @@ class ProfileService(
     private val listingOutboxRepo: ListingOutboxRepository,
     private val moderationRequestService: ModerationRequestService,
     private val aiTextReportRepo: AiTextReportRepo,
+    private val aiPhotoReportRepo: AiPhotoReportRepo,
+    private val photoUrlService: PhotoUrlService,
+    private val photoModerationUrlService: PhotoModerationUrlService,
 ) {
     private val log = LoggerFactory.getLogger(ProfileService::class.java)
 
@@ -72,6 +80,7 @@ class ProfileService(
         log.info("Seller profile created for user ID: {}, shop name: {}", userId, request.shopName)
 
         val report = getSellerProfileReport(requireNotNull(saved.id))
+        val photoHint = getSellerProfilePhotoHint(saved)
         return SellerProfileResponse(
             id = requireNotNull(saved.id) { "Seller profile ID cannot be null" },
             userId = saved.seller?.id,
@@ -81,7 +90,8 @@ class ProfileService(
             isVerified = saved.isVerified,
             createdAt = saved.createdAt,
             avatarKey = saved.seller?.avatarKey,
-            moderationHint = toModerationHint(report)
+            moderationHint = toModerationHint(report),
+            photoModerationHint = photoHint
         )
     }
 
@@ -153,6 +163,7 @@ class ProfileService(
         log.info("Seller profile updated for user ID: {}", userId)
 
         val report = getSellerProfileReport(requireNotNull(updated.id))
+        val photoHint = getSellerProfilePhotoHint(updated)
         return SellerProfileResponse(
             id = requireNotNull(updated.id),
             userId = updated.seller?.id,
@@ -162,7 +173,8 @@ class ProfileService(
             isVerified = updated.isVerified,
             createdAt = updated.createdAt,
             avatarKey = updated.seller?.avatarKey,
-            moderationHint = toModerationHint(report)
+            moderationHint = toModerationHint(report),
+            photoModerationHint = photoHint
         )
     }
 
@@ -171,6 +183,7 @@ class ProfileService(
             ?: throw UserNotFoundException("Seller profile not found for user ID: $sellerId")
 
         val report = getSellerProfileReport(requireNotNull(sellerProfile.id))
+        val photoHint = getSellerProfilePhotoHint(sellerProfile)
         return SellerProfileResponse(
             id = requireNotNull(sellerProfile.id) { "Seller profile ID cannot be null" },
             userId = sellerProfile.seller?.id,
@@ -180,7 +193,8 @@ class ProfileService(
             isVerified = sellerProfile.isVerified,
             createdAt = sellerProfile.createdAt,
             avatarKey = sellerProfile.seller?.avatarKey,
-            moderationHint = toModerationHint(report)
+            moderationHint = toModerationHint(report),
+            photoModerationHint = photoHint
         )
     }
 
@@ -189,6 +203,7 @@ class ProfileService(
             .orElseThrow { UserNotFoundException("Seller profile not found for id: $sellerProfileId") }
 
         val report = getSellerProfileReport(requireNotNull(sellerProfile.id))
+        val photoHint = getSellerProfilePhotoHint(sellerProfile)
         return SellerProfileResponse(
             id = requireNotNull(sellerProfile.id) { "Seller profile ID cannot be null" },
             userId = sellerProfile.seller?.id,
@@ -198,7 +213,8 @@ class ProfileService(
             isVerified = sellerProfile.isVerified,
             createdAt = sellerProfile.createdAt,
             avatarKey = sellerProfile.seller?.avatarKey,
-            moderationHint = toModerationHint(report)
+            moderationHint = toModerationHint(report),
+            photoModerationHint = photoHint
         )
     }
 
@@ -206,6 +222,7 @@ class ProfileService(
         return sellerProfileRepo.findByIsApprovedFalse()
             .map { profile ->
                 val report = getSellerProfileReport(requireNotNull(profile.id))
+                val photoHint = getSellerProfilePhotoHint(profile)
                 SellerProfileResponse(
                     id = requireNotNull(profile.id) { "Seller profile ID cannot be null" },
                     userId = profile.seller?.id,
@@ -215,7 +232,8 @@ class ProfileService(
                     isVerified = profile.isVerified,
                     createdAt = profile.createdAt,
                     avatarKey = profile.seller?.avatarKey,
-                    moderationHint = toModerationHint(report)
+                    moderationHint = toModerationHint(report),
+                    photoModerationHint = photoHint
                 )
             }
     }
@@ -224,6 +242,7 @@ class ProfileService(
         val profile = sellerProfileRepo.findByIdAndIsApprovedFalse(id)
             ?: throw UserNotFoundException("Pending seller profile with id $id not found")
         val report = getSellerProfileReport(requireNotNull(profile.id))
+        val photoHint = getSellerProfilePhotoHint(profile)
         return SellerProfileResponse(
             id = requireNotNull(profile.id) { "Seller profile ID cannot be null" },
             userId = profile.seller?.id,
@@ -233,7 +252,8 @@ class ProfileService(
             isVerified = profile.isVerified,
             createdAt = profile.createdAt,
             avatarKey = profile.seller?.avatarKey,
-            moderationHint = toModerationHint(report)
+            moderationHint = toModerationHint(report),
+            photoModerationHint = photoHint
         )
     }
 
@@ -250,6 +270,31 @@ class ProfileService(
             sourceAction = report?.aiSourceAction,
             modelVersion = null
         )
+
+    @Suppress("ReturnCount")
+    private fun getSellerProfilePhotoHint(profile: SellerProfile): PhotoModerationHintResponse? {
+        val avatarKey = profile.seller?.avatarKey ?: return null
+        val avatarUrl = photoUrlService.objectUrl(avatarKey)
+        val moderationUrl = photoModerationUrlService.objectUrl(avatarKey)
+        val byUri = aiPhotoReportRepo.findByPhotoUri(avatarUrl)
+            ?: aiPhotoReportRepo.findByPhotoUri(moderationUrl)
+            ?: aiPhotoReportRepo.findByPhotoUri(avatarKey)
+        val report = byUri ?: aiPhotoReportRepo
+            .findByEntityIdAndEntityType(requireNotNull(profile.id), ModerationEntityType.USER.name)
+            .maxByOrNull { it.id ?: 0 }
+            ?: return null
+        return toPhotoHint(report)
+    }
+
+    private fun toPhotoHint(report: AiPhotoModerationReport) = PhotoModerationHintResponse(
+        status = report.aiModerationStatus,
+        reason = report.aiModerationReason,
+        toxicityScore = report.aiToxicityScore,
+        labels = report.aiLabels,
+        toxicTextDetected = report.aiToxicTextDetected,
+        toxicTextMatches = report.aiToxicTextMatches,
+        modelVersion = null
+    )
 
     @Transactional
     fun approveSellerProfile(id: Long) {
