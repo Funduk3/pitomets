@@ -6,7 +6,16 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface AiPhotoReportRepo : JpaRepository<AiPhotoModerationReport, Long> {
-    fun findByPhotoUri(photoUri: String): AiPhotoModerationReport?
-    fun findByPhotoUriIn(photoUris: List<String>): List<AiPhotoModerationReport>
+    fun findByPhotoUriAndEntityIdAndEntityType(
+        photoUri: String,
+        entityId: Long,
+        entityType: String
+    ): AiPhotoModerationReport?
+
+    fun findByPhotoUriInAndEntityIdAndEntityType(
+        photoUris: List<String>,
+        entityId: Long,
+        entityType: String
+    ): List<AiPhotoModerationReport>
     fun findByEntityIdAndEntityType(entityId: Long, entityType: String): List<AiPhotoModerationReport>
 }

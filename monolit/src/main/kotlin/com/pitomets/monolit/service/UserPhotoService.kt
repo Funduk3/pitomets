@@ -76,7 +76,11 @@ class UserPhotoService(
         val approved = if (includeUnapproved) {
             true
         } else {
-            val report = aiPhotoReportRepo.findByPhotoUri(avatarUrl)
+            val report = aiPhotoReportRepo.findByPhotoUriAndEntityIdAndEntityType(
+                avatarUrl,
+                userId,
+                ModerationEntityType.USER.name
+            )
             report?.aiModerationStatus == ModerationStatus.APPROVED.name
         }
         return avatarUrl.takeIf { approved }

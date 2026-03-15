@@ -6,7 +6,9 @@ import com.pitomets.monolit.model.dto.request.CreateReviewRequest
 import com.pitomets.monolit.model.dto.request.UpdateListingReviewRequest
 import com.pitomets.monolit.model.dto.response.ReviewResponse
 import com.pitomets.monolit.model.entity.Review
+import com.pitomets.monolit.model.kafka.moderation.ModerationEntityType
 import com.pitomets.monolit.model.kafka.moderation.ModerationOperation
+import com.pitomets.monolit.repository.AiTextReportRepo
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.ReviewsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
@@ -27,6 +29,7 @@ class ListingReviewsService(
     private val listingsRepo: ListingsRepo,
     private val sellerProfileRepo: SellerProfileRepo,
     private val moderationRequestService: ModerationRequestService,
+    private val aiTextReportRepo: AiTextReportRepo,
 ) {
     private val log = LoggerFactory.getLogger(ListingReviewsService::class.java)
 
@@ -74,6 +77,7 @@ class ListingReviewsService(
 
         sellerProfileRepo.save(sellerProfile)
 
+        val report = getReviewReport(requireNotNull(saved.id))
         return ReviewResponse(
             id = requireNotNull(saved.id),
             rating = request.rating,
@@ -83,19 +87,20 @@ class ListingReviewsService(
             sellerProfileId = requireNotNull(sellerProfile.id),
             createdAt = saved.createdAt,
             moderationHint = moderationHint(
-                status = saved.aiModerationStatus,
-                reason = saved.aiModerationReason,
-                toxicityScore = saved.aiToxicityScore,
-                profanityDetected = saved.aiProfanityDetected,
-                sexualContentDetected = saved.aiSexualContentDetected,
-                sourceAction = saved.aiSourceAction,
-                modelVersion = saved.aiModelVersion
+                status = report?.aiModerationStatus,
+                reason = report?.aiModerationReason,
+                toxicityScore = report?.aiToxicityScore,
+                profanityDetected = report?.aiProfanityDetected,
+                sexualContentDetected = report?.aiSexualContentDetected,
+                sourceAction = report?.aiSourceAction,
+                modelVersion = null
             )
         )
     }
 
     fun getReviewByListing(listingId: Long): List<ReviewResponse> =
         reviewsRepo.findByListingIdAndIsApprovedTrue(listingId).map { r ->
+            val report = getReviewReport(requireNotNull(r.id))
             ReviewResponse(
                 id = requireNotNull(r.id),
                 rating = r.rating,
@@ -105,19 +110,20 @@ class ListingReviewsService(
                 sellerProfileId = requireNotNull(r.sellerProfile.id),
                 createdAt = r.createdAt,
                 moderationHint = moderationHint(
-                    status = r.aiModerationStatus,
-                    reason = r.aiModerationReason,
-                    toxicityScore = r.aiToxicityScore,
-                    profanityDetected = r.aiProfanityDetected,
-                    sexualContentDetected = r.aiSexualContentDetected,
-                    sourceAction = r.aiSourceAction,
-                    modelVersion = r.aiModelVersion
+                    status = report?.aiModerationStatus,
+                    reason = report?.aiModerationReason,
+                    toxicityScore = report?.aiToxicityScore,
+                    profanityDetected = report?.aiProfanityDetected,
+                    sexualContentDetected = report?.aiSexualContentDetected,
+                    sourceAction = report?.aiSourceAction,
+                    modelVersion = null
                 )
             )
         }
 
     fun getPendingReviews(): List<ReviewResponse> {
         return reviewsRepo.findByIsApprovedFalse().map { r ->
+            val report = getReviewReport(requireNotNull(r.id))
             ReviewResponse(
                 id = requireNotNull(r.id),
                 rating = r.rating,
@@ -127,13 +133,13 @@ class ListingReviewsService(
                 sellerProfileId = requireNotNull(r.sellerProfile.id),
                 createdAt = r.createdAt,
                 moderationHint = moderationHint(
-                    status = r.aiModerationStatus,
-                    reason = r.aiModerationReason,
-                    toxicityScore = r.aiToxicityScore,
-                    profanityDetected = r.aiProfanityDetected,
-                    sexualContentDetected = r.aiSexualContentDetected,
-                    sourceAction = r.aiSourceAction,
-                    modelVersion = r.aiModelVersion
+                    status = report?.aiModerationStatus,
+                    reason = report?.aiModerationReason,
+                    toxicityScore = report?.aiToxicityScore,
+                    profanityDetected = report?.aiProfanityDetected,
+                    sexualContentDetected = report?.aiSexualContentDetected,
+                    sourceAction = report?.aiSourceAction,
+                    modelVersion = null
                 )
             )
         }
@@ -142,6 +148,7 @@ class ListingReviewsService(
     fun getPendingReview(id: Long): ReviewResponse {
         val review = reviewsRepo.findByIdAndIsApprovedFalse(id)
             ?: throw BadReviewException("Pending review with id $id not found")
+        val report = getReviewReport(requireNotNull(review.id))
         return ReviewResponse(
             id = requireNotNull(review.id),
             rating = review.rating,
@@ -151,13 +158,13 @@ class ListingReviewsService(
             sellerProfileId = requireNotNull(review.sellerProfile.id),
             createdAt = review.createdAt,
             moderationHint = moderationHint(
-                status = review.aiModerationStatus,
-                reason = review.aiModerationReason,
-                toxicityScore = review.aiToxicityScore,
-                profanityDetected = review.aiProfanityDetected,
-                sexualContentDetected = review.aiSexualContentDetected,
-                sourceAction = review.aiSourceAction,
-                modelVersion = review.aiModelVersion
+                status = report?.aiModerationStatus,
+                reason = report?.aiModerationReason,
+                toxicityScore = report?.aiToxicityScore,
+                profanityDetected = report?.aiProfanityDetected,
+                sexualContentDetected = report?.aiSexualContentDetected,
+                sourceAction = report?.aiSourceAction,
+                modelVersion = null
             )
         )
     }
@@ -240,6 +247,7 @@ class ListingReviewsService(
         val updated = reviewsRepo.save(review)
         moderationRequestService.publishReview(updated, ModerationOperation.UPDATE)
 
+        val report = getReviewReport(requireNotNull(updated.id))
         return ReviewResponse(
             id = updated.id!!,
             rating = updated.rating,
@@ -249,14 +257,17 @@ class ListingReviewsService(
             sellerProfileId = updated.sellerProfile.id!!,
             createdAt = updated.createdAt,
             moderationHint = moderationHint(
-                status = updated.aiModerationStatus,
-                reason = updated.aiModerationReason,
-                toxicityScore = updated.aiToxicityScore,
-                profanityDetected = updated.aiProfanityDetected,
-                sexualContentDetected = updated.aiSexualContentDetected,
-                sourceAction = updated.aiSourceAction,
-                modelVersion = updated.aiModelVersion
+                status = report?.aiModerationStatus,
+                reason = report?.aiModerationReason,
+                toxicityScore = report?.aiToxicityScore,
+                profanityDetected = report?.aiProfanityDetected,
+                sexualContentDetected = report?.aiSexualContentDetected,
+                sourceAction = report?.aiSourceAction,
+                modelVersion = null
             )
         )
     }
+
+    private fun getReviewReport(reviewId: Long) =
+        aiTextReportRepo.findByEntityIdAndEntityType(reviewId, ModerationEntityType.REVIEW.name)
 }

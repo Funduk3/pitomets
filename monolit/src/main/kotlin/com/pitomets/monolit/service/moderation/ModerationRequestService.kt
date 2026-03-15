@@ -36,11 +36,11 @@ class ModerationRequestService(
         profile: SellerProfile,
         operation: ModerationOperation
     ) {
-        val profileId = requireNotNull(profile.id) { "Seller profile ID cannot be null for moderation request" }
+        val userId = requireNotNull(profile.seller?.id) { "Seller user ID cannot be null for moderation request" }
         moderationPublisher.publish(
             ModerationRequestedEvent(
                 entityType = ModerationEntityType.USER,
-                entityId = profileId,
+                entityId = userId,
                 operation = operation,
                 textParts = listOfNotNull(profile.shopName, profile.description),
                 withAnimal = withAnimal

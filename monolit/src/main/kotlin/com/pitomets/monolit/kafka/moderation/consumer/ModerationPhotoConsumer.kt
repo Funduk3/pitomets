@@ -71,6 +71,9 @@ class ModerationPhotoConsumer(
             val autoPublish = photosApproved && textApproved
 
             listing.isApproved = autoPublish
+            if (autoPublish) {
+                listing.manualModerationPending = false
+            }
 
             if (!wasApproved && autoPublish) {
                 emitListingIndexUpsert(listing)
@@ -100,7 +103,11 @@ class ModerationPhotoConsumer(
     }
 
     private fun saveAiPhotoModerationReport(event: ModerationPhotoProcessedEvent) {
-        val report = aiPhotoModerationReport.findByPhotoUri(event.photoURI)
+        val report = aiPhotoModerationReport.findByPhotoUriAndEntityIdAndEntityType(
+            event.photoURI,
+            event.entityId,
+            event.entityType.name
+        )
             ?: AiPhotoModerationReport(
                 entityId = event.entityId,
                 entityType = event.entityType.name,
@@ -130,7 +137,11 @@ class ModerationPhotoConsumer(
         val photoUrls = photos.map { photoUrlService.objectUrl(it.objectKey) }
         val moderationUrls = photos.map { photoModerationUrlService.objectUrl(it.objectKey) }
         val photoKeys = photos.map { it.objectKey }
-        val reports = aiPhotoModerationReport.findByPhotoUriIn((photoUrls + moderationUrls + photoKeys).distinct())
+        val reports = aiPhotoModerationReport.findByPhotoUriInAndEntityIdAndEntityType(
+            (photoUrls + moderationUrls + photoKeys).distinct(),
+            listingId,
+            ModerationEntityType.LISTING.name
+        )
         if (reports.isEmpty()) {
             return false
         }

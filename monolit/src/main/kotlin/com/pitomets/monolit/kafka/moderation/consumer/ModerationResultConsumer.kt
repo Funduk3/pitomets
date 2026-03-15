@@ -4,13 +4,12 @@ import com.pitomets.monolit.model.AgeEnum
 import com.pitomets.monolit.model.EventType
 import com.pitomets.monolit.model.entity.AiPhotoModerationReport
 import com.pitomets.monolit.model.entity.AiTextModerationReport
+import com.pitomets.monolit.model.entity.Listing
 import com.pitomets.monolit.model.entity.ListingOutbox
 import com.pitomets.monolit.model.entity.Review
 import com.pitomets.monolit.model.kafka.moderation.ModerationEntityType
 import com.pitomets.monolit.model.kafka.moderation.ModerationProcessedEvent
 import com.pitomets.monolit.model.kafka.moderation.ModerationStatus
-import com.pitomets.monolit.model.entity.Listing
-import com.pitomets.monolit.model.entity.SellerProfile
 import com.pitomets.monolit.repository.AiPhotoReportRepo
 import com.pitomets.monolit.repository.AiTextReportRepo
 import com.pitomets.monolit.repository.ListingOutboxRepository
@@ -29,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional
 @Component
 class ModerationResultConsumer(
     private val listingsRepo: ListingsRepo,
+    private val sellerProfileRepo: SellerProfileRepo,
     private val userRepo: UserRepo,
     private val reviewsRepo: ReviewsRepo,
     private val outboxRepo: ListingOutboxRepository,
@@ -79,6 +79,9 @@ class ModerationResultConsumer(
             val autoPublish = shouldAutoPublish(event) && photosApproved
 
             listing.isApproved = autoPublish
+            if (autoPublish) {
+                listing.manualModerationPending = false
+            }
 
             if (!wasApproved && autoPublish) {
                 emitListingIndexUpsert(listing)
@@ -109,7 +112,11 @@ class ModerationResultConsumer(
         val photoUrls = photos.map { photoUrlService.objectUrl(it.objectKey) }
         val moderationUrls = photos.map { photoModerationUrlService.objectUrl(it.objectKey) }
         val photoKeys = photos.map { it.objectKey }
-        val reports = aiPhotoModerationRepo.findByPhotoUriIn((photoUrls + moderationUrls + photoKeys).distinct())
+        val reports = aiPhotoModerationRepo.findByPhotoUriInAndEntityIdAndEntityType(
+            (photoUrls + moderationUrls + photoKeys).distinct(),
+            listingId,
+            ModerationEntityType.LISTING.name
+        )
         if (reports.isEmpty()) {
             return false
         }
@@ -177,7 +184,11 @@ class ModerationResultConsumer(
 
     private fun handleSellerProfile(event: ModerationProcessedEvent) {
         val user = userRepo.findById(event.entityId).orElse(null) ?: run {
-            log.warn("Seller profile {} not found for moderation result", event.entityId)
+            log.warn("User {} not found for moderation result", event.entityId)
+            return
+        }
+        val profile = sellerProfileRepo.findBySellerId(user.id ?: 0) ?: run {
+            log.warn("Seller profile for user {} not found for moderation result", event.entityId)
             return
         }
 
@@ -189,18 +200,18 @@ class ModerationResultConsumer(
             )
         }
 
-        if (user.manualModerationPending == true) {
-            val wasApproved = user.isApproved
+        if (!profile.isApproved) {
+            val wasApproved = profile.isApproved
             val autoPublish = shouldAutoPublish(event)
 
-            user.isApproved = autoPublish
+            profile.isApproved = autoPublish
 
             // Listing index updates apply only to listings.
         }
 
         saveAiTextModerationReport(event)
 
-        userRepo.save(user)
+        sellerProfileRepo.save(profile)
     }
 
     private fun handleReview(event: ModerationProcessedEvent) {

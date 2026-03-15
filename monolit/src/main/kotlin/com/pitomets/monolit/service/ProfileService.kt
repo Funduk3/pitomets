@@ -257,8 +257,12 @@ class ProfileService(
         )
     }
 
-    private fun getSellerProfileReport(profileId: Long): AiTextModerationReport? =
-        aiTextReportRepo.findByEntityIdAndEntityType(profileId, ModerationEntityType.USER.name)
+    @Suppress("ReturnCount")
+    private fun getSellerProfileReport(profileId: Long): AiTextModerationReport? {
+        val profile = sellerProfileRepo.findById(profileId).orElse(null) ?: return null
+        val userId = profile.seller?.id ?: return null
+        return aiTextReportRepo.findByEntityIdAndEntityType(userId, ModerationEntityType.USER.name)
+    }
 
     private fun toModerationHint(report: AiTextModerationReport?) =
         moderationHint(
@@ -274,13 +278,26 @@ class ProfileService(
     @Suppress("ReturnCount")
     private fun getSellerProfilePhotoHint(profile: SellerProfile): PhotoModerationHintResponse? {
         val avatarKey = profile.seller?.avatarKey ?: return null
+        val userId = profile.seller?.id ?: return null
         val avatarUrl = photoUrlService.objectUrl(avatarKey)
         val moderationUrl = photoModerationUrlService.objectUrl(avatarKey)
-        val byUri = aiPhotoReportRepo.findByPhotoUri(avatarUrl)
-            ?: aiPhotoReportRepo.findByPhotoUri(moderationUrl)
-            ?: aiPhotoReportRepo.findByPhotoUri(avatarKey)
+        val byUri = aiPhotoReportRepo.findByPhotoUriAndEntityIdAndEntityType(
+            avatarUrl,
+            userId,
+            ModerationEntityType.USER.name
+        )
+            ?: aiPhotoReportRepo.findByPhotoUriAndEntityIdAndEntityType(
+                moderationUrl,
+                userId,
+                ModerationEntityType.USER.name
+            )
+            ?: aiPhotoReportRepo.findByPhotoUriAndEntityIdAndEntityType(
+                avatarKey,
+                userId,
+                ModerationEntityType.USER.name
+            )
         val report = byUri ?: aiPhotoReportRepo
-            .findByEntityIdAndEntityType(requireNotNull(profile.id), ModerationEntityType.USER.name)
+            .findByEntityIdAndEntityType(userId, ModerationEntityType.USER.name)
             .maxByOrNull { it.id ?: 0 }
             ?: return null
         return toPhotoHint(report)

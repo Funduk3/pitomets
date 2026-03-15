@@ -623,7 +623,11 @@ class ListingsService(
             return null
         }
 
-        val reports = aiPhotoReportRepo.findByPhotoUriIn((photoUrls + moderationUrls + photoKeys).distinct())
+        val reports = aiPhotoReportRepo.findByPhotoUriInAndEntityIdAndEntityType(
+            (photoUrls + moderationUrls + photoKeys).distinct(),
+            listingId,
+            ModerationEntityType.LISTING.name
+        )
         val enriched = if (reports.isNotEmpty()) {
             reports
         } else {

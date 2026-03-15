@@ -23,6 +23,6 @@ class ModerationPhotoPublisher(
     }
 
     companion object {
-        private val log = LoggerFactory.getLogger(ModerationPublisher::class.java)
+        private val log = LoggerFactory.getLogger(ModerationPhotoPublisher::class.java)
     }
 }

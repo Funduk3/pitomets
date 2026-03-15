@@ -107,8 +107,10 @@ class ListingPhotoService(
             return photos
         }
 
-        val reportByUri = aiPhotoReportRepo.findByPhotoUriIn(
-            photos.map { photoUrlService.objectUrl(it.objectKey) }
+        val reportByUri = aiPhotoReportRepo.findByPhotoUriInAndEntityIdAndEntityType(
+            photos.map { photoUrlService.objectUrl(it.objectKey) },
+            listingId,
+            ModerationEntityType.LISTING.name
         )
             .associateBy { it.photoUri }
 
