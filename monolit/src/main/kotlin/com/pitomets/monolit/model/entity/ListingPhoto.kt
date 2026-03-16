@@ -20,5 +20,5 @@ class ListingPhoto(
     var objectKey: String,
 
     @Column(nullable = false)
-    var position: Int
+    var position: Int,
 )

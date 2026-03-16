@@ -33,6 +33,9 @@ services:
       MINIO_URL: http://minio:9000
       PHOTOS_PUBLIC_BASE_URL_IMAGES: http://localhost:9000/pitomets-images
       PHOTOS_PUBLIC_BASE_URL_AVATARS: http://localhost:9000/pitomets-images
+      # In dev: send local URLs to moderator so it falls back to base64
+      PHOTOS_MODERATION_PUBLIC_BASE_URL_IMAGES: ${PHOTOS_MODERATION_PUBLIC_BASE_URL_IMAGES:-http://localhost:9000/pitomets-images}
+      PHOTOS_MODERATION_PUBLIC_BASE_URL_AVATARS: ${PHOTOS_MODERATION_PUBLIC_BASE_URL_AVATARS:-http://localhost:9000/pitomets-images}
       # messenger1 runs separately; from inside Docker use host.docker.internal to reach host-mapped 8081
       MESSENGER_URL: http://host.docker.internal:8081
 

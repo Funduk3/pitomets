@@ -1,8 +1,8 @@
 package com.pitomets.moderator.infrastructure.client
 
 import com.pitomets.moderator.config.ModeriumApiProperties
-import com.pitomets.moderator.infrastructure.dto.ModeriumAnalyzeRequest
-import com.pitomets.moderator.infrastructure.dto.ModeriumAnalyzeResponse
+import com.pitomets.moderator.infrastructure.dto.moderiumAPI.text.ModeriumAnalyzeRequest
+import com.pitomets.moderator.infrastructure.dto.moderiumAPI.text.ModeriumAnalyzeResponse
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient

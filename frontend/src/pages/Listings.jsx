@@ -91,7 +91,8 @@ export const Listings = () => {
               const listingPhotos = listingsPhotos[listing.listingsId] || [];
               const firstPhoto = listingPhotos[0];
               const approved = listing.isApproved ?? listing.approved;
-              const showPending = (approved === false || approved === 0) && !listing.moderatorMessage;
+              const moderationPending = listing.manualModerationPending === true;
+              const showPending = (moderationPending || (approved === false || approved === 0)) && !listing.moderatorMessage;
               
               return (
                 <Link key={listing.listingsId} to={`/listings/${listing.listingsId}`} className="listing-card">

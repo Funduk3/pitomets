@@ -1,4 +1,4 @@
-package com.pitomets.monolit.service
+package com.pitomets.monolit.service.moderation
 
 import com.pitomets.monolit.kafka.moderation.producer.ModerationPublisher
 import com.pitomets.monolit.model.entity.Listing
@@ -36,11 +36,11 @@ class ModerationRequestService(
         profile: SellerProfile,
         operation: ModerationOperation
     ) {
-        val profileId = requireNotNull(profile.id) { "Seller profile ID cannot be null for moderation request" }
+        val userId = requireNotNull(profile.seller?.id) { "Seller user ID cannot be null for moderation request" }
         moderationPublisher.publish(
             ModerationRequestedEvent(
-                entityType = ModerationEntityType.SELLER_PROFILE,
-                entityId = profileId,
+                entityType = ModerationEntityType.USER,
+                entityId = userId,
                 operation = operation,
                 textParts = listOfNotNull(profile.shopName, profile.description),
                 withAnimal = withAnimal

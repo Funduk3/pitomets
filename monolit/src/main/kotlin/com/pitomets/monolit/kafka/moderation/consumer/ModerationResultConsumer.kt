@@ -2,17 +2,24 @@ package com.pitomets.monolit.kafka.moderation.consumer
 
 import com.pitomets.monolit.model.AgeEnum
 import com.pitomets.monolit.model.EventType
+import com.pitomets.monolit.model.entity.AiPhotoModerationReport
+import com.pitomets.monolit.model.entity.AiTextModerationReport
+import com.pitomets.monolit.model.entity.Listing
 import com.pitomets.monolit.model.entity.ListingOutbox
 import com.pitomets.monolit.model.entity.Review
 import com.pitomets.monolit.model.kafka.moderation.ModerationEntityType
 import com.pitomets.monolit.model.kafka.moderation.ModerationProcessedEvent
 import com.pitomets.monolit.model.kafka.moderation.ModerationStatus
-import com.pitomets.monolit.model.entity.Listing
-import com.pitomets.monolit.model.entity.SellerProfile
+import com.pitomets.monolit.repository.AiPhotoReportRepo
+import com.pitomets.monolit.repository.AiTextReportRepo
 import com.pitomets.monolit.repository.ListingOutboxRepository
+import com.pitomets.monolit.repository.ListingPhotoRepo
 import com.pitomets.monolit.repository.ListingsRepo
 import com.pitomets.monolit.repository.ReviewsRepo
 import com.pitomets.monolit.repository.SellerProfileRepo
+import com.pitomets.monolit.repository.UserRepo
+import com.pitomets.monolit.service.PhotoModerationUrlService
+import com.pitomets.monolit.service.PhotoUrlService
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.stereotype.Component
@@ -22,8 +29,14 @@ import org.springframework.transaction.annotation.Transactional
 class ModerationResultConsumer(
     private val listingsRepo: ListingsRepo,
     private val sellerProfileRepo: SellerProfileRepo,
+    private val userRepo: UserRepo,
     private val reviewsRepo: ReviewsRepo,
-    private val outboxRepo: ListingOutboxRepository
+    private val outboxRepo: ListingOutboxRepository,
+    private val aiTextModerationRepo: AiTextReportRepo,
+    private val aiPhotoModerationRepo: AiPhotoReportRepo,
+    private val listingPhotoRepo: ListingPhotoRepo,
+    private val photoUrlService: PhotoUrlService,
+    private val photoModerationUrlService: PhotoModerationUrlService,
 ) {
     @KafkaListener(
         topics = ["\${moderation.kafka.topics.moderation-processed}"],
@@ -41,7 +54,7 @@ class ModerationResultConsumer(
 
         when (event.entityType) {
             ModerationEntityType.LISTING -> handleListing(event)
-            ModerationEntityType.SELLER_PROFILE -> handleSellerProfile(event)
+            ModerationEntityType.USER -> handleSellerProfile(event)
             ModerationEntityType.REVIEW -> handleReview(event)
         }
     }
@@ -62,10 +75,13 @@ class ModerationResultConsumer(
 
         if (listing.manualModerationPending) {
             val wasApproved = listing.isApproved
-            val autoPublish = shouldAutoPublish(event)
+            val photosApproved = areListingPhotosApproved(requireNotNull(listing.id))
+            val autoPublish = shouldAutoPublish(event) && photosApproved
 
             listing.isApproved = autoPublish
-            listing.moderatorMessage = null
+            if (autoPublish) {
+                listing.manualModerationPending = false
+            }
 
             if (!wasApproved && autoPublish) {
                 emitListingIndexUpsert(listing)
@@ -74,7 +90,8 @@ class ModerationResultConsumer(
             }
         }
 
-        applyAiResult(listing, event)
+        saveAiTextModerationReport(event)
+
         listingsRepo.save(listing)
     }
 
@@ -83,6 +100,53 @@ class ModerationResultConsumer(
         return toxicity < LOW_TOXICITY_THRESHOLD &&
             event.profanityDetected != true &&
             event.sexualContentDetected != true
+    }
+
+    @Suppress("ReturnCount")
+    private fun areListingPhotosApproved(listingId: Long): Boolean {
+        val photos = listingPhotoRepo.findByListingIdOrderByPosition(listingId)
+        if (photos.isEmpty()) {
+            return true
+        }
+
+        val photoUrls = photos.map { photoUrlService.objectUrl(it.objectKey) }
+        val moderationUrls = photos.map { photoModerationUrlService.objectUrl(it.objectKey) }
+        val photoKeys = photos.map { it.objectKey }
+        val reports = aiPhotoModerationRepo.findByPhotoUriInAndEntityIdAndEntityType(
+            (photoUrls + moderationUrls + photoKeys).distinct(),
+            listingId,
+            ModerationEntityType.LISTING.name
+        )
+        if (reports.isEmpty()) {
+            return false
+        }
+
+        val reportsByUri = reports.groupBy { it.photoUri }
+        return photos.all { photo ->
+            val keys = listOf(
+                photoUrlService.objectUrl(photo.objectKey),
+                photoModerationUrlService.objectUrl(photo.objectKey),
+                photo.objectKey
+            )
+            val matched = keys.flatMap { reportsByUri[it].orEmpty() }
+            val worst = pickWorstPhotoReport(matched)
+            worst?.aiModerationStatus == ModerationStatus.APPROVED.name
+        }
+    }
+
+    private fun pickWorstPhotoReport(reports: List<AiPhotoModerationReport>): AiPhotoModerationReport? {
+        if (reports.isEmpty()) {
+            return null
+        }
+        val priority = mapOf(
+            ModerationStatus.REJECTED.name to PRIORITY_REJECTED,
+            ModerationStatus.REVIEW.name to PRIORITY_REVIEW,
+            ModerationStatus.ERROR.name to PRIORITY_ERROR,
+            ModerationStatus.APPROVED.name to PRIORITY_APPROVED
+        )
+        return reports.maxByOrNull { report ->
+            priority[report.aiModerationStatus] ?: 0
+        }
     }
 
     private fun emitListingIndexUpsert(listing: Listing) {
@@ -119,20 +183,34 @@ class ModerationResultConsumer(
     }
 
     private fun handleSellerProfile(event: ModerationProcessedEvent) {
-        val profile = sellerProfileRepo.findById(event.entityId).orElse(null) ?: run {
-            log.warn("Seller profile {} not found for moderation result", event.entityId)
+        val user = userRepo.findById(event.entityId).orElse(null) ?: run {
+            log.warn("User {} not found for moderation result", event.entityId)
+            return
+        }
+        val profile = sellerProfileRepo.findBySellerId(user.id ?: 0) ?: run {
+            log.warn("Seller profile for user {} not found for moderation result", event.entityId)
             return
         }
 
         if (event.status == ModerationStatus.ERROR) {
             log.warn(
-                "Moderation ERROR for seller profile {}: {}",
+                "Moderation ERROR for seller user profile {}: {}",
                 event.entityId,
                 event.reason
             )
         }
 
-        applyAiResult(profile, event)
+        if (!profile.isApproved) {
+            val wasApproved = profile.isApproved
+            val autoPublish = shouldAutoPublish(event)
+
+            profile.isApproved = autoPublish
+
+            // Listing index updates apply only to listings.
+        }
+
+        saveAiTextModerationReport(event)
+
         sellerProfileRepo.save(profile)
     }
 
@@ -146,51 +224,45 @@ class ModerationResultConsumer(
             log.warn("Moderation ERROR for review {}: {}", event.entityId, event.reason)
         }
 
-        applyAiResult(review, event)
+        if (review.manualModerationPending == true) {
+            val wasApproved = review.isApproved
+            val autoPublish = shouldAutoPublish(event)
+
+            review.isApproved = autoPublish
+
+            // Listing index updates apply only to listings.
+        }
+
+        saveAiTextModerationReport(event)
+
         reviewsRepo.save(review)
     }
 
-    private fun applyAiResult(
-        listing: Listing,
-        event: ModerationProcessedEvent
-    ) {
-        listing.aiModerationStatus = event.status.name
-        listing.aiModerationReason = event.reason
-        listing.aiToxicityScore = event.toxicityScore
-        listing.aiProfanityDetected = event.profanityDetected
-        listing.aiSexualContentDetected = event.sexualContentDetected
-        listing.aiSourceAction = event.sourceAction
-        listing.aiModelVersion = event.modelVersion
-    }
+    private fun saveAiTextModerationReport(event: ModerationProcessedEvent) {
+        val report = aiTextModerationRepo.findByEntityIdAndEntityType(
+            event.entityId,
+            event.entityType.name
+        ) ?: AiTextModerationReport(
+            entityId = event.entityId,
+            entityType = event.entityType.name
+        )
 
-    private fun applyAiResult(
-        profile: SellerProfile,
-        event: ModerationProcessedEvent
-    ) {
-        profile.aiModerationStatus = event.status.name
-        profile.aiModerationReason = event.reason
-        profile.aiToxicityScore = event.toxicityScore
-        profile.aiProfanityDetected = event.profanityDetected
-        profile.aiSexualContentDetected = event.sexualContentDetected
-        profile.aiSourceAction = event.sourceAction
-        profile.aiModelVersion = event.modelVersion
-    }
+        report.aiModerationStatus = event.status.name
+        report.aiModerationReason = event.reason
+        report.aiToxicityScore = event.toxicityScore
+        report.aiProfanityDetected = event.profanityDetected
+        report.aiSexualContentDetected = event.sexualContentDetected
+        report.aiSourceAction = event.sourceAction
 
-    private fun applyAiResult(
-        review: Review,
-        event: ModerationProcessedEvent
-    ) {
-        review.aiModerationStatus = event.status.name
-        review.aiModerationReason = event.reason
-        review.aiToxicityScore = event.toxicityScore
-        review.aiProfanityDetected = event.profanityDetected
-        review.aiSexualContentDetected = event.sexualContentDetected
-        review.aiSourceAction = event.sourceAction
-        review.aiModelVersion = event.modelVersion
+        aiTextModerationRepo.save(report)
     }
 
     companion object {
         private const val LOW_TOXICITY_THRESHOLD = 0.4
+        private const val PRIORITY_REJECTED = 4
+        private const val PRIORITY_REVIEW = 3
+        private const val PRIORITY_ERROR = 2
+        private const val PRIORITY_APPROVED = 1
         private val log = LoggerFactory.getLogger(ModerationResultConsumer::class.java)
     }
 }

@@ -1,6 +1,6 @@
 package com.pitomets.moderator.infrastructure.client
 
-import com.pitomets.moderator.infrastructure.dto.ModeriumAnalyzeResponse
+import com.pitomets.moderator.infrastructure.dto.moderiumAPI.text.ModeriumAnalyzeResponse
 
 interface ModeriumClient {
     fun analyze(

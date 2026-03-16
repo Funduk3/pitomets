@@ -15,5 +15,6 @@ data class SellerProfileResponse(
     val isVerified: Boolean,
     val createdAt: OffsetDateTime,
     val avatarKey: String?,
-    val moderationHint: ModerationHintResponse? = null
+    val moderationHint: ModerationHintResponse? = null,
+    val photoModerationHint: PhotoModerationHintResponse? = null
 )

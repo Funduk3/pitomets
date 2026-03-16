@@ -13,6 +13,7 @@ interface UserRepo : JpaRepository<User, Long> {
     fun findByPasswordResetToken(token: String): User?
     fun findByIsApprovedFalse(): List<User>
     fun findByIdAndIsApprovedFalse(id: Long): User?
+    fun findByAvatarKeyIsNotNull(): List<User>
 }
 
 fun UserRepo.findUserOrThrow(userId: Long): User =

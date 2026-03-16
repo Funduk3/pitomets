@@ -2,7 +2,7 @@ package com.pitomets.monolit.controller
 
 import com.pitomets.monolit.model.dto.request.AdminMessage
 import com.pitomets.monolit.model.dto.response.ListingsResponse
-import com.pitomets.monolit.service.ListingsService
+import com.pitomets.monolit.service.listing.ListingsService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
