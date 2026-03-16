@@ -10,6 +10,7 @@ export const Listings = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [listings, setListings] = useState([]);
+  const [visibleMode, setVisibleMode] = useState('active');
   const [listingsPhotos, setListingsPhotos] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -46,6 +47,17 @@ export const Listings = () => {
       console.error('Error loading listings:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleArchive = async (listingId, archived) => {
+    try {
+      const updated = await listingsAPI.archiveListing(listingId, archived);
+      setListings((prev) =>
+        prev.map((l) => (l.listingsId === listingId ? { ...l, isArchived: updated.isArchived } : l))
+      );
+    } catch (err) {
+      alert('Не удалось обновить архив');
     }
   };
 
@@ -86,8 +98,34 @@ export const Listings = () => {
             )}
           </div>
         ) : (
-          <div className="listings-grid" style={{ marginTop: '2rem' }}>
-            {listings.map((listing) => {
+          <>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <button
+                className={`btn ${visibleMode === 'active' ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setVisibleMode('active')}
+              >
+                Активные
+              </button>
+              <button
+                className={`btn ${visibleMode === 'archived' ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setVisibleMode('archived')}
+              >
+                Архив
+              </button>
+            </div>
+          {listings.filter((listing) =>
+            visibleMode === 'archived' ? listing.isArchived === true : listing.isArchived !== true
+          ).length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem' }}>
+              {visibleMode === 'archived' ? 'Архив пуст' : 'Нет активных объявлений'}
+            </div>
+          ) : (
+            <div className="listings-grid" style={{ marginTop: '2rem' }}>
+              {listings
+                .filter((listing) =>
+                  visibleMode === 'archived' ? listing.isArchived === true : listing.isArchived !== true
+                )
+                .map((listing) => {
               const listingPhotos = listingsPhotos[listing.listingsId] || [];
               const firstPhoto = listingPhotos[0];
               const approved = listing.isApproved ?? listing.approved;
@@ -113,6 +151,11 @@ export const Listings = () => {
                       {showPending && (
                         <span style={{ padding: '0.2rem 0.5rem', backgroundColor: '#f2f2f2', color: '#666', borderRadius: '999px', fontSize: '0.8rem' }}>
                           На модерации
+                        </span>
+                      )}
+                      {listing.isArchived && (
+                        <span style={{ padding: '0.2rem 0.5rem', backgroundColor: '#f2f2f2', color: '#666', borderRadius: '999px', fontSize: '0.8rem' }}>
+                          В архиве
                         </span>
                       )}
                       {listing.moderatorMessage && (
@@ -164,12 +207,25 @@ export const Listings = () => {
                       >
                         Удалить
                       </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleArchive(listing.listingsId, !listing.isArchived);
+                        }}
+                        className="btn"
+                        style={{ fontSize: '0.9rem' }}
+                      >
+                        {listing.isArchived ? 'Вернуть из архива' : 'В архив'}
+                      </button>
                     </div>
                   </div>
                 </Link>
               );
             })}
           </div>
+          )}
+          </>
         )}
       </div>
     </ProtectedRoute>

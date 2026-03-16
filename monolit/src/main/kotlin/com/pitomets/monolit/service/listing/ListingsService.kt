@@ -177,9 +177,13 @@ class ListingsService(
         }
     }
 
-    fun getSellerListingsPublic(sellerId: Long): List<ListingsResponse> {
+    fun getSellerListingsPublic(sellerId: Long, archived: Boolean = false): List<ListingsResponse> {
         val seller = findSellerProfile(sellerId, sellerProfileRepo, log)
-        val listings = listingsRepo.findBySellerProfileAndIsApprovedTrue(seller)
+        val listings = if (archived) {
+            listingsRepo.findBySellerProfileAndIsApprovedTrueAndIsArchivedTrue(seller)
+        } else {
+            listingsRepo.findBySellerProfileAndIsApprovedTrueAndIsArchivedFalse(seller)
+        }
         return listings.map { listing ->
             buildListingsResponse(
                 listing,
@@ -234,6 +238,24 @@ class ListingsService(
         sellerId: Long,
         request: UpdateListingRequest
     ): ListingsResponse {
+        val hasNonArchiveChanges = listOf(
+            request.title,
+            request.description,
+            request.species,
+            request.breed,
+            request.ageMonths,
+            request.gender,
+            request.mother,
+            request.father,
+            request.price,
+            request.city,
+            request.metroStation,
+        ).any { it != null }
+
+        if (!hasNonArchiveChanges && request.isArchived != null) {
+            return setListingArchived(listingId, sellerId, request.isArchived)
+        }
+
         val listing = requireOwnerAndReturnListing(listingId, sellerId)
         val wasApproved = listing.isApproved
 
@@ -347,6 +369,56 @@ class ListingsService(
                 price = 0.toBigDecimal(),
             )
         )
+    }
+
+    @Transactional
+    fun setListingArchived(
+        listingId: Long,
+        userId: Long,
+        archived: Boolean
+    ): ListingsResponse {
+        val listing = requireOwnerAndReturnListing(listingId, userId)
+        if (listing.isArchived == archived) {
+            return buildListingsResponse(listing, listing.father, listing.mother)
+        }
+
+        listing.isArchived = archived
+        val saved = listingsRepo.save(listing)
+
+        if (saved.isApproved) {
+            if (archived) {
+                outboxRepo.save(
+                    ListingOutbox(
+                        listingId = listingId,
+                        eventType = EventType.DELETE,
+                        title = null,
+                        description = null,
+                        city = 0,
+                        metro = null,
+                        price = 0.toBigDecimal(),
+                    )
+                )
+            } else {
+                outboxRepo.save(
+                    ListingOutbox(
+                        listingId = listingId,
+                        eventType = EventType.UPDATE,
+                        title = saved.title,
+                        description = saved.description,
+                        species = saved.species,
+                        breed = saved.breed,
+                        gender = saved.gender,
+                        ageEnum = AgeEnum.entries.getOrNull(saved.ageMonths)?.name,
+                        cityTitle = saved.city.title,
+                        city = saved.city.id,
+                        metro = saved.metroStation?.id,
+                        price = saved.price,
+                    )
+                )
+            }
+        }
+
+        return buildListingsResponse(saved, saved.father, saved.mother)
     }
 
     @Transactional

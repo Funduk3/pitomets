@@ -127,7 +127,7 @@ services:
       - "traefik.http.routers.frontend.priority=1"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://localhost:80/ >/dev/null 2>&1"]
+      test: ["CMD-SHELL", "test -f /usr/share/nginx/html/index.html"]
       interval: 10s
       timeout: 5s
       retries: 10

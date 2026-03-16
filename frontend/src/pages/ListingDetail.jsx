@@ -211,6 +211,10 @@ export const ListingDetail = () => {
   };
 
   const handleMessageSeller = async () => {
+    if (listing?.isArchived) {
+      alert('Это объявление в архиве. Написать продавцу нельзя.');
+      return;
+    }
     if (!isAuthenticated()) {
       navigate('/login', { state: { from: location.pathname } });
       return;
@@ -399,7 +403,13 @@ export const ListingDetail = () => {
           )}
           {user?.id !== listing.sellerId && (
             <div className="link-actions">
-              <button onClick={handleMessageSeller} className="btn btn-primary">Написать продавцу</button>
+              {listing?.isArchived ? (
+                <div className="small-muted" style={{ padding: '0.5rem 0' }}>
+                  Объявление в архиве. Связаться с продавцом нельзя.
+                </div>
+              ) : (
+                <button onClick={handleMessageSeller} className="btn btn-primary">Написать продавцу</button>
+              )}
               {isAuthenticated() && (
                 <button onClick={handleToggleFavourite} className={isFavourite ? 'btn btn-ghost' : 'btn btn-secondary'}>
                   {isFavourite ? 'Удалить из избранных' : 'Добавить в избранное'}

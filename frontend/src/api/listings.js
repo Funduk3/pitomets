@@ -13,9 +13,9 @@ export const listingsAPI = {
     return response.data;
   },
 
-  getSellerListings: async (sellerId) => {
+  getSellerListings: async (sellerId, archived = false) => {
     const response = await api.get('/listings/seller', {
-      params: { sellerId },
+      params: { sellerId, archived },
     });
     return response.data;
   },
@@ -35,6 +35,13 @@ export const listingsAPI = {
   updateListing: async (listingId, updateData) => {
     const response = await api.put('/listings/', updateData, {
       params: { id: listingId },
+    });
+    return response.data;
+  },
+
+  archiveListing: async (listingId, archived = true) => {
+    const response = await api.put('/listings/archive', null, {
+      params: { id: listingId, archived },
     });
     return response.data;
   },
