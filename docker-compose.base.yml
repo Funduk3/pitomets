@@ -6,6 +6,11 @@ services:
     ports:
       - "6379:6379"
     command: redis-server --save 60 1 --loglevel warning
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 10
     networks:
       - web
 
@@ -121,6 +126,11 @@ services:
     volumes:
       - minio-data:/data
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     networks:
       - web
 
@@ -128,7 +138,7 @@ services:
     image: minio/mc:RELEASE.2025-08-13T08-35-41Z
     depends_on:
       minio:
-        condition: service_started
+        condition: service_healthy
     environment:
       AWS_ACCESS_KEY_ID: minioadmin
       AWS_SECRET_ACCESS_KEY: minioadmin
@@ -171,6 +181,12 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_LOG_RETENTION_HOURS: 168
+    healthcheck:
+      test: [ "CMD-SHELL", "bash -lc \"/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:29092 >/dev/null 2>&1\"" ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 60s
     networks:
       - web
 
@@ -178,7 +194,7 @@ services:
     image: apache/kafka:4.1.1
     depends_on:
       kafka:
-        condition: service_started
+        condition: service_healthy
     entrypoint: [ "/bin/bash", "-c" ]
     command: |
       "

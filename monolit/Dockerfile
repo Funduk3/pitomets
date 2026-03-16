@@ -20,6 +20,9 @@ RUN ./gradlew --no-daemon bootJar -x test -x detekt --quiet
 FROM eclipse-temurin:25-jre
 WORKDIR /app
 
+# Install curl for healthchecks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 # Копируем jar, который создал Spring Boot (bootJar)
 COPY --from=build /app/build/libs/*.jar app.jar
 
