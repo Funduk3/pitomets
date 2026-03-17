@@ -49,7 +49,7 @@ import java.time.Duration
 import java.nio.file.AccessDeniedException
 
 @Service
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 class ListingsService(
     private val petsRepo: PetsRepo,
     private val listingsRepo: ListingsRepo,
