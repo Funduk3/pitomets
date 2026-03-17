@@ -34,6 +34,7 @@ export const ListingDetail = () => {
   const [editRating, setEditRating] = useState(5);
   const [editText, setEditText] = useState('');
   const [reviewActionLoading, setReviewActionLoading] = useState(false);
+  const [archiveActionLoading, setArchiveActionLoading] = useState(false);
 
   useEffect(() => {
     loadListing();
@@ -225,7 +226,7 @@ export const ListingDetail = () => {
       return;
     }
 
-    if (user?.id === listing.sellerId) {
+    if (Number(user?.id) === Number(listing.sellerId)) {
       alert('Нельзя написать самому себе');
       return;
     }
@@ -240,6 +241,19 @@ export const ListingDetail = () => {
     } catch (err) {
       console.error('Failed to create chat:', err);
       alert('Не удалось начать диалог с продавцом');
+    }
+  };
+
+  const handleArchiveToggle = async () => {
+    if (!listing) return;
+    setArchiveActionLoading(true);
+    try {
+      const updated = await listingsAPI.archiveListing(listing.listingsId, !listing.isArchived);
+      setListing((prev) => (prev ? { ...prev, isArchived: updated.isArchived } : prev));
+    } catch (err) {
+      alert('Не удалось обновить архив');
+    } finally {
+      setArchiveActionLoading(false);
     }
   };
 
@@ -278,7 +292,8 @@ export const ListingDetail = () => {
   if (loading) return <div>Грузим...</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
   if (!listing) return <div>Объявление не найдено</div>;
-  const isOwner = isAuthenticated() && user?.id === listing.sellerId;
+  const isOwner = isAuthenticated() && Number(user?.id) === Number(listing.sellerId);
+  const isArchived = !!listing.isArchived;
   const approved = listing.isApproved ?? listing.approved;
   const moderationPending = listing.manualModerationPending === true;
   const showPending = isOwner && (moderationPending || (approved === false || approved === 0)) && !listing.moderatorMessage;
@@ -362,6 +377,11 @@ export const ListingDetail = () => {
         </div>
         <div style={{ flex: 1 }}>
           <p><strong>Описание:</strong> {listing.description}</p>
+          {isArchived && (
+            <p className="small-muted" style={{ marginTop: '0.5rem' }}>
+              Объявление в архиве
+            </p>
+          )}
           <p className="small-muted">
             <strong>Город:</strong> {cityTitle || 'Не указан'}
             {metroStation && (
@@ -389,7 +409,7 @@ export const ListingDetail = () => {
             <strong>Пол:</strong>{' '}
             {listing.gender ? (GENDER_LABELS[listing.gender] || 'Любой') : 'Любой'}
           </p>
-          {isAuthenticated() && user?.id === listing.sellerId && (
+          {isOwner && (
             <div className="link-actions">
               <Link to={`/listings/${id}/edit`} className="btn btn-secondary">Изменить объявление</Link>
 
@@ -399,11 +419,21 @@ export const ListingDetail = () => {
               <button onClick={handleToggleFavourite} className={isFavourite ? 'btn btn-ghost' : 'btn btn-secondary'}>
                 {isFavourite ? 'Удалить из избранных' : 'Добавить в избранное'}
               </button>
+
+              <button
+                onClick={handleArchiveToggle}
+                className="btn btn-ghost"
+                disabled={archiveActionLoading}
+              >
+                {archiveActionLoading
+                  ? 'Сохраняем...'
+                  : (isArchived ? 'Убрать из архива' : 'В архив')}
+              </button>
             </div>
           )}
-          {user?.id !== listing.sellerId && (
+          {!isOwner && (
             <div className="link-actions">
-              {listing?.isArchived ? (
+              {isArchived ? (
                 <div className="small-muted" style={{ padding: '0.5rem 0' }}>
                   Объявление в архиве. Связаться с продавцом нельзя.
                 </div>

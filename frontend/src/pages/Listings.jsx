@@ -56,6 +56,7 @@ export const Listings = () => {
       setListings((prev) =>
         prev.map((l) => (l.listingsId === listingId ? { ...l, isArchived: updated.isArchived } : l))
       );
+      await loadListings();
     } catch (err) {
       alert('Не удалось обновить архив');
     }
@@ -113,24 +114,27 @@ export const Listings = () => {
                 Архив
               </button>
             </div>
-          {listings.filter((listing) =>
-            visibleMode === 'archived' ? listing.isArchived === true : listing.isArchived !== true
-          ).length === 0 ? (
+          {listings.filter((listing) => {
+            const isArchived = !!listing.isArchived;
+            return visibleMode === 'archived' ? isArchived : !isArchived;
+          }).length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem' }}>
               {visibleMode === 'archived' ? 'Архив пуст' : 'Нет активных объявлений'}
             </div>
           ) : (
             <div className="listings-grid" style={{ marginTop: '2rem' }}>
               {listings
-                .filter((listing) =>
-                  visibleMode === 'archived' ? listing.isArchived === true : listing.isArchived !== true
-                )
+                .filter((listing) => {
+                  const isArchived = !!listing.isArchived;
+                  return visibleMode === 'archived' ? isArchived : !isArchived;
+                })
                 .map((listing) => {
               const listingPhotos = listingsPhotos[listing.listingsId] || [];
               const firstPhoto = listingPhotos[0];
               const approved = listing.isApproved ?? listing.approved;
               const moderationPending = listing.manualModerationPending === true;
               const showPending = (moderationPending || (approved === false || approved === 0)) && !listing.moderatorMessage;
+              const isArchived = !!listing.isArchived;
               
               return (
                 <Link key={listing.listingsId} to={`/listings/${listing.listingsId}`} className="listing-card">
@@ -153,7 +157,7 @@ export const Listings = () => {
                           На модерации
                         </span>
                       )}
-                      {listing.isArchived && (
+                      {isArchived && (
                         <span style={{ padding: '0.2rem 0.5rem', backgroundColor: '#f2f2f2', color: '#666', borderRadius: '999px', fontSize: '0.8rem' }}>
                           В архиве
                         </span>
@@ -211,12 +215,12 @@ export const Listings = () => {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          handleArchive(listing.listingsId, !listing.isArchived);
+                          handleArchive(listing.listingsId, !isArchived);
                         }}
                         className="btn"
                         style={{ fontSize: '0.9rem' }}
                       >
-                        {listing.isArchived ? 'Вернуть из архива' : 'В архив'}
+                        {isArchived ? 'Убрать из архива' : 'В архив'}
                       </button>
                     </div>
                   </div>
