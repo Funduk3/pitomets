@@ -1,6 +1,7 @@
 # stage: build
 FROM eclipse-temurin:23-jdk AS build
 WORKDIR /app
+ENV GRADLE_USER_HOME=/home/gradle/.gradle
 
 COPY settings.gradle* build.gradle* build.gradle.kts* gradlew ./
 COPY gradle ./gradle
@@ -8,10 +9,12 @@ RUN ["chmod", "+x", "./gradlew"]
 
 # Запускаем зависимостную фазу (без сборки приложения)
 # Первый вызов скачает зависимости и закэширует их в слое
-RUN ./gradlew --no-daemon build -x test -x detekt --parallel --quiet || true
+RUN --mount=type=cache,target=/home/gradle/.gradle \
+    ./gradlew --no-daemon build -x test -x detekt --parallel --quiet || true
 
 COPY . .
-RUN ./gradlew --no-daemon bootJar -x test -x detekt --quiet
+RUN --mount=type=cache,target=/home/gradle/.gradle \
+    ./gradlew --no-daemon bootJar -x test -x detekt --quiet
 
 # stage: runtime
 FROM eclipse-temurin:23-jre
