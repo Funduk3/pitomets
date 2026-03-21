@@ -22,6 +22,9 @@ export const SellerProfileView = () => {
   const [loading, setLoading] = useState(true);
   const [loadingListings, setLoadingListings] = useState(false);
   const [activeTab, setActiveTab] = useState('listings');
+  const [listingsMode, setListingsMode] = useState('active');
+  const [activeCount, setActiveCount] = useState(0);
+  const [archivedCount, setArchivedCount] = useState(0);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -73,9 +76,9 @@ export const SellerProfileView = () => {
 
   useEffect(() => {
     if (profile?.userId) {
-      loadListings();
+      loadListings(listingsMode);
     }
-  }, [profile]);
+  }, [profile, listingsMode]);
 
   const loadAvatar = async (userId) => {
     try {
@@ -87,17 +90,21 @@ export const SellerProfileView = () => {
     }
   };
 
-  const loadListings = async () => {
+  const loadListings = async (mode = 'active') => {
     if (!profile?.userId) return;
     setLoadingListings(true);
     try {
-      const data = await listingsAPI.getSellerListings(profile.userId);
-      // Фильтруем только неархивированные объявления
-      const activeListings = data.filter(listing => !listing.isArchived);
-      setListings(activeListings);
+      const isArchived = mode === 'archived';
+      const data = await listingsAPI.getSellerListings(profile.userId, isArchived);
+      setListings(data);
+      if (isArchived) {
+        setArchivedCount(data.length);
+      } else {
+        setActiveCount(data.length);
+      }
       
       // Загружаем фотографии для каждого объявления
-      const photosPromises = activeListings.map(async (listing) => {
+      const photosPromises = data.map(async (listing) => {
         try {
           const photosData = await photosAPI.getListingPhotos(listing.listingsId);
           return { listingId: listing.listingsId, photos: photosData.photos || [] };
@@ -187,7 +194,7 @@ export const SellerProfileView = () => {
             className={`tab ${activeTab === 'listings' ? 'active' : ''}`}
             onClick={() => setActiveTab('listings')}
           >
-            Объявления ({listings.length})
+            Объявления ({listingsMode === 'archived' ? archivedCount : activeCount})
           </button>
           <button
             role="tab"
@@ -203,10 +210,24 @@ export const SellerProfileView = () => {
 
         {activeTab === 'listings' && (
           <div id="tab-listings" role="tabpanel" aria-labelledby="tab-button-listings">
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+              <button
+                className={`btn ${listingsMode === 'active' ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setListingsMode('active')}
+              >
+                Активные
+              </button>
+              <button
+                className={`btn ${listingsMode === 'archived' ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setListingsMode('archived')}
+              >
+                Архив
+              </button>
+            </div>
             {loadingListings ? (
               <p>Загрузка объявлений...</p>
             ) : listings.length === 0 ? (
-              <p>У продавца пока нет объявлений</p>
+              <p>{listingsMode === 'archived' ? 'Архив пуст' : 'У продавца пока нет объявлений'}</p>
             ) : (
               <div className="profile-listings-grid">
                 {listings.map((listing) => {

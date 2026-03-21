@@ -45,6 +45,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: changes
     if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.frontend == 'true'
+    env:
+      DOCKER_BUILDKIT: 1
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -77,6 +79,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: changes
     if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.monolit == 'true'
+    env:
+      DOCKER_BUILDKIT: 1
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -107,6 +111,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: changes
     if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.messenger == 'true'
+    env:
+      DOCKER_BUILDKIT: 1
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -137,6 +143,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: changes
     if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.notifications == 'true'
+    env:
+      DOCKER_BUILDKIT: 1
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -167,6 +175,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: changes
     if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.moderator == 'true'
+    env:
+      DOCKER_BUILDKIT: 1
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

@@ -23,8 +23,16 @@ docker compose -f docker-compose.base.yml -f docker-compose.prod.yml down && doc
 Сборка образа
 ```
 docker buildx build \
+  --platform linux/amd64 \
+  -t artshar/frontend:1.0.0 \
+  --build-arg VITE_API_BASE_URL=https://pitomets.com/api \
+  --push .
+```
+
+```
+ docker buildx build \
 --platform linux/amd64 \
--t artshar/frontend:1.0.0 \
+-t artshar/monolit:1.0.0 \
 --push .
 ```
 
