@@ -1,4 +1,4 @@
-name: CI - monolit and messenger (Java, Gradle)
+name: CI - monolit messenger frontend
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
@@ -8,12 +8,14 @@ on:
     paths:
       - "monolit/**"
       - "messenger/**"
+      - "frontend/**"
       - ".github/workflows/ci.yml"
   pull_request:
     branches: ["main", "dev"]
     paths:
       - "monolit/**"
       - "messenger/**"
+      - "frontend/**"
       - ".github/workflows/ci.yml"
   workflow_dispatch:
 
@@ -39,10 +41,12 @@ jobs:
         run: |
           monolit=false
           messenger=false
+          frontend=false
 
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             monolit=true
             messenger=true
+            frontend=true
           else
             head_sha=$(git rev-parse HEAD)
             parent_sha=$(git rev-parse "${head_sha}^" 2>/dev/null || true)
@@ -58,10 +62,14 @@ jobs:
             if echo "$changed_files" | grep -qE '^messenger/'; then
               messenger=true
             fi
+            if echo "$changed_files" | grep -qE '^frontend/'; then
+              frontend=true
+            fi
           fi
 
           echo "monolit=$monolit" >> "$GITHUB_OUTPUT"
           echo "messenger=$messenger" >> "$GITHUB_OUTPUT"
+          echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
 
       - name: Build dynamic matrix
         id: matrix
@@ -69,14 +77,18 @@ jobs:
           entries=()
 
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            entries+=('{"service":"monolit","java-version":"25"}')
-            entries+=('{"service":"messenger","java-version":"25"}')
+            entries+=('{"service":"monolit","kind":"java","java-version":"25"}')
+            entries+=('{"service":"messenger","kind":"java","java-version":"25"}')
+            entries+=('{"service":"frontend","kind":"node","node-version":"25.9.0"}')
           else
             if [ "${{ steps.changes.outputs.monolit }}" = "true" ]; then
-              entries+=('{"service":"monolit","java-version":"25"}')
+              entries+=('{"service":"monolit","kind":"java","java-version":"25"}')
             fi
             if [ "${{ steps.changes.outputs.messenger }}" = "true" ]; then
-              entries+=('{"service":"messenger","java-version":"25"}')
+              entries+=('{"service":"messenger","kind":"java","java-version":"25"}')
+            fi
+            if [ "${{ steps.changes.outputs.frontend }}" = "true" ]; then
+              entries+=('{"service":"frontend","kind":"node","node-version":"25.9.0"}')
             fi
           fi
 
@@ -106,12 +118,14 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Set up JDK ${{ matrix.java-version }} (Temurin)
+        if: matrix.kind == 'java'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ matrix.java-version }}
 
       - name: Cache Gradle directories
+        if: matrix.kind == 'java'
         uses: actions/cache@v4
         with:
           path: |
@@ -124,13 +138,16 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Make gradlew executable
+        if: matrix.kind == 'java'
         run: chmod +x ${{ matrix.service }}/gradlew
 
       - name: Build (without tests)
+        if: matrix.kind == 'java'
         working-directory: ${{ matrix.service }}
         run: ./gradlew clean assemble --parallel
 
       - name: Run tests
+        if: matrix.kind == 'java'
         id: tests
         working-directory: ${{ matrix.service }}
         run: ./gradlew test --no-parallel --max-workers=2
@@ -139,18 +156,43 @@ jobs:
           PHOTOS_PUBLIC_BASE_URL: "https://minio.pitomets/objects"
 
       - name: Upload test results (JUnit XML)
-        if: steps.tests.outcome == 'failure'
+        if: matrix.kind == 'java' && steps.tests.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.service }}
           path: ${{ matrix.service }}/**/build/test-results
 
       - name: Upload test reports (HTML)
-        if: steps.tests.outcome == 'failure'
+        if: matrix.kind == 'java' && steps.tests.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: test-reports-${{ matrix.service }}
           path: ${{ matrix.service }}/**/build/reports/tests
+
+      - name: Set up Node.js
+        if: matrix.kind == 'node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        if: matrix.kind == 'node'
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        if: matrix.kind == 'node'
+        working-directory: frontend
+        run: npm run build
+
+      - name: Upload frontend artifact
+        if: matrix.kind == 'node'
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
 
   quality-gate:
     name: Quality Gate
