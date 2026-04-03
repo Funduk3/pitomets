@@ -87,10 +87,6 @@ jobs:
             if [ "${{ steps.changes.outputs.messenger }}" = "true" ]; then
               entries+=('{"service":"messenger","java-version":"25"}')
             fi
-            if [ "${{ steps.changes.outputs.workflow }}" = "true" ] && [ ${#entries[@]} -eq 0 ]; then
-              entries+=('{"service":"monolit","java-version":"25"}')
-              entries+=('{"service":"messenger","java-version":"25"}')
-            fi
           fi
 
           if [ ${#entries[@]} -eq 0 ]; then
