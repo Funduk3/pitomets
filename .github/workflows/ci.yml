@@ -43,18 +43,12 @@ jobs:
             messenger=true
             workflow=true
           else
-            if [ "${{ github.event_name }}" = "pull_request" ]; then
-              base_sha="${{ github.event.pull_request.base.sha }}"
-              head_sha="${{ github.sha }}"
-              changed_files=$(git diff --name-only "$base_sha" "$head_sha")
+            head_sha="${{ github.sha }}"
+            parent_sha=$(git rev-parse "${head_sha}^" 2>/dev/null || true)
+            if [ -n "$parent_sha" ]; then
+              changed_files=$(git diff --name-only "$parent_sha" "$head_sha")
             else
-              before_sha="${{ github.event.before }}"
-              head_sha="${{ github.sha }}"
-              if [ -z "$before_sha" ] || [ "$before_sha" = "0000000000000000000000000000000000000000" ]; then
-                changed_files=$(git show --pretty="" --name-only "$head_sha")
-              else
-                changed_files=$(git diff --name-only "$before_sha" "$head_sha")
-              fi
+              changed_files=$(git show --pretty="" --name-only "$head_sha")
             fi
 
             if echo "$changed_files" | grep -qE '^monolit/'; then
@@ -160,3 +154,23 @@ jobs:
         with:
           name: test-reports-${{ matrix.service }}
           path: ${{ matrix.service }}/**/build/reports/tests
+
+  quality-gate:
+    name: Quality Gate
+    needs: [detect-changes, build-and-test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce tests for changed services
+        run: |
+          if [ "${{ needs.detect-changes.outputs.has_changes }}" != "true" ]; then
+            echo "No service changes in this commit; gate passed."
+            exit 0
+          fi
+
+          if [ "${{ needs.build-and-test.result }}" != "success" ]; then
+            echo "Changed service tests failed. Fix required before merge."
+            exit 1
+          fi
+
+          echo "Changed service tests passed."

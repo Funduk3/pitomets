@@ -42,7 +42,7 @@ dependencies {
     implementation("com.zaxxer:HikariCP:5.1.0")
 
     // Tests
-    testImplementation("io.ktor:ktor-server-tests:3.4.2")
+    testImplementation("io.ktor:ktor-server-test-host:3.4.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.3.0")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:2.3.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
