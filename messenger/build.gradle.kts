@@ -3,7 +3,7 @@ plugins {
     kotlin("plugin.serialization") version "2.3.0"
     id("io.ktor.plugin") version "3.4.2"
     id("dev.detekt") version "2.0.0-alpha.2"
-    application // добавляем этот plugin
+    application
 }
 
 group = "com.pitomets"

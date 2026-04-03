@@ -29,21 +29,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0
+          fetch-depth: 2
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Detect changed paths
         id: changes
         run: |
           monolit=false
           messenger=false
-          workflow=false
 
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             monolit=true
             messenger=true
-            workflow=true
           else
-            head_sha="${{ github.sha }}"
+            head_sha=$(git rev-parse HEAD)
             parent_sha=$(git rev-parse "${head_sha}^" 2>/dev/null || true)
             if [ -n "$parent_sha" ]; then
               changed_files=$(git diff --name-only "$parent_sha" "$head_sha")
@@ -57,14 +56,10 @@ jobs:
             if echo "$changed_files" | grep -qE '^messenger/'; then
               messenger=true
             fi
-            if echo "$changed_files" | grep -qE '^\.github/workflows/ci\.yml$'; then
-              workflow=true
-            fi
           fi
 
           echo "monolit=$monolit" >> "$GITHUB_OUTPUT"
           echo "messenger=$messenger" >> "$GITHUB_OUTPUT"
-          echo "workflow=$workflow" >> "$GITHUB_OUTPUT"
 
       - name: Build dynamic matrix
         id: matrix
