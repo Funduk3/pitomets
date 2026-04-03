@@ -26,9 +26,13 @@ class BlockAndSyncModelsTest {
 
         val raw = json.encodeToString(event)
 
-        assertTrue(raw.contains("\"type\":\"block_status\""))
-        assertTrue(raw.contains("\"otherUserId\":42"))
-        assertTrue(raw.contains("\"blockedByMe\":true"))
+        val parsed = json.decodeFromString(BlockStatusEvent.serializer(), raw)
+
+        assertEquals("block_status", parsed.type)
+        assertEquals(42L, parsed.otherUserId)
+        assertTrue(parsed.blockedByMe)
+        assertFalse(parsed.blockedMe)
+        assertTrue(parsed.blockedAny)
     }
 
     @Test
