@@ -1,6 +1,4 @@
 name: CI - monolit and messenger (Java, Gradle)
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 on:
   push:
@@ -29,19 +27,50 @@ jobs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Detect changed paths
         id: changes
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            monolit:
-              - 'monolit/**'
-            messenger:
-              - 'messenger/**'
-            workflow:
-              - '.github/workflows/ci.yml'
+        run: |
+          monolit=false
+          messenger=false
+          workflow=false
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            monolit=true
+            messenger=true
+            workflow=true
+          else
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              base_sha="${{ github.event.pull_request.base.sha }}"
+              head_sha="${{ github.sha }}"
+              changed_files=$(git diff --name-only "$base_sha" "$head_sha")
+            else
+              before_sha="${{ github.event.before }}"
+              head_sha="${{ github.sha }}"
+              if [ -z "$before_sha" ] || [ "$before_sha" = "0000000000000000000000000000000000000000" ]; then
+                changed_files=$(git show --pretty="" --name-only "$head_sha")
+              else
+                changed_files=$(git diff --name-only "$before_sha" "$head_sha")
+              fi
+            fi
+
+            if echo "$changed_files" | grep -qE '^monolit/'; then
+              monolit=true
+            fi
+            if echo "$changed_files" | grep -qE '^messenger/'; then
+              messenger=true
+            fi
+            if echo "$changed_files" | grep -qE '^\.github/workflows/ci\.yml$'; then
+              workflow=true
+            fi
+          fi
+
+          echo "monolit=$monolit" >> "$GITHUB_OUTPUT"
+          echo "messenger=$messenger" >> "$GITHUB_OUTPUT"
+          echo "workflow=$workflow" >> "$GITHUB_OUTPUT"
 
       - name: Build dynamic matrix
         id: matrix
@@ -87,7 +116,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK ${{ matrix.java-version }} (Temurin)
         uses: actions/setup-java@v4
