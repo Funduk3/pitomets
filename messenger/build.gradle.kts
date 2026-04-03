@@ -2,7 +2,7 @@ plugins {
     kotlin("jvm") version "2.0.21"
     kotlin("plugin.serialization") version "2.0.21"
     id("io.ktor.plugin") version "3.4.2"
-    id("io.gitlab.arturbosch.detekt") version "1.23.8"
+    id("dev.detekt") version "2.0.0-alpha.2"
     application // добавляем этот plugin
 }
 
@@ -48,7 +48,6 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.8")
 }
 
 kotlin {
@@ -69,16 +68,17 @@ ktor {
 }
 
 detekt {
-    toolVersion = "1.23.8"
+    toolVersion = "2.0.0-alpha.2"
     parallel = true
     buildUponDefaultConfig = true
     allRules = false
-    config = files("config/detekt/detekt.yml")
+    config.setFrom("config/detekt/detekt.yml")
     baseline = file("config/baseline.xml")
+    autoCorrect = true
 }
 
-tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
-    autoCorrect = true
+tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
+    jvmTarget = "21"
 
     reports {
         html.required.set(true)
@@ -88,6 +88,10 @@ tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
         txt.required.set(true)
         txt.outputLocation.set(file("build/reports/detekt.txt"))
     }
+}
+
+tasks.withType<dev.detekt.gradle.DetektCreateBaselineTask>().configureEach {
+    jvmTarget = "21"
 }
 
 // Запуск detekt перед сборкой
