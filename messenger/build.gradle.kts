@@ -1,7 +1,7 @@
 plugins {
     kotlin("jvm") version "2.0.21"
     kotlin("plugin.serialization") version "2.0.21"
-    id("io.ktor.plugin") version "2.3.12"
+    id("io.ktor.plugin") version "3.4.2"
     id("io.gitlab.arturbosch.detekt") version "1.23.8"
     application // добавляем этот plugin
 }
@@ -15,13 +15,13 @@ repositories {
 
 dependencies {
     // Ktor Server
-    implementation("io.ktor:ktor-server-core:2.3.12")
-    implementation("io.ktor:ktor-server-netty:2.3.12")
-    implementation("io.ktor:ktor-server-websockets:2.3.12")
-    implementation("io.ktor:ktor-server-content-negotiation:2.3.12")
-    implementation("io.ktor:ktor-server-status-pages:2.3.12")
-    implementation("io.ktor:ktor-server-call-logging:2.3.12")
-    implementation("io.ktor:ktor-server-cors:2.3.12")
+    implementation("io.ktor:ktor-server-core:3.4.2")
+    implementation("io.ktor:ktor-server-netty:3.4.2")
+    implementation("io.ktor:ktor-server-websockets:3.4.2")
+    implementation("io.ktor:ktor-server-content-negotiation:3.4.2")
+    implementation("io.ktor:ktor-server-status-pages:3.4.2")
+    implementation("io.ktor:ktor-server-call-logging:3.4.2")
+    implementation("io.ktor:ktor-server-cors:3.4.2")
 
     // PostgreSQL & Exposed
     implementation("org.jetbrains.exposed:exposed-core:0.48.0")
@@ -31,7 +31,7 @@ dependencies {
     implementation("org.postgresql:postgresql:42.7.3")
 
     // Ktor Serialization
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.12")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.4.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
 
@@ -42,7 +42,7 @@ dependencies {
     implementation("com.zaxxer:HikariCP:5.1.0")
 
     // Tests
-    testImplementation("io.ktor:ktor-server-tests:2.3.12")
+    testImplementation("io.ktor:ktor-server-tests:3.4.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:2.0.21")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")

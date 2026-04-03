@@ -16,19 +16,72 @@ on:
   workflow_dispatch:
 
 jobs:
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      has_changes: ${{ steps.matrix.outputs.has_changes }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            monolit:
+              - 'monolit/**'
+            messenger:
+              - 'messenger/**'
+            workflow:
+              - '.github/workflows/ci.yml'
+
+      - name: Build dynamic matrix
+        id: matrix
+        run: |
+          entries=()
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            entries+=('{"service":"monolit","java-version":"25"}')
+            entries+=('{"service":"messenger","java-version":"25"}')
+          else
+            if [ "${{ steps.changes.outputs.monolit }}" = "true" ]; then
+              entries+=('{"service":"monolit","java-version":"25"}')
+            fi
+            if [ "${{ steps.changes.outputs.messenger }}" = "true" ]; then
+              entries+=('{"service":"messenger","java-version":"25"}')
+            fi
+            if [ "${{ steps.changes.outputs.workflow }}" = "true" ] && [ ${#entries[@]} -eq 0 ]; then
+              entries+=('{"service":"monolit","java-version":"25"}')
+              entries+=('{"service":"messenger","java-version":"25"}')
+            fi
+          fi
+
+          if [ ${#entries[@]} -eq 0 ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo 'matrix={"include":[]}' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          json_entries=$(IFS=,; echo "${entries[*]}")
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          echo "matrix={\"include\":[${json_entries}]}" >> "$GITHUB_OUTPUT"
+
   build-and-test:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_changes == 'true'
     name: Build & Test (${{ matrix.service }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - service: monolit
-            java-version: '25'
-          - service: messenger
-            java-version: '25'
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
 
     steps:
       - name: Checkout repository
