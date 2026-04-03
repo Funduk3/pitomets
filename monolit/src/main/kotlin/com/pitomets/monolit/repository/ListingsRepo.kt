@@ -16,6 +16,8 @@ interface ListingsRepo : JpaRepository<Listing, Long> {
     fun findAllByIdIn(ids: List<Long>): List<Listing>
     fun findBySellerProfile(sellerProfile: SellerProfile): List<Listing>
     fun findBySellerProfileAndIsApprovedTrue(sellerProfile: SellerProfile): List<Listing>
+    fun findBySellerProfileAndIsApprovedTrueAndIsArchivedFalse(sellerProfile: SellerProfile): List<Listing>
+    fun findBySellerProfileAndIsApprovedTrueAndIsArchivedTrue(sellerProfile: SellerProfile): List<Listing>
     fun findByIsArchivedFalseOrderByIdDesc(pageable: Pageable): List<Listing>
     fun findByIsArchivedFalseAndIdLessThanOrderByIdDesc(id: Long, pageable: Pageable): List<Listing>
     fun findByIsArchivedFalseAndIsApprovedTrueOrderByIdDesc(pageable: Pageable): List<Listing>

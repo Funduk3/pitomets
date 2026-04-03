@@ -44,9 +44,10 @@ class ListingController(
 
     @GetMapping("/seller")
     fun getSellerListings(
-        @RequestParam("sellerId") sellerId: Long
+        @RequestParam("sellerId") sellerId: Long,
+        @RequestParam("archived", required = false, defaultValue = "false") archived: Boolean
     ): List<ListingsResponse> =
-        listingsService.getSellerListingsPublic(sellerId)
+        listingsService.getSellerListingsPublic(sellerId, archived)
 
     @GetMapping("/home")
     fun getHomeListings(
@@ -74,6 +75,18 @@ class ListingController(
             listingId,
             userPrincipal.id,
             updateListing
+        )
+
+    @PutMapping("/archive")
+    fun archiveListing(
+        @RequestParam("id") listingId: Long,
+        @RequestParam("archived", required = false, defaultValue = "true") archived: Boolean,
+        @AuthenticationPrincipal userPrincipal: UserPrincipal,
+    ): ListingsResponse =
+        listingsService.setListingArchived(
+            listingId,
+            userPrincipal.id,
+            archived
         )
 
     @DeleteMapping("/")
