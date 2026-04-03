@@ -1,30 +1,45 @@
 import api from './axios';
 
+const normalizeListing = (listing) => {
+  if (!listing || typeof listing !== 'object') return listing;
+  const archived = listing.isArchived ?? listing.archived;
+  const approved = listing.isApproved ?? listing.approved;
+  return { ...listing, isArchived: archived, isApproved: approved };
+};
+
+const normalizeListings = (data) => {
+  if (Array.isArray(data)) return data.map(normalizeListing);
+  return normalizeListing(data);
+};
+
 export const listingsAPI = {
   getListing: async (listingId) => {
     const response = await api.get('/listings/', {
       params: { id: listingId },
     });
-    return response.data;
+    return normalizeListing(response.data);
   },
 
   getMyListings: async () => {
     const response = await api.get('/listings/my');
-    return response.data;
+    return normalizeListings(response.data);
   },
 
-  getSellerListings: async (sellerId) => {
+  getSellerListings: async (sellerId, archived = false) => {
     const response = await api.get('/listings/seller', {
-      params: { sellerId },
+      params: { sellerId, archived },
     });
-    return response.data;
+    return normalizeListings(response.data);
   },
 
   getHomeListings: async (cursor = null) => {
     const response = await api.get('/listings/home', {
       params: cursor == null ? {} : { cursor },
     });
-    return response.data;
+    return {
+      ...response.data,
+      items: normalizeListings(response.data?.items || []),
+    };
   },
 
   createListing: async (listingData) => {
@@ -36,7 +51,14 @@ export const listingsAPI = {
     const response = await api.put('/listings/', updateData, {
       params: { id: listingId },
     });
-    return response.data;
+    return normalizeListing(response.data);
+  },
+
+  archiveListing: async (listingId, archived = true) => {
+    const response = await api.put('/listings/archive', null, {
+      params: { id: listingId, archived },
+    });
+    return normalizeListing(response.data);
   },
 
   deleteListing: async (listingId) => {

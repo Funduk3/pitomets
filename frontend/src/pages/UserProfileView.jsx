@@ -22,6 +22,9 @@ export const UserProfileView = () => {
   const [loading, setLoading] = useState(true);
   const [loadingListings, setLoadingListings] = useState(false);
   const [activeTab, setActiveTab] = useState('listings');
+  const [listingsMode, setListingsMode] = useState('active');
+  const [activeCount, setActiveCount] = useState(0);
+  const [archivedCount, setArchivedCount] = useState(0);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -39,9 +42,9 @@ export const UserProfileView = () => {
   useEffect(() => {
     if (profile?.isSeller && profile?.id) {
       loadReviews();
-      loadListings();
+      loadListings(listingsMode);
     }
-  }, [profile]);
+  }, [profile, listingsMode]);
 
   const loadProfile = async () => {
     try {
@@ -71,15 +74,20 @@ export const UserProfileView = () => {
     }
   };
 
-  const loadListings = async () => {
+  const loadListings = async (mode = 'active') => {
     if (!profile?.isSeller) return;
     setLoadingListings(true);
     try {
-      const data = await listingsAPI.getSellerListings(parseInt(userId));
-      const activeListings = data.filter(listing => !listing.isArchived);
-      setListings(activeListings);
+      const isArchived = mode === 'archived';
+      const data = await listingsAPI.getSellerListings(parseInt(userId), isArchived);
+      setListings(data);
+      if (isArchived) {
+        setArchivedCount(data.length);
+      } else {
+        setActiveCount(data.length);
+      }
       
-      const photosPromises = activeListings.map(async (listing) => {
+      const photosPromises = data.map(async (listing) => {
         try {
           const photosData = await photosAPI.getListingPhotos(listing.listingsId);
           return { listingId: listing.listingsId, photos: photosData.photos || [] };
@@ -191,7 +199,7 @@ export const UserProfileView = () => {
               onClick={() => setActiveTab('listings')}
               className={`tab ${activeTab === 'listings' ? 'active' : ''}`}
             >
-              Объявления ({listings.length})
+              Объявления ({listingsMode === 'archived' ? archivedCount : activeCount})
             </button>
             <button
               onClick={() => setActiveTab('reviews')}
@@ -203,10 +211,24 @@ export const UserProfileView = () => {
 
           {activeTab === 'listings' && (
             <div>
+              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                <button
+                  className={`btn ${listingsMode === 'active' ? 'btn-primary' : 'btn-ghost'}`}
+                  onClick={() => setListingsMode('active')}
+                >
+                  Активные
+                </button>
+                <button
+                  className={`btn ${listingsMode === 'archived' ? 'btn-primary' : 'btn-ghost'}`}
+                  onClick={() => setListingsMode('archived')}
+                >
+                  Архив
+                </button>
+              </div>
               {loadingListings ? (
                 <p>Загрузка объявлений...</p>
               ) : listings.length === 0 ? (
-                <p>У пользователя пока нет объявлений</p>
+                <p>{listingsMode === 'archived' ? 'Архив пуст' : 'У пользователя пока нет объявлений'}</p>
               ) : (
                 <div className="profile-listings-grid">
                   {listings.map((listing) => {

@@ -15,12 +15,23 @@ services:
     container_name: monolit
     restart: unless-stopped
     environment:
-      - PHOTOS_PUBLIC_BASE_URL_IMAGES=${PHOTOS_PUBLIC_BASE_URL_IMAGES}
-      - PHOTOS_PUBLIC_BASE_URL_AVATARS=${PHOTOS_PUBLIC_BASE_URL_AVATARS}
-      - PHOTOS_MODERATION_PUBLIC_BASE_URL_IMAGES=${PHOTOS_MODERATION_PUBLIC_BASE_URL_IMAGES:-${PHOTOS_PUBLIC_BASE_URL_IMAGES}}
-      - PHOTOS_MODERATION_PUBLIC_BASE_URL_AVATARS=${PHOTOS_MODERATION_PUBLIC_BASE_URL_AVATARS:-${PHOTOS_PUBLIC_BASE_URL_AVATARS}}
+      PHOTOS_PUBLIC_BASE_URL_IMAGES: ${PHOTOS_PUBLIC_BASE_URL_IMAGES}
+      PHOTOS_PUBLIC_BASE_URL_AVATARS: ${PHOTOS_PUBLIC_BASE_URL_AVATARS}
+      PHOTOS_MODERATION_PUBLIC_BASE_URL_IMAGES: ${PHOTOS_MODERATION_PUBLIC_BASE_URL_IMAGES:-${PHOTOS_PUBLIC_BASE_URL_IMAGES}}
+      PHOTOS_MODERATION_PUBLIC_BASE_URL_AVATARS: ${PHOTOS_MODERATION_PUBLIC_BASE_URL_AVATARS:-${PHOTOS_PUBLIC_BASE_URL_AVATARS}}
     env_file:
       - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks:
       - web
     labels:
@@ -32,6 +43,12 @@ services:
       - "traefik.http.routers.monolit.middlewares=monolit-strip"
       - "traefik.http.middlewares.monolit-strip.stripprefix.prefixes=/api"
       - "traefik.http.services.monolit.loadbalancer.server.port=8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health | grep -q '\"status\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   messenger:
     image: ${MESSENGER_IMAGE}
@@ -43,6 +60,9 @@ services:
       - JAVA_OPTS=-Xms512m -Xmx768m -XX:MaxMetaspaceSize=128m
     env_file:
       - .env
+    depends_on:
+      postgres-messenger:
+        condition: service_healthy
     networks:
       - web
     labels:
@@ -64,6 +84,11 @@ services:
     env_file:
       - .env
       - .env.prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks:
       - web
 
@@ -78,6 +103,9 @@ services:
     env_file:
       - .env
       - .env.prod
+    depends_on:
+      kafka:
+        condition: service_healthy
     networks:
       - web
 
@@ -98,3 +126,9 @@ services:
       - "traefik.http.routers.frontend.tls.certresolver=le"
       - "traefik.http.routers.frontend.priority=1"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /usr/share/nginx/html/index.html"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
