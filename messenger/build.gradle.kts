@@ -83,10 +83,6 @@ tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
     reports {
         html.required.set(true)
         html.outputLocation.set(file("build/reports/detekt.html"))
-        xml.required.set(true)
-        xml.outputLocation.set(file("build/reports/detekt.xml"))
-        txt.required.set(true)
-        txt.outputLocation.set(file("build/reports/detekt.txt"))
     }
 }
 
