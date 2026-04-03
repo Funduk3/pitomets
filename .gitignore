@@ -40,4 +40,6 @@ out/
 .kotlin
 
 .DS_Store
+
+/.gradle-local/**
 .env.prod
