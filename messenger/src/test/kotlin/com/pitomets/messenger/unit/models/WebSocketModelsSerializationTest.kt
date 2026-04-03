@@ -30,6 +30,27 @@ class WebSocketModelsSerializationTest {
 
         assertEquals("sync", parsed.type)
         assertEquals(mapOf("1" to "10", "2" to "20"), parsed.lastMessageIds)
+        assertEquals(null, parsed.chatId)
+        assertEquals(null, parsed.content)
+    }
+
+    @Test
+    fun `WebSocketMessage keeps optional fields when provided`() {
+        val raw = """
+            {
+              "type": "send_message",
+              "chatId": 55,
+              "content": "hey",
+              "senderId": 1000
+            }
+        """.trimIndent()
+
+        val parsed = json.decodeFromString(WebSocketMessage.serializer(), raw)
+
+        assertEquals("send_message", parsed.type)
+        assertEquals(55L, parsed.chatId)
+        assertEquals("hey", parsed.content)
+        assertEquals(1000L, parsed.senderId)
     }
 
     @Test
