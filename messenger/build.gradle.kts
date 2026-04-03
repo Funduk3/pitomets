@@ -44,7 +44,9 @@ dependencies {
     // Tests
     testImplementation("io.ktor:ktor-server-tests:2.3.12")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:2.0.21")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.8")
 }
@@ -96,6 +98,10 @@ tasks.named("compileKotlin") {
 // Альтернативно: запуск detekt перед тестами
 tasks.named("test") {
     dependsOn("detekt")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }
 
 // Или запуск перед созданием jar

@@ -1,32 +1,44 @@
-name: CI — monolit (Java 21, Gradle)
+name: CI - monolit and messenger (Java, Gradle)
 
 on:
   push:
     branches: ["main", "dev"]
     paths:
       - "monolit/**"
+      - "messenger/**"
+      - ".github/workflows/ci.yml"
   pull_request:
     branches: ["main", "dev"]
     paths:
       - "monolit/**"
+      - "messenger/**"
+      - ".github/workflows/ci.yml"
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build & Test (monolit)
+  build-and-test:
+    name: Build & Test (${{ matrix.service }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: monolit
+            java-version: '25'
+          - service: messenger
+            java-version: '25'
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21 (Temurin)
+      - name: Set up JDK ${{ matrix.java-version }} (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: ${{ matrix.java-version }}
 
       - name: Cache Gradle directories
         uses: actions/cache@v4
@@ -34,33 +46,24 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-            monolit/.gradle
-          key: ${{ runner.os }}-gradle-${{ hashFiles('monolit/**/gradle-wrapper.properties','monolit/**/build.gradle*','monolit/**/settings.gradle*') }}
+            ${{ matrix.service }}/.gradle
+          key: ${{ runner.os }}-${{ matrix.service }}-gradle-${{ hashFiles(format('{0}/**/gradle-wrapper.properties', matrix.service), format('{0}/**/build.gradle*', matrix.service), format('{0}/**/settings.gradle*', matrix.service)) }}
           restore-keys: |
+            ${{ runner.os }}-${{ matrix.service }}-gradle-
             ${{ runner.os }}-gradle-
 
       - name: Make gradlew executable
-        run: chmod +x monolit/gradlew
+        run: chmod +x ${{ matrix.service }}/gradlew
 
       - name: Build (without tests)
-        working-directory: monolit
+        working-directory: ${{ matrix.service }}
         run: ./gradlew clean assemble --parallel
 
-      # Free up disk space for Docker containers
-#      - name: Free Disk Space
-#        run: |
-#          sudo rm -rf /usr/local/lib/android
-#          sudo rm -rf /usr/share/dotnet
-#          sudo rm -rf /opt/ghc
-#          df -h
-
-      # Run tests with increased timeout and without parallel execution for stability
       - name: Run tests
         id: tests
-        working-directory: monolit
+        working-directory: ${{ matrix.service }}
         run: ./gradlew test --no-parallel --max-workers=2
         env:
-          # Increase timeouts for CI environment
           GRADLE_OPTS: "-Dorg.gradle.daemon=false -Xmx2g"
           PHOTOS_PUBLIC_BASE_URL: "https://minio.pitomets/objects"
 
@@ -68,12 +71,12 @@ jobs:
         if: steps.tests.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
-          path: monolit/**/build/test-results
+          name: test-results-${{ matrix.service }}
+          path: ${{ matrix.service }}/**/build/test-results
 
       - name: Upload test reports (HTML)
         if: steps.tests.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports
-          path: monolit/**/build/reports/tests
+          name: test-reports-${{ matrix.service }}
+          path: ${{ matrix.service }}/**/build/reports/tests
