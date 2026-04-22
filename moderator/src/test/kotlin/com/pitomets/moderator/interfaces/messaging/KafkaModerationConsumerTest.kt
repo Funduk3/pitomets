@@ -1,7 +1,8 @@
 package com.pitomets.moderator.interfaces.messaging
 
 import com.pitomets.moderator.application.service.ModerationProcessor
-import com.pitomets.moderator.infrastructure.kafka.ModerationResultPublisher
+import com.pitomets.moderator.infrastructure.kafka.consumer.KafkaModerationConsumer
+import com.pitomets.moderator.infrastructure.kafka.producer.ModerationResultPublisher
 import com.pitomets.moderator.interfaces.messaging.event.ModerationEntityType
 import com.pitomets.moderator.interfaces.messaging.event.ModerationOperation
 import com.pitomets.moderator.interfaces.messaging.event.ModerationProcessedEvent
