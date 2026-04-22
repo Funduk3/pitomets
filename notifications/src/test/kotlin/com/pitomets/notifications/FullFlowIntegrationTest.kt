@@ -3,6 +3,7 @@ package com.pitomets.notifications
 import com.pitomets.notifications.domain.model.Channel
 import com.pitomets.notifications.domain.model.Status
 import com.pitomets.notifications.domain.port.NotificationRepository
+import com.pitomets.notifications.infrastructure.outbox.OutboxJpaRepository
 import com.pitomets.notifications.interfaces.messaging.event.NotificationRequestedEvent
 import jakarta.mail.Session
 import jakarta.mail.internet.MimeMessage
@@ -37,7 +38,6 @@ import java.util.concurrent.TimeUnit
         "spring.kafka.consumer.auto-offset-reset=earliest",
         "spring.kafka.listener.missing-topics-fatal=false",
         "spring.jpa.hibernate.ddl-auto=create-drop",
-        // ✅ Важно: Настраиваем URL фронтенда для тестов
         "app.frontend-url=http://test-localhost:3000"
     ]
 )
@@ -54,6 +54,9 @@ class FullFlowIntegrationTest : BaseContainers() {
     @Autowired
     private lateinit var kafkaTemplate: KafkaTemplate<String, Any>
 
+    @Autowired
+    private lateinit var outboxJpaRepository: OutboxJpaRepository
+
     @MockitoBean
     private lateinit var mailSender: JavaMailSender
 
@@ -63,7 +66,6 @@ class FullFlowIntegrationTest : BaseContainers() {
     @BeforeEach
     fun setUpMailSender() {
         val session = Session.getInstance(Properties())
-        // Настраиваем мок, чтобы он возвращал валидный MimeMessage
         whenever(mailSender.createMimeMessage()).thenReturn(MimeMessage(session))
     }
 
@@ -86,7 +88,6 @@ class FullFlowIntegrationTest : BaseContainers() {
 
         kafkaTemplate.send(notificationsTopic, userId.toString(), notificationEvent)
 
-        // 1. Ждем сохранения в БД со статусом SENT
         await.atMost(10, TimeUnit.SECONDS).untilAsserted {
             val notifications = notificationRepository.findByUserId(userId)
             assertTrue(notifications.isNotEmpty())
@@ -95,18 +96,8 @@ class FullFlowIntegrationTest : BaseContainers() {
             assertEquals(fullPayload, notification.payload)
         }
 
-        // 2. Проверяем, что метод send был вызван, и перехватываем сообщение
         val messageCaptor = argumentCaptor<MimeMessage>()
         verify(mailSender, times(1)).send(messageCaptor.capture())
-
-        // 3. Проверяем содержимое письма (ссылка должна быть правильной)
-        // В messageCaptor.firstValue.content может быть String или Multipart, для теста упростим:
-        // *Примечание: MimeMessage.content может требовать DataHandler, поэтому часто проверяют subject или toString,
-        // но если у вас text/plain, то .content сработает.
-
-        // Тут мы проверяем сам факт вызова, но если мы хотим проверить URL внутри:
-        // P.S. В реальном MimeMessage без реальной сессии получение контента может быть сложным.
-        // Если ваш сервис формирует тело письма, логично проверить хотя бы Subject или Recipient.
     }
 
     @Test
@@ -114,7 +105,6 @@ class FullFlowIntegrationTest : BaseContainers() {
         val userId = faker.number().randomNumber(6, false)
         val eventId = faker.number().randomNumber(8, false)
 
-        // Настраиваем MailSender на выброс ошибки при попытке отправки
         whenever(mailSender.send(any<MimeMessage>())).thenThrow(MailSendException("SMTP error"))
 
         val notificationEvent = NotificationRequestedEvent(
@@ -128,7 +118,6 @@ class FullFlowIntegrationTest : BaseContainers() {
 
         kafkaTemplate.send(notificationsTopic, userId.toString(), notificationEvent)
 
-        // Ждем, что статус станет FAILED
         await.atMost(10, TimeUnit.SECONDS).untilAsserted {
             val notifications = notificationRepository.findByUserId(userId)
             assertTrue(notifications.isNotEmpty())
@@ -143,7 +132,7 @@ class FullFlowIntegrationTest : BaseContainers() {
         val invalidEvent = NotificationRequestedEvent(
             eventId = faker.number().randomNumber(8, false),
             userId = faker.number().randomNumber(6, false),
-            channel = "SMS", // Допустим SMS не поддерживается или не настроен
+            channel = "SMS",
             messageType = "REGISTRATION",
             payload = "invalid_payload",
             occurredAt = Instant.now()
@@ -157,7 +146,59 @@ class FullFlowIntegrationTest : BaseContainers() {
             assertTrue(failed.isNotEmpty(), "Не найдено уведомлений со статусом FAILED")
         }
 
-        // Убеждаемся, что почту отправлять не пытались
         verify(mailSender, never()).send(any<MimeMessage>())
+    }
+
+    @Test
+    fun `should process duplicate event id only once`() {
+        val userId = faker.number().randomNumber(6, false)
+        val eventId = faker.number().randomNumber(8, false)
+        val payload = "${faker.internet().emailAddress()} token-${faker.number().digits(6)}"
+
+        val event = NotificationRequestedEvent(
+            eventId = eventId,
+            userId = userId,
+            channel = Channel.EMAIL.name,
+            messageType = "CONFIRM",
+            payload = payload,
+            occurredAt = Instant.now()
+        )
+
+        kafkaTemplate.send(notificationsTopic, userId.toString(), event)
+        kafkaTemplate.send(notificationsTopic, userId.toString(), event)
+
+        await.atMost(10, TimeUnit.SECONDS).untilAsserted {
+            val stored = notificationRepository.findAll().filter { it.eventId == eventId }
+            assertEquals(1, stored.size, "Должна быть только одна запись для одного eventId")
+            assertEquals(Status.SENT, stored.first().status)
+        }
+
+        verify(mailSender, times(1)).send(any<MimeMessage>())
+    }
+
+    @Test
+    fun `should create outbox event after successful processing`() {
+        val userId = faker.number().randomNumber(6, false)
+        val eventId = faker.number().randomNumber(8, false)
+        val payload = "${faker.internet().emailAddress()} token-${faker.number().digits(6)}"
+
+        val event = NotificationRequestedEvent(
+            eventId = eventId,
+            userId = userId,
+            channel = Channel.EMAIL.name,
+            messageType = "CONFIRM",
+            payload = payload,
+            occurredAt = Instant.now()
+        )
+
+        kafkaTemplate.send(notificationsTopic, userId.toString(), event)
+
+        await.atMost(10, TimeUnit.SECONDS).untilAsserted {
+            val outboxEvents = outboxJpaRepository.findAll()
+            assertTrue(
+                outboxEvents.any { it.eventType.contains("NotificationSentEvent") && !it.published },
+                "Ожидали запись NotificationSentEvent в outbox"
+            )
+        }
     }
 }
