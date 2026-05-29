@@ -41,6 +41,7 @@ graph LR
   API --> S3
   API --> WS
   API --> K
+  WS --> PG
 
   K --> NTF
   K --> MOD
